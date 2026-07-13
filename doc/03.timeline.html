@@ -329,10 +329,13 @@
           <li class="sub-nav-item"><a href="#weekly-w13-16">2.4. Vue UI & 오프라인 맵 (W13-16)</a></li>
           <li class="sub-nav-item"><a href="#weekly-w17-20">2.5. 정산 엔진 구축 (W17-20)</a></li>
           <li class="sub-nav-item"><a href="#weekly-w21-24">2.6. 경량화 & M1 완료 (W21-24)</a></li>
-          <li class="sub-nav-item"><a href="#weekly-w25-28">2.7. HA 클러스터 구축 (W25-28)</a></li>
-          <li class="sub-nav-item"><a href="#weekly-w29-32">2.8. 버스 특화 & 스마트차징 (W29-32)</a></li>
-          <li class="sub-nav-item"><a href="#weekly-w33-36">2.9. 로밍 & 최종 인도 (W33-36)</a></li>
-          <li class="sub-nav-item"><a href="#weekly-w3d">2.10. 3D 디지털트윈 트랙 (별도)</a></li>
+          <li class="sub-nav-item"><a href="#weekly-w25-28">2.7. 분산 웹소켓 구축 (W25-28)</a></li>
+          <li class="sub-nav-item"><a href="#weekly-w29-32">2.8. DB & Kafka 다중화 (W29-32)</a></li>
+          <li class="sub-nav-item"><a href="#weekly-w33-36">2.9. 버스 차고지 관제 개발 (W33-36)</a></li>
+          <li class="sub-nav-item"><a href="#weekly-w37-40">2.10. 스마트차징 & FOTA (W37-40)</a></li>
+          <li class="sub-nav-item"><a href="#weekly-w41-44">2.11. 로밍 & 결제취소 (W41-44)</a></li>
+          <li class="sub-nav-item"><a href="#weekly-w45-48">2.12. 지급대행 & M3 완료 (W45-48)</a></li>
+          <li class="sub-nav-item"><a href="#weekly-w3d">2.13. 3D 디지털트윈 트랙 (별도)</a></li>
         </ul>
       </li>
       <li class="nav-item">
@@ -350,7 +353,7 @@
     <!-- Section 1: Milestones -->
     <section id="milestones">
       <h2>1. 프로젝트 마일스톤 (Project Milestones)</h2>
-      <p>본 프로젝트는 Phase 1 (단일 서버 기동 모드 - 필수 기능)의 안정성을 최적화하기 위해 초기 6개월(24주)의 개발 및 검증 기간을 적용하고, 이후 Phase 2 (HA 분산 확장 및 고도화 기능) 단계를 고도화하는 일정을 따릅니다.</p>
+      <p>본 프로젝트는 Phase 1 (단일 서버 기동 모드 - 필수 기능)의 안정성을 최적화하기 위해 초기 6개월(24주)의 충분한 개발 및 검증 기간을 적용하고, 이후 Phase 2 (HA 분산 확장 및 고도화 기능) 단계를 6개월 동안 고도화하는 총 12개월(1년)의 장기 안정 일정을 따릅니다.</p>
       <p>※ <strong>3D 디지털 트윈 관제 기능</strong>은 필수 마일스톤에서 제외되어, 프로젝트에 영향을 주지 않도록 <strong>별도의 독립된 추가 트랙 (Optional)</strong>으로 이관되었습니다.</p>
       
       <table>
@@ -370,16 +373,16 @@
             <td><strong>24주차 말 (6개월차)</strong></td>
           </tr>
           <tr>
-            <td><strong>M2: Phase 2 완료</strong></td>
-            <td>분산 스케일 아웃 및 OCPP 2.0.1 지원</td>
-            <td>Redis 세션 동기화, 멀티 노드 라우팅, OCPP 2.0.1 확장, 스마트 차징 프로파일 제어 및 전기 버스 차고지 배치도 완성</td>
-            <td><strong>32주차 말 (8개월차)</strong></td>
+            <td><strong>M2: Phase 2 개발 완료</strong></td>
+            <td>분산 클러스터 및 스마트 차징 고도화</td>
+            <td>Redis 세션 동기화, 멀티 노드 라우팅, DB/Kafka 분산 클러스터, OCPP 2.0.1 확장, 스마트 차징 프로파일 제어 및 전기 버스 차고지 배치도 완성</td>
+            <td><strong>40주차 말 (10개월차)</strong></td>
           </tr>
           <tr>
             <td><strong>M3: 최종 인수</strong></td>
-            <td>안정성 검증 및 폐쇄망 실환경 배포</td>
-            <td>로밍 연동, 배치 및 청구 리포터 완성, 동시 2,000 TPS 대용량 부하 테스트 통과 및 Zero-Dependency 배포 패키지 인도</td>
-            <td><strong>36주차 말 (9개월차)</strong></td>
+            <td>대외 연동 및 안정성 검증 배포</td>
+            <td>로밍 중계 연동, 정산지급 대행, 청구 리포터 완성, 대용량 부하 테스트(2,000 TPS) 통과 및 폐쇄망(Air-Gapped) 패키지 최종 인도</td>
+            <td><strong>48주차 말 (12개월차/1년)</strong></td>
           </tr>
         </tbody>
       </table>
@@ -388,15 +391,15 @@
     <!-- Section 2: Weekly Plan -->
     <section id="weekly-plan">
       <h2>2. 상세 일정 계획 (Detailed Plan)</h2>
-      <p>전체 9개월(36주) 일정으로 구성된 세부 개발 일정 및 마일스톤 일정 계획입니다. (Phase 1 필수 기능 구축에 6개월을 집중 배치하여 안정성 확보)</p>
+      <p>전체 12개월(48주) 일정으로 구성된 세부 개발 일정 및 마일스톤 일정 계획입니다. (Phase 1 필수 기능 6개월 + Phase 2 고도화 기능 6개월 분할 배치)</p>
 
       <div class="mermaid">
         gantt
-            title CPO 통합 CSMS 개발 일정 (Phase 1 6개월 집중 조율)
+            title CPO 통합 CSMS 개발 일정 (Phase 1 & Phase 2 각 6개월 조율)
             dateFormat  YYYY-MM-DD
             axisFormat  %m-%d
             
-            section Phase 1 (★ Standalone 필수 개발 및 안착 - 6개월 집중 강조)
+            section Phase 1 (★ Standalone 필수 개발 및 안착 - 6개월)
             인프라 구성 및 설계        :crit, active, p1_infra, 2026-07-13, 28d
             OCPP 1.6J GW & Uplink 개발   :crit, p1_gw, after p1_infra, 28d
             비즈니스 로직 & 백엔드 코어 개발 :crit, p1_biz, after p1_gw, 28d
@@ -404,13 +407,16 @@
             정산 엔진 및 장애 관리 구축    :crit, p1_twin, after p1_fe, 28d
             경량화 튜닝 & M1 통합 검증      :crit, p1_test, after p1_twin, 28d
             
-            section Phase 2 (HA & Advanced)
-            분산 클러스터 HA 인프라 구축    : p2_cluster, after p1_test, 28d
-            버스 특화 물류, FOTA & 스마트차징 : p2_bus, after p2_cluster, 28d
-            로밍, 결제 취소, 배치 & 최종 검증 : p2_roam, after p2_bus, 28d
+            section Phase 2 (★ 분산 클러스터 & 고도화 기능 - 6개월)
+            분산 웹소켓 & 세션공유 구축      : p2_infra, after p1_test, 28d
+            DB & Kafka 분산 클러스터 다중화 : p2_db, after p2_infra, 28d
+            버스 차고지 관제 & 물류 특화 개발  : p2_bus, after p2_db, 28d
+            스마트차징 & FOTA 관리 고도화   : p2_smart, after p2_bus, 28d
+            로밍 연동 & 결제 취소 관리      : p2_roam, after p2_smart, 28d
+            지급대행, 리포트 & 최종 M3 검증   : p2_final, after p2_roam, 28d
             
             section 별도 추가 트랙 (Optional)
-            3D 디지털 트윈 관제 개발 (별도 일정) : p3_twin, after p2_roam, 28d
+            3D 디지털 트윈 관제 개발 (별도 일정) : p3_twin, after p2_final, 28d
       </div>
 
       <h3 id="weekly-w1-4">2.1. [Phase 1 - 1개월차] 개발 환경 & 인프라 및 상세 설계 (Week 1 - 4)</h3>
@@ -465,32 +471,55 @@
         <li><strong>Zero-Dependency 패키징:</strong> 폐쇄망 배포용 Vue 정적 리소스의 Spring Boot 내장 및 오프라인 배포 압축 패키징 검증 완료.</li>
       </ul>
 
-      <h3 id="weekly-w25-28">2.7. [Phase 2 - 7개월차] 분산 클러스터 HA 인프라 구축 (Week 25 - 28)</h3>
-      <p>트래픽 분산과 스케일 아웃에 유연하게 대응할 수 있도록 시스템 전반을 분산 이중화 구성하는 단계입니다.</p>
+      <h3 id="weekly-w25-28">2.7. [Phase 2 - 7개월차] 분산 웹소켓 & 세션 공유 아키텍처 구축 (Week 25 - 28)</h3>
+      <p>다중 서버 기동 환경에서 실시간 기기 커넥션을 안전하게 관리할 수 있도록 소켓 분산 처리를 구현합니다.</p>
       <ul>
-        <li><strong>로드밸런싱 및 Redis 세션 공유:</strong> L4/L7 로드밸런서 배치 및 다중 Gateway 서버 세션 동기화를 위한 Redis Active Connection Map 연동.</li>
-        <li><strong>제어 명령 Pub/Sub 라우팅:</strong> Redis Pub/Sub을 활용해 원격제어 명령을 대상 기기가 연결된 게이트웨이 노드로 노드 라우팅 구현.</li>
-        <li><strong>데이터베이스 다중화:</strong> PostgreSQL 복제본(Primary-Standby) 및 ClickHouse 분산 레플리카 환경 구성.</li>
+        <li><strong>로드밸런싱 게이트웨이:</strong> L4/L7 로드밸런서를 통한 분산 WebSocket 게이트웨이 환경 연동.</li>
+        <li><strong>Redis 세션 맵:</strong> 기기의 접속 노드 위치 및 세션 상태를 실시간 공유하기 위한 Redis Active Connection Map 연동.</li>
+        <li><strong>제어 명령 라우팅:</strong> Redis Pub/Sub 채널을 통한 대상 노드별 원격 제어 커맨드 라우팅 및 전송 큐 설계.</li>
       </ul>
 
-      <h3 id="weekly-w29-32">2.8. [Phase 2 - 8개월차] 버스 특화 물류, FOTA 및 스마트 차징 고도화 (Week 29 - 32)</h3>
-      <p>전기 버스 차고지 전용 물류 로직 및 동적 전력 조절 시스템을 구축하여 Milestone 2를 달성합니다.</p>
+      <h3 id="weekly-w29-32">2.8. [Phase 2 - 8개월차] 데이터베이스 및 메시지 브로커 분산 다중화 (Week 29 - 32)</h3>
+      <p>대용량 트래픽의 무손실 적재 및 무중단 인프라 가용성을 위해 DB와 메시지 브로커를 클러스터화합니다.</p>
       <ul>
-        <li><strong>버스 차고지 관제:</strong> 버스 차고지 평면도 드래그 앤 드롭 편집기(Canvas 기반) 및 배차 대비 완충 가능성을 판단하는 최적 SOC 현황판 구현.</li>
-        <li><strong>차량 상태 수집:</strong> 전기 버스 배터리 SOH(State of Health) 모니터링 팝업 및 오프라인 대비 화이트리스트 캐싱 파일 연동.</li>
-        <li><strong>FOTA 및 스마트차징:</strong> 원격 펌웨어 업데이트(`UpdateFirmware`), 동적 전력 분배(`SetChargingProfile`) 및 TLS 인증 키 관리.</li>
+        <li><strong>Kafka Multi-Broker 구축:</strong> 브로커 분산 및 파티셔닝 전략을 통한 고신뢰 메시징 큐 배포.</li>
+        <li><strong>PostgreSQL Failover 구축:</strong> Primary-Standby 물리 복제를 통한 실시간 DB 이중화 및 장애 복구 자동화.</li>
+        <li><strong>ClickHouse 분산 레플리카:</strong> ClickHouse 분산 테이블 구성을 통한 실시간 대용량 로그 조회 부하 분산.</li>
       </ul>
 
-      <h3 id="weekly-w33-36">2.9. [Phase 2 - 9개월차] 로밍, 정산지급 대행 및 최종 인수 배포 (Week 33 - 36)</h3>
-      <p>대외 기관 로밍 및 거래명세 청구 리포팅을 연동하고 대용량 부하 검증을 통과하여 최종 산출물을 인도합니다 (M3).</p>
+      <h3 id="weekly-w33-36">2.9. [Phase 2 - 9개월차] 전기 버스 차고지 관제 및 물류 특화 시스템 개발 (Week 33 - 36)</h3>
+      <p>전기 버스 운수사의 차고지 평면 관제 및 전용 충전 관리 요건을 맞춤식으로 개발하는 단계입니다.</p>
       <ul>
-        <li><strong>로밍 및 결제 연동:</strong> 환경부/한전 로밍 API 정보 연동 및 PG사 Merchant API, 취소/부분취소 미처리 건 수동 조치 연동.</li>
-        <li><strong>정산지급 대행 관리:</strong> 위탁 충전소 점주 정산 대금 자동 송금 요청 및 계좌 이체 송금결과 대조(Reconciliation) 시스템 구축.</li>
-        <li><strong>청구서 및 배치 관리:</strong> 거래처별 거래명세표 및 용역 청구서 PDF 실시간 생성/발송 모듈 구현 및 정기 아카이빙 배치 엔진 활성화.</li>
-        <li><strong>최종 TPS 부하 테스트:</strong> 동시 2,000 TPS 급 트래픽 유입 부하 성능 검증 및 최종 Helm Chart 패키징 전달.</li>
+        <li><strong>Canvas 배치 편집기:</strong> 차고지 배경 위에 충전기 객체를 드래그하여 배치 및 상태를 직접 매핑하는 Canvas 편집 화면 개발.</li>
+        <li><strong>차량 배터리 SOH 추적:</strong> 전기 버스 배터리 노화도(State of Health) 추적 및 최적 SOC 충전 스케줄러 알고리즘 탑재.</li>
+        <li><strong>운수사 매출 정산:</strong> 정기 운수 버스 전용 요율 및 법인 결제 이력 정산 레포트 화면 개발.</li>
       </ul>
 
-      <h3 id="weekly-w3d">2.10. [별도 추가 트랙] 3D 디지털 트윈 관제 고도화 (별도 프로젝트 일정)</h3>
+      <h3 id="weekly-w37-40">2.10. [Phase 2 - 10개월차] 스마트 차징 및 원격 FOTA 관리 고도화 (Week 37 - 40)</h3>
+      <p>전력 제어 신뢰도 확보 및 대형 스케줄러 배포 안전성을 확보하여 Milestone 2를 완수합니다.</p>
+      <ul>
+        <li><strong>스마트 차징 프로파일 연동:</strong> OCPP 규격의 dynamic 충전 프로파일(`SetChargingProfile`) 및 전력 제한 알고리즘 튜닝.</li>
+        <li><strong>FOTA 자동화 배포:</strong> FOTA 스케줄러를 통한 버전별 펌웨어 자동 배포 진행률 트래킹 시스템 구축.</li>
+        <li><strong>보안 키 관리 및 인증:</strong> OCPP 2.0.1 및 1.6J 보안 등급용 TLS 암호화 키 관리 및 암호키 셋업.</li>
+      </ul>
+
+      <h3 id="weekly-w41-44">2.11. [Phase 2 - 11개월차] 대외 로밍 중계 연동 및 결제 취소 수동 관리 (Week 41 - 44)</h3>
+      <p>대외 기관과의 중계 연동 및 예외 PG 결제 처리에 대처하기 위한 통합 화면 요소를 개발합니다.</p>
+      <ul>
+        <li><strong>로밍 중계 연동:</strong> 환경부 및 한전 로밍 연동 API 중계 프로토콜 연동 및 정합성 검증.</li>
+        <li><strong>PG사 결제 취소 수동 관리:</strong> 승인 에러 또는 승인 취소 실패 건에 대한 강제 부분 취소 및 조치 결과 수동 관리 기능 개발.</li>
+        <li><strong>바로정산 고도화:</strong> 결제 승인과 연동한 바로정산 규칙 엔진 보완.</li>
+      </ul>
+
+      <h3 id="weekly-w45-48">2.12. [Phase 2 - 12개월차] 정산지급 대행, 리포트 출력 및 최종 M3 검증 (Week 45 - 48)</h3>
+      <p>정산 결과 대조, 청구서 자동 출력 및 최종 2,000 TPS 대용량 부하 테스트를 거쳐 프로젝트를 성공적으로 인수 인도합니다.</p>
+      <ul>
+        <li><strong>점주 정산 지급대행:</strong> 위탁 충전소 점주 수수료 연산 및 송금 결과 대대적 Reconciliation 시스템.</li>
+        <li><strong>청구서 및 명세서 PDF:</strong> 거래처별 거래명세서 실시간 생성 및 청구용 PDF 메일 자동 발송 배치 구축.</li>
+        <li><strong>2,000 TPS 부하 검증:</strong> 충전기 대량 가상 트래픽 유입 테스트 및 Kubernetes Helm Chart 패키징 배포 검증 완료.</li>
+      </ul>
+
+      <h3 id="weekly-w3d">2.13. [별도 추가 트랙] 3D 디지털 트윈 관제 고도화 (별도 프로젝트 일정)</h3>
       <p>비즈니스 핵심 기동과 독립적으로 진행되는 Three.js WebGL 기반 3D 입체 관제 화면 개발 트랙입니다.</p>
       <ul>
         <li><strong>3D Mesh 입체 시각화:</strong> Three.js 기반의 충전소 부지/건물 평면도 2.5D/3D 입체 모델링 및 로딩 최적화.</li>
