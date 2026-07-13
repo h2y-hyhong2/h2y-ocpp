@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPO 통합 운영 솔루션 소프트웨어 아키텍처 정의서</title>
+  <!-- Google Fonts & Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Mermaid.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' }
+    });
+  </script>
+  <!-- Vanilla CSS Style -->
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-sidebar: #f1f5f9;
+      --border-color: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --primary-color: #4f46e5;
+      --primary-hover: #3730a3;
+      --accent-color: #0284c7;
+      --font-sans: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Left Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      margin-bottom: 32px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+
+    .sidebar-header h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.025em;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header h1 span {
+      font-size: 0.75rem;
+      color: var(--primary-color);
+      text-transform: uppercase;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-item > a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: block;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item > a:hover {
+      color: var(--primary-color);
+      background-color: rgba(79, 70, 229, 0.08);
+    }
+
+    .nav-item.active > a {
+      color: #ffffff;
+      background-color: var(--primary-color);
+    }
+
+    /* Sub-navigation style */
+    .sub-nav-list {
+      list-style: none;
+      margin-left: 16px;
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-left: 1.5px solid var(--border-color);
+      padding-left: 12px;
+    }
+
+    .sub-nav-item a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.825rem;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: block;
+      transition: all 0.2s ease;
+    }
+
+    .sub-nav-item a:hover {
+      color: var(--primary-color);
+      background-color: rgba(79, 70, 229, 0.05);
+    }
+
+    .sub-nav-item.active a {
+      color: var(--primary-color);
+      font-weight: 600;
+      background-color: rgba(79, 70, 229, 0.08);
+    }
+
+    /* Main Content Area */
+    .content-wrapper {
+      margin-left: 280px;
+      padding: 48px 64px;
+      width: calc(100% - 280px);
+      max-width: 1920px;
+    }
+
+    section {
+      margin-bottom: 64px;
+      scroll-margin-top: 48px;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 24px;
+      background-color: var(--primary-color);
+      border-radius: 2px;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 28px 0 16px 0;
+      color: var(--primary-color);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      font-size: 0.975rem;
+    }
+
+    ul {
+      margin-left: 24px;
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    strong {
+      color: var(--text-primary);
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-size: 0.9rem;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--bg-sidebar);
+      color: var(--text-primary);
+      font-weight: 600;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    td {
+      background-color: var(--bg-card);
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Code blocks */
+    pre, code {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.875rem;
+    }
+
+    pre {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 16px 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Mermaid diagrams container */
+    .mermaid {
+      background-color: #ffffff !important;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      margin: 24px 0 36px 0;
+      display: block;
+      overflow-x: auto;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .mermaid svg {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      min-height: 380px;
+    }
+
+    /* Notification / Callouts */
+    .callout {
+      background-color: rgba(79, 70, 229, 0.04);
+      border-left: 4px solid var(--primary-color);
+      border-radius: 4px 12px 12px 4px;
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+
+    .callout-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .callout-content {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .sidebar {
+        display: none;
+      }
+      .content-wrapper {
+        margin-left: 0;
+        width: 100%;
+        padding: 32px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>CPO CSMS Platform<span>Software Architecture</span></h1>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item active">
+        <a href="#principles">1. 핵심 설계 원칙</a>
+      </li>
+      <li class="nav-item">
+        <a href="#layered">2. 다층 레이어드 구조</a>
+      </li>
+      <li class="nav-item">
+        <a href="#session">3. 웹소켓 세션 설계</a>
+        <ul class="sub-nav-list">
+          <li class="sub-nav-item"><a href="#session-data">3.1. Agent 스펙</a></li>
+          <li class="sub-nav-item"><a href="#session-state">3.2. 상태 전이 모델</a></li>
+        </ul>
+      </li>
+      <li class="nav-item">
+        <a href="#routing">4. 분산 원격 제어 라우팅</a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <main class="content-wrapper">
+
+    <!-- Section 1: Principles -->
+    <section id="principles">
+      <h2>1. 아키텍처 핵심 설계 원칙 (Architectural Principles)</h2>
+      <p>본 시스템은 대용량 비동기 충전기 트래픽의 병목 현상을 해결하고, 폐쇄망 실환경의 제한된 장비 리소스를 극대화하기 위해 다음의 3대 소프트웨어 아키텍처 원칙을 고수합니다.</p>
+      
+      <div class="callout">
+        <div class="callout-title">📡 비차단 비동기 파이프라인 (Loose Coupling)</div>
+        <div class="callout-content">
+          충전기 웹소켓 커넥션을 받아 패킷을 수집하는 WebSocket Gateway와 정산 연산 및 DB 적재를 담당하는 Business Core 사이에 <strong>Apache Kafka</strong>를 완충지대로 배치합니다. 백엔드의 DB 병목이나 PG사 결제 연동 지연 등이 실시간 소켓 연결 유지에 지장을 주지 않습니다.
+        </div>
+      </div>
+
+      <div class="callout" style="background-color: rgba(2, 132, 199, 0.04); border-left: 4px solid var(--accent-color);">
+        <div class="callout-title">💾 하이브리드 세션 관리 (Stateful Agent + Stateless Service)</div>
+        <div class="callout-content">
+          충전기 세션별로 상태 정보만을 지니는 경량화된 <strong><code>OcppSessionAgent</code> (Stateful)</strong> 객체를 JVM 메모리에 보존하여 상태 검증을 초고속으로 수행하고, 무거운 정산 계산이나 CRUD 트랜잭션 처리는 Spring의 <strong>Stateless Service</strong> 싱글톤 빈들이 가상 스레드 상에서 처리하도록 이원화합니다.
+        </div>
+      </div>
+
+      <div class="callout" style="background-color: rgba(16, 185, 129, 0.04); border-left: 4px solid #10b981;">
+        <div class="callout-title">🗄️ 데이터 저장소 CQRS (Command Query Responsibility Segregation)</div>
+        <div class="callout-content">
+          회원 원장, 충전기 정보, 그리고 무결성이 요구되는 최종 매출 정산서(CDR)는 <strong>PostgreSQL(OLTP)</strong>에 엄격히 보관하고, 15초 주기로 밀려드는 무수한 계측 데이터(MeterValues)와 원본 JSON 송수신 패킷은 대량 압축 쓰기에 강한 <strong>ClickHouse(OLAP)</strong>에 시계열 분리 적재하여 디스크 병목을 해결합니다.
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Layered Architecture -->
+    <section id="layered">
+      <h2>2. 소프트웨어 다층 레이어드 구조 (Software Layered Architecture)</h2>
+      <p>전체 아키텍처 모듈 레이어는 결합도를 차단하고 유연한 이기종 프로토콜 확장을 지원하기 위해 다음과 같이 계층화 설계되었습니다.</p>
+
+      <div class="mermaid">
+        flowchart TD
+            subgraph Client ["클라이언트 레이어 (Presentation Layer)"]
+                UI["어드민 웹 UI (Vue 3 / SPA)"]
+            end
+
+            subgraph GW ["게이트웨이 레이어 (Gateway Layer)"]
+                WS["WebSocket Gateway Handler (Netty / Spring WS)"]
+                SessionStore["로컬 세션 저장소 (LocalSessionStore)"]
+                WS <-->|JVM Session 참조| SessionStore
+            end
+
+            subgraph Broker ["메시지 브로커 레이어 (Message Broker Layer)"]
+                RawEvents["Kafka raw-events (Uplink Topic)"]
+                CtrlCmds["Kafka control-commands (Downlink Topic)"]
+            end
+
+            subgraph Core ["비즈니스 코어 레이어 (Business Core Layer - Java Virtual Threads)"]
+                OCPPAgent["OCPP 프로토콜 핸들러 (OCPP Message Parser)"]
+                SettEngine["TOU 정산 엔진 (TOU Settlement Engine)"]
+                FaultMgr["장애 전이 감지기 (Fault Handler)"]
+                SmartCharger["스마트 차징 스케줄러 (Smart Charging Scheduler)"]
+            end
+
+            subgraph DB ["퍼시스턴스 레이어 (Persistence Layer)"]
+                Postgres["PostgreSQL (OLTP) - 자산/정산원장/회원"]
+                ClickHouse["ClickHouse (OLAP) - MeterValues/원본로그"]
+                Redis["Redis (Cache/PubSub) - 분산세션/명령라우팅"]
+            end
+
+            %% 데이터 흐름
+            UI <-->|HTTP REST / WebSocket| WS
+            WS -->|Uplink raw JSON| RawEvents
+            RawEvents -->|Consume| OCPPAgent
+            OCPPAgent --> FaultMgr & SettEngine & SmartCharger
+            
+            FaultMgr & SettEngine & SmartCharger -->|SQL CRUD| Postgres
+            OCPPAgent -->|Bulk Insert 시계열| ClickHouse
+            OCPPAgent -->|세션 상태 조회/저장| Redis
+            
+            %% 다운링크 제어 흐름
+            UI -.->|API Call| Core
+            Core -.->|Produce Command| CtrlCmds
+            CtrlCmds -.->|Consume Cmd| WS
+      </div>
+
+      <h3>2.1. 각 소프트웨어 레이어 설명</h3>
+      <ul>
+        <li><strong>웹소켓 게이트웨이 핸들러:</strong> 소켓 연결 및 수명 주기를 제어하며, 유입되는 OCPP JSON의 정합성 스키마를 1차 필터링하고 로컬 ConcurrentHashMap에 세션을 매핑하여 상시 유지합니다.</li>
+        <li><strong>Kafka 이벤트 파이프라인:</strong> 유입되는 모든 실시간 패킷은 <code>raw-events</code> 큐로 전달되어 순서대로 처리되고, 원격 제어 명령은 <code>control-commands</code> 토픽을 통해 분배됩니다.</li>
+        <li><strong>가상 스레드(Virtual Threads) 처리 엔진:</strong> Java 25 가상 스레드를 적극 할당하여, 대량의 트랜잭션 및 DB 쓰기 차단 작업이 발생하더라도 가용 시스템 스레드를 블로킹하지 않고 고속 병렬 처리합니다.</li>
+      </ul>
+    </section>
+
+    <!-- Section 3: WebSocket Session -->
+    <section id="session">
+      <h2>3. 웹소켓 세션 관리 및 세션 객체 상세 설계 (Session Design)</h2>
+      
+      <h3 id="session-data">3.1. `OcppSessionAgent` 데이터 스펙</h3>
+      <p>동시성 연결 증가 시 JVM의 힙(Heap) 공간 압박을 해소하기 위해, 동작 제어 로직을 일절 베재하고 핵심 상태 변수만을 보존하도록 단순 가볍게 설계했습니다.</p>
+
+      <pre><code class="language-java">public class OcppSessionAgent {
+    private final String chargePointId;       // 충전기 고유 식별 시리얼 (Key)
+    private final WebSocketSession session;    // JVM 실제 물리 웹소켓 소켓 연결 객체 참조
+    private String ocppVersion = "1.6J";       // 프로토콜 버전 (1.6J 또는 2.0.1)
+    private SessionState state = SessionState.CONNECTED; // 세션 수명 주기 상태
+    private String activeTransactionId = null; // 현재 진행 중인 충전 트랜잭션 식별 ID (미충전 시 null)
+    private Instant lastHeartbeatTime;        // 최종 하트비트 패킷 수신 시각 (커넥션 타임아웃 감지용)
+    
+    // Getters & Setters
+}</code></pre>
+
+      <h3 id="session-state">3.2. 세션 수명 주기 상태 전이 모델</h3>
+      <p>각 세션 객체는 기기 통신 단계에 따라 다음과 같이 일관되게 트래킹되며, 최종 소켓 단절 시 즉시 클린업 맵에 처리됩니다.</p>
+
+      <div class="mermaid">
+        stateDiagram-v2
+            [*] --> CONNECTED : WebSocket Handshake 완료
+            CONNECTED --> BOOTED : BootNotification.req 수신
+            BOOTED --> AUTHORIZED : Authorize.req 승인
+            AUTHORIZED --> CHARGING : StartTransaction.req 성공 (activeTransactionId 할당)
+            CHARGING --> STOPPING : StopTransaction.req 수신 (activeTransactionId null화)
+            STOPPING --> AVAILABLE : 최종 무결성 원장 기록 완료
+            AVAILABLE --> AUTHORIZED : 신규 충전 시도 시
+            AVAILABLE --> DISCONNECTED : 소켓 단절 감지 시
+            DISCONNECTED --> [*] : LocalSessionStore 메모리 해제
+      </div>
+    </section>
+
+    <!-- Section 4: Routing -->
+    <section id="routing">
+      <h2>4. [Phase 2] 다중 노드 분산 환경에서의 원격 명령 라우팅 흐름 (Routing Flow)</h2>
+      <p>로드밸런서 하부 다중 게이트웨이 노드 구성 시, 어드민 제어 명령이 충전기가 속하지 않은 다른 서버 노드로 인입되더라도 <strong>Redis Pub/Sub</strong> 채널을 이용하여 연결 대상 소켓이 존재하는 노드로 원격 제어 명령 패킷을 정확히 유도 및 전송합니다.</p>
+
+      <div class="mermaid">
+        sequenceDiagram
+            autonumber
+            actor Admin as CPO 관제사 (Admin API)
+            participant Core as 비즈니스 코어 (Node 1)
+            participant Redis as Redis (Active Session Map / Pub-Sub)
+            participant Node2 as WebSocket Gateway (Node 2)
+            participant CP as 충전기 (Node 2에 접속되어 있음)
+
+            Admin->>Core: 1. 충전기 CP_102 에 '원격잠금해제(UnlockConnector)' REST API 요청
+            Core->>Redis: 2. 충전기 ID(CP_102)가 현재 어느 노드에 연결되어 있는지 위치 조회
+            Redis-->>Core: "Node 2에 연결되어 있음" 응답 (Session Map Lookup)
+            Core->>Redis: 3. Redis Pub/Sub 토픽('gw-commands-node2')으로 Unlock 메시지 발행
+            Note over Redis, Node2: Node 2 게이트웨이는 부팅 시 'gw-commands-node2' 채널을 상시 구독 중
+            Redis->>Node2: 4. Unlock 제어 명령 브로드캐스팅 라우팅 전달
+            Node2->>Node2: 5. 자체 LocalSessionStore에서 CP_102 웹소켓 물리 세션 객체 획득
+            Node2->>CP: 6. 소켓을 통해 UnlockConnector.req 메시지 송신
+            CP-->>Node2: 7. UnlockConnector.res 응답 송신
+            Node2->>Core: 8. 비즈니스 코어에 최종 성공 처리 결과 이벤트 전송
+            Core-->>Admin: 9. CPO 관제 화면에 실시간 원격 제어 성공 결과 반환
+      </div>
+
+      <div class="callout" style="background-color: rgba(244, 63, 94, 0.04); border-left: 4px solid #f43f5e;">
+        <div class="callout-title">⚠️ 분산 상태 동기화 및 메시지 유실 예방 정책</div>
+        <div class="callout-content">
+          <ul>
+            <li><strong>노드 맵 등록:</strong> 충전기 소켓 세션 연결 수립 시 게이트웨이 노드는 즉시 Redis Hash 테이블인 <code>active_session_map</code>에 <code>[충전기ID] : [노드ID]</code> 데이터를 기록합니다. 소켓 해제 시 해당 데이터를 자가 삭제(Clean) 처리합니다.</li>
+            <li><strong>장애 극복 라우팅:</strong> 대상 노드가 순간적인 크래시(Crash)로 인해 Redis Pub/Sub을 받지 못할 경우, 즉각 에러 처리를 하지 않고 Apache Kafka <code>control-commands-retry</code> 토픽으로 제어 명령을 재우회 전송하여 3회 재시도를 보장합니다.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Sticky Active Menu Script -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const id = entry.target.getAttribute('id');
+          if (entry.intersectionRatio > 0.0) {
+            const targetLink = document.querySelector(`a[href="#${id}"]`);
+            if (targetLink) {
+              // Remove active from previous items
+              document.querySelector(`.nav-item.active`)?.classList.remove('active');
+              document.querySelector(`.sub-nav-item.active`)?.classList.remove('active');
+              
+              const parentListItem = targetLink.parentElement;
+              if (parentListItem.classList.contains('nav-item')) {
+                parentListItem.classList.add('active');
+              } else if (parentListItem.classList.contains('sub-nav-item')) {
+                parentListItem.classList.add('active');
+                parentListItem.closest('.nav-item')?.classList.add('active');
+              }
+            }
+          }
+        });
+      }, { rootMargin: '0px 0px -60% 0px' });
+
+      document.querySelectorAll('section[id], h3[id]').forEach(el => {
+        observer.observe(el);
+      });
+    });
+  </script>
+</body>
+</html>
