@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPO 통합 운영 솔루션 PRD (Integrated CSMS Platform)</title>
+  <!-- Google Fonts & Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Mermaid.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' }
+    });
+  </script>
+  <!-- Vanilla CSS Style (Light Theme) -->
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-sidebar: #f1f5f9;
+      --border-color: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --primary-color: #4f46e5;
+      --primary-hover: #3730a3;
+      --accent-color: #0284c7;
+      --status-available: #059669;
+      --status-charging: #0284c7;
+      --status-faulted: #e11d48;
+      --status-offline: #64748b;
+      --status-preparing: #d97706;
+      --font-sans: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Left Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      margin-bottom: 32px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+
+    .sidebar-header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.025em;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header h1 span {
+      font-size: 0.75rem;
+      color: var(--primary-color);
+      text-transform: uppercase;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item > a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: block;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item > a:hover {
+      color: var(--primary-color);
+      background-color: rgba(79, 70, 229, 0.08);
+    }
+
+    .nav-item.active > a {
+      color: #ffffff;
+      background-color: var(--primary-color);
+    }
+
+    /* Sub-navigation style */
+    .sub-nav-list {
+      list-style: none;
+      margin-left: 16px;
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-left: 1.5px solid var(--border-color);
+      padding-left: 12px;
+    }
+
+    .sub-nav-item a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.825rem;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: block;
+      transition: all 0.2s ease;
+    }
+
+    .sub-nav-item a:hover {
+      color: var(--primary-color);
+      background-color: rgba(79, 70, 229, 0.05);
+    }
+
+    .sub-nav-item.active a {
+      color: var(--primary-color);
+      font-weight: 600;
+      background-color: rgba(79, 70, 229, 0.08);
+    }
+
+    /* Main Content Area */
+    .content-wrapper {
+      margin-left: 280px;
+      padding: 48px 64px;
+      width: calc(100% - 280px);
+      max-width: 1920px;
+    }
+
+    section {
+      margin-bottom: 64px;
+      scroll-margin-top: 48px;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 24px;
+      background-color: var(--primary-color);
+      border-radius: 2px;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 28px 0 16px 0;
+      color: var(--primary-color);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      font-size: 0.975rem;
+    }
+
+    ul {
+      margin-left: 24px;
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    strong {
+      color: var(--text-primary);
+    }
+
+    /* Grid & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 6px rgba(79, 70, 229, 0.08);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-size: 0.9rem;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--bg-sidebar);
+      color: var(--text-primary);
+      font-weight: 600;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    td {
+      background-color: var(--bg-card);
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: rgba(79, 70, 229, 0.02);
+      color: var(--text-primary);
+    }
+
+    /* Code Block & Syntax highlighting */
+    pre, code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+    }
+
+    pre {
+      background-color: #1e293b; /* 가독성을 위해 코드블록은 어둡게 유지 */
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      margin: 16px 0 24px 0;
+    }
+
+    code {
+      color: var(--primary-color);
+      background-color: rgba(79, 70, 229, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    pre code {
+      color: #f8fafc;
+      background-color: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    /* Mermaid diagrams container (Enlarged) */
+    .mermaid {
+      background-color: #ffffff !important;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      margin: 24px 0 36px 0;
+      display: block;
+      overflow-x: auto;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .mermaid svg {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      min-height: 500px;
+    }
+
+    /* Notification / Callouts */
+    .callout {
+      background-color: rgba(79, 70, 229, 0.04);
+      border-left: 4px solid var(--primary-color);
+      border-radius: 4px 12px 12px 4px;
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+
+    .callout-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .callout-content {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    /* Color Tokens Indicators */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      font-size: 0.85rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .status-available { background-color: rgba(5, 150, 105, 0.1); color: var(--status-available); }
+    .status-charging { background-color: rgba(2, 132, 199, 0.1); color: var(--status-charging); }
+    .status-faulted { background-color: rgba(225, 29, 72, 0.1); color: var(--status-faulted); }
+    .status-offline { background-color: rgba(100, 116, 139, 0.1); color: var(--status-offline); }
+    .status-preparing { background-color: rgba(217, 119, 6, 0.1); color: var(--status-preparing); }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .sidebar {
+        display: none;
+      }
+      .content-wrapper {
+        margin-left: 0;
+        width: 100%;
+        padding: 32px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>CPO CSMS Platform<span>Product Requirement Document</span></h1>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item active">
+        <a href="#overview">1. 프로젝트 개요</a>
+        <ul class="sub-nav-list">
+          <li class="sub-nav-item"><a href="#overview-values">1.1. 핵심 가치</a></li>
+          <li class="sub-nav-item"><a href="#overview-architecture">1.2. 개념 아키텍처</a></li>
+        </ul>
+      </li>
+      <li class="nav-item">
+        <a href="#scenarios">2. 사용자 시나리오</a>
+        <ul class="sub-nav-list">
+          <li class="sub-nav-item"><a href="#scenarios-onboarding">2.1. Onboarding</a></li>
+          <li class="sub-nav-item"><a href="#scenarios-monitoring">2.2. 관제 및 제어</a></li>
+          <li class="sub-nav-item"><a href="#scenarios-billing">2.3. 과금 및 정산</a></li>
+        </ul>
+      </li>
+      <li class="nav-item">
+        <a href="#features">3. 핵심 기능 목록</a>
+        <ul class="sub-nav-list">
+          <li class="sub-nav-item"><a href="#features-assets">3.1. 자산 관리</a></li>
+          <li class="sub-nav-item"><a href="#features-ocpp">3.2. OCPP 명세</a></li>
+          <li class="sub-nav-item"><a href="#features-alarms">3.3. 알림 등급</a></li>
+        </ul>
+      </li>
+      <li class="nav-item">
+        <a href="#specs">4. 상세 기술 명세</a>
+        <ul class="sub-nav-list">
+          <li class="sub-nav-item"><a href="#specs-stack">4.1. 기술 스택</a></li>
+          <li class="sub-nav-item"><a href="#specs-db">4.2. 하이브리드 DB</a></li>
+          <li class="sub-nav-item"><a href="#specs-schema">4.3. DB 스키마</a></li>
+        </ul>
+      </li>
+      <li class="nav-item">
+        <a href="#design">5. 디자인 & UI/UX</a>
+        <ul class="sub-nav-list">
+          <li class="sub-nav-item"><a href="#design-style">5.1. 디자인 스타일</a></li>
+          <li class="sub-nav-item"><a href="#design-3d">5.2. 3D 디지털 트윈</a></li>
+        </ul>
+      </li>
+      <li class="nav-item">
+        <a href="#constraints">6. 제약 & 사양</a>
+        <ul class="sub-nav-list">
+          <li class="sub-nav-item"><a href="#constraints-hw">6.1. 권장 스펙</a></li>
+          <li class="sub-nav-item"><a href="#constraints-tuning">6.2. 경량화 설정</a></li>
+        </ul>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <main class="content-wrapper">
+
+    <!-- Section 1: Project Overview -->
+    <section id="overview">
+      <h2>1. 프로젝트 개요 (Project Overview)</h2>
+      <p>전기차 충전 인프라의 효율적 운영 및 관리를 위해 CPO(Charge Point Operator) 전용 고성능 통합 관리 시스템(CSMS: Charging Station Management System)을 구축합니다. 충전기 상태 모니터링, 원격 제어, 매출 정산, 고객 및 멤버십 관리를 일원화하여 운영 효율성을 극대화합니다.</p>
+      
+      <h3 id="overview-values">1.1. 핵심 가치</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🚀 실시간성 확보</div>
+          <p>초 단위의 충전 상태 변경 및 미터값 처리를 위한 고성능 비동기 아키텍처 확보.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 대용량 트래픽 처리</div>
+          <p>수천 대 이상의 충전기가 동시에 발생시키는 OCPP 메시지를 병목 없이 수집 및 분석.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">🔒 폐쇄망 유연 배포</div>
+          <p>외부 인터넷이 차단된 폐쇄망 환경에서도 로컬 리소스만으로 완벽하게 독립 구동.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">🖥️ 직관적 시각화</div>
+          <p>3D 디지털 트윈 기술을 도입하여 자산 상황과 충전 트래픽을 직관적으로 관제.</p>
+        </div>
+      </div>
+
+      <h3 id="overview-architecture">1.2. 시스템 단계별 개념 아키텍처 (Phased Architecture)</h3>
+      <p>솔루션은 초기 저비용/경량 1대 배포(Phase 1)부터 시작하여, 트래픽 증가에 따라 대규모 분산 클러스터(Phase 2)로 원활하게 진화할 수 있도록 설계합니다. 이력 데이터의 효율적 분석을 위해 <strong>PostgreSQL(관계형 OLTP)</strong>과 <strong>ClickHouse(시계열 OLAP)</strong>의 하이브리드 아키텍처를 적용합니다.</p>
+      
+      <h4>1.2.1. Phase 1: 1대 운영 모드 (초기 및 Standalone 배포)</h4>
+      <p>단일 가상 머신(VM) 또는 물리 하드웨어 내에서 Kafka 단일 브로커(KRaft 모드)와 데이터베이스들을 가볍게 결합하여 구동합니다. 이 단계에서는 별도의 분산 세션 캐시(Redis) 없이 JVM 로컬 메모리로 세션을 관리하여 자원 소모를 최소화합니다.</p>
+      
+      <div class="mermaid">
+        flowchart TB
+            subgraph Host ["단일 호스트 (Single Host VM / Server)"]
+                subgraph EVSE ["전기차 충전기 (Charge Point)"]
+                    CP1["충전기 1 (OCPP 1.6J)"]
+                    CP2["충전기 2 (OCPP 1.6J)"]
+                end
+
+                subgraph Engine ["Spring Boot 통합 어플리케이션"]
+                    GW["WS Gateway Module (WebSocket / SSL)"]
+                    LocalSession["Local Session Map (JVM Memory)"]
+                    BizCore["Business Core Engine (Virtual Threads)"]
+                end
+
+                subgraph LocalMQ ["내장형 메시지 큐"]
+                    Kafka["Single Kafka Broker (KRaft Mode)"]
+                end
+
+                subgraph LocalDB ["하이브리드 데이터베이스"]
+                    Postgres["PostgreSQL (OLTP DB)"]
+                    ClickHouse["ClickHouse (OLAP DB)"]
+                end
+
+                subgraph Admin ["관제 웹 UI"]
+                    VueApp["Vue 3 + Three.js Admin Console"]
+                end
+            end
+
+            CP1 -->|WebSocket| GW
+            CP2 -->|WebSocket| GW
+            GW --> LocalSession
+            GW -->|Produce Raw Events| Kafka
+            Kafka -->|Consume| BizCore
+            BizCore -->|SQL CRUD| Postgres
+            BizCore -->|Bulk Insert Logs| ClickHouse
+            BizCore -->|WebSocket Push / REST API| VueApp
+            
+            VueApp -.->|HTTP Request| BizCore
+            BizCore -.->|Produce Control Cmd| Kafka
+            Kafka -.->|Consume| GW
+            GW -.->|Send Remote Message| CP1 & CP2
+      </div>
+
+      <h4>1.2.2. Phase 2: 스케일 아웃 모드 (대형 서비스 확장 및 HA 클러스터)</h4>
+      <p>운영 노드가 2대 이상으로 확장되면 L4/L7 로드밸런서를 배치하여 트래픽을 분산합니다. 이때 다중 노드 간의 웹소켓 세션 맵 동기화 및 제어 명령 라우팅을 위해 Redis 캐시 및 Pub/Sub 기능을 활성화합니다.</p>
+
+      <div class="mermaid">
+        flowchart TB
+            subgraph CP_Group ["전기차 충전기 군"]
+                CP1["충전기 1 (OCPP 1.6J)"]
+                CP2["충전기 N (OCPP 2.0.1 - Phase 2)"]
+            end
+
+            subgraph LB_Layer ["부하 분산 레이어"]
+                LB["L4/L7 Load Balancer"]
+            end
+
+            subgraph App_Cluster ["어플리케이션 클러스터 (Scale-out)"]
+                subgraph Node1 ["App Node 1"]
+                    GW1["WS Gateway 1"]
+                    LocalSession1["Local Session Map 1"]
+                    BizCore1["Business Core 1"]
+                end
+                subgraph Node2 ["App Node 2"]
+                    GW2["WS Gateway 2"]
+                    LocalSession2["Local Session Map 2"]
+                    BizCore2["Business Core 2"]
+                end
+            end
+
+            subgraph Cache_Layer ["공유 캐시 및 라우팅 (Scale-out)"]
+                Redis["Redis (Active Connection Map & Pub/Sub)"]
+            end
+
+            subgraph MQ_Cluster ["분산 메시지 큐"]
+                KafkaCluster["Apache Kafka Cluster"]
+            end
+
+            subgraph DB_Cluster ["분산 데이터베이스"]
+                PostgresPrimary["PostgreSQL Primary (Write)"]
+                PostgresStandby["PostgreSQL Standby (Read)"]
+                ClickHouseCluster["ClickHouse Cluster (OLAP)"]
+            end
+
+            subgraph UI ["관제 웹 UI"]
+                VueApp["Vue 3 Admin Console"]
+            end
+
+            CP1 --> LB
+            CP2 --> LB
+            LB --> GW1
+            LB --> GW2
+
+            GW1 --> LocalSession1
+            GW2 --> LocalSession2
+            
+            GW1 -->|Produce Raw Events| KafkaCluster
+            GW2 -->|Produce Raw Events| KafkaCluster
+            
+            KafkaCluster -->|Consume| BizCore1
+            KafkaCluster -->|Consume| BizCore2
+            
+            BizCore1 --> Redis
+            BizCore2 --> Redis
+            
+            BizCore1 --> PostgresPrimary
+            BizCore2 --> PostgresPrimary
+            PostgresPrimary -.->|Replication| PostgresStandby
+            
+            BizCore1 -->|Bulk Insert| ClickHouseCluster
+            BizCore2 -->|Bulk Insert| ClickHouseCluster
+            
+            BizCore1 --> UI
+            BizCore2 --> UI
+            
+            UI -.->|API Request| BizCore1 & BizCore2
+            BizCore1 & BizCore2 -.->|Redis Pub/Sub| Redis
+            Redis -.->|Route to active node| GW1 & GW2
+            GW1 & GW2 -.-> CP1 & CP2
+      </div>
+    </section>
+
+    <!-- Section 2: User Scenarios -->
+    <section id="scenarios">
+      <h2>2. 사용자 시나리오 및 Flow (User Scenarios & Detail Flows)</h2>
+      
+      <h3 id="scenarios-onboarding">2.1. Onboarding (신규 충전소 및 기기 등록 시나리오)</h3>
+      <p>CPO 관리자는 기기 설치 전 마스터 정보를 생성하고, 설치 완료 후 기기는 자동 인증 및 승인 정책에 따라 활성화됩니다.</p>
+      
+      <div class="mermaid">
+        sequenceDiagram
+            autonumber
+            actor Admin as CPO 관리자
+            actor Staff as 설치 엔지니어
+            participant Portal as 관리자 포털 (Vue 3)
+            participant Core as 비즈니스 코어 (Spring)
+            participant DB as 데이터베이스 (PostgreSQL)
+            participant GW as 게이트웨이 (Spring Boot WS)
+            participant CP as 충전기 (Charge Point)
+
+            Admin->>Portal: 1. 신규 충전소 정보 및 충전기 시리얼 등록
+            Portal->>Core: 등록 API 호출
+            Core->>DB: 충전소/충전기(Status: Registered) 저장
+            Staff->>CP: 2. 현장 물리 설치 및 CSMS Endpoint URL 설정
+            CP->>GW: 3. WebSocket 연결 요청 (Identity 전달)
+            GW->>Core: 연결 인증 및 세션 검증 요청
+            Core-->>GW: 세션 승인
+            CP->>GW: 4. BootNotification.req 송신
+            GW->>Core: BootNotification 이벤트 전달
+            Core->>DB: 충전기 상태 변경 (Registered -> Online)
+            Core-->>GW: BootNotification.res (Status: Accepted, Interval: 60s)
+            GW-->>CP: BootNotification.res 전달
+            Note over CP, GW: 온보딩 성공 및 하트비트 주기 구동 시작
+      </div>
+
+      <h3 id="scenarios-monitoring">2.2. Monitoring & Control (원격 제어 및 장애 관리 시나리오)</h3>
+      <p>충전기 커넥터에 물리적 락킹 오류(Lock Failure) 발생으로 기기가 <code>Faulted</code> 상태로 전이되었을 때의 대처 흐름입니다.</p>
+      <ul>
+        <li><strong>장애 인지:</strong> 충전기는 <code>StatusNotification.req(errorCode: ConnectorLockFailure, status: Faulted)</code> 발송. 코어는 이를 수신하여 PostgreSQL에 이력을 적재하고 ClickHouse에 로그 저장 후 관제 웹 화면에 실시간 브로드캐스트.</li>
+        <li><strong>원격 명령 하달:</strong> 관제사가 <code>UnlockConnector</code> 원격 명령 버튼을 클릭. API 요청이 Kafka의 <code>control-commands</code> 토픽으로 유입.</li>
+        <li><strong>하이브리드 라우팅:</strong>
+          <ul>
+            <li><strong>Phase 1 (1대 기동 시):</strong> 메모리 상의 세션 맵(<code>LocalSessionMap</code>)을 직접 조회하여 해당 소켓에 명령을 직접 송신.</li>
+            <li><strong>Phase 2 (다중 노드 시):</strong> Redis 세션 조회 후 해당 충전기가 물려있는 노드로 Redis Pub/Sub 메시지 전송 후 해당 노드가 명령 중계.</li>
+          </ul>
+        </li>
+        <li><strong>조치 완료:</strong> 충전기의 <code>UnlockConnector.res(status: Unlocked)</code> 수신 즉시 UI 상태 복구.</li>
+      </ul>
+
+      <div class="mermaid">
+        sequenceDiagram
+            autonumber
+            actor Admin as CPO 관제사
+            actor User as 사용자
+            participant Portal as 관리자 포털 (Vue 3)
+            participant Core as 비즈니스 코어 (Spring)
+            participant Kafka as Apache Kafka
+            participant Redis as Redis / DB
+            participant GW as 게이트웨이 (Spring Boot WS)
+            participant CP as 충전기 (Charge Point)
+
+            %% 장애 발생 및 감지
+            Note over CP: 커넥터 물리 락킹 오류 발생 (Faulted)
+            CP->>GW: StatusNotification.req(connectorId: 1, errorCode: ConnectorLockFailure, status: Faulted)
+            GW->>Kafka: raw-events 토픽 발행 (장애 발생 정보)
+            Kafka->>Core: raw-events 컨슘
+            Core->>Redis: DB 장애 기록 및 상태 저장
+            Core->>Portal: WebSocket 실시간 알림 푸시 (CRITICAL 장애)
+            Note over Portal: 대시보드 적색 장애 경고 표출
+
+            %% 원격 제어 조치
+            Admin->>Portal: 장애 확인 및 'UnlockConnector' 원격 제어 클릭
+            Portal->>Core: UnlockConnector API 요청
+            Core->>Kafka: control-commands 토픽 발행 (제어 명령)
+            alt Phase 1: 로컬 단독 구동 모드
+                Kafka->>GW: control-commands 컨슘 (LocalSessionMap 조회 후 직접 전송)
+            else Phase 2: 분산 클러스터 모드
+                Kafka->>Core: control-commands 컨슘 및 Redis 라우팅 타겟 조회
+                Core->>Redis: Redis Pub/Sub을 통한 제어 명령 중계
+                Redis->>GW: 해당 게이트웨이 노드로 명령 전달
+            end
+            GW->>CP: UnlockConnector.req 송신
+            Note over CP: 커넥터 물리 락 해제 동작 수행
+            CP-->>GW: UnlockConnector.res(status: Unlocked)
+            GW->>Kafka: raw-events 토픽 발행 (제어 결과)
+            Kafka->>Core: raw-events 컨슘
+            Core-->>Portal: 제어 성공 결과 응답
+            Admin-->>Portal: 복구 상태 확인 (Available 전환)
+      </div>
+
+      <h3 id="scenarios-billing">2.3. Billing & Settlement (충전 트랜잭션 및 정산 시나리오)</h3>
+      <p>사용자 승인부터 미터링 수집, 그리고 정산 기록 생성까지의 안전성 중심의 이력 보존 흐름입니다.</p>
+      <ul>
+        <li>사용자가 회원 카드 태깅 시 <code>Authorize.req</code> 수신. PostgreSQL DB에서 유효 회원 여부 검증.</li>
+        <li>충전 시작과 동시에 <code>StartTransaction.req</code>를 받아 트랜잭션 생성 및 상태 변경.</li>
+        <li>충전 진행 중 15초 단위로 수신되는 <code>MeterValues.req</code> 데이터는 대용량 시계열 이므로 **클릭하우스(ClickHouse)**에 단독 적재.</li>
+        <li>충전 종료(<code>StopTransaction.req</code>) 시 최종 사용 전력량(kWh)을 산출하고, PostgreSQL 요금 테이블(TOU)을 참조하여 정산 금액 계산 후 <strong>최종 CDR(충전 상세 기록)을 PostgreSQL에 저장</strong>하여 무결성 유지.</li>
+      </ul>
+
+      <div class="mermaid">
+        sequenceDiagram
+            autonumber
+            actor User as 사용자
+            participant CP as 충전기 (Charge Point)
+            participant GW as 게이트웨이 (Spring Boot WS)
+            participant Kafka as Apache Kafka
+            participant Core as 비즈니스 코어 (Spring)
+            participant PG as PostgreSQL (OLTP DB)
+            participant CH as ClickHouse (OLAP DB)
+
+            %% 1. 인증 및 충전 시작
+            User->>CP: RFID 태깅 또는 앱 충전 시작 버튼 클릭
+            CP->>GW: Authorize.req(idTag)
+            GW->>Kafka: raw-events 토픽 발행 (인증 요청)
+            Kafka->>Core: raw-events 컨슘 및 회원 검증 진행
+            Core->>PG: 회원 존재 및 상태 확인
+            PG-->>Core: 회원 상태 응답 (Accepted)
+            Core->>Kafka: control-commands 토픽 발행 (인증 결과)
+            Kafka->>GW: control-commands 컨슘 및 클라이언트 전송
+            GW-->>CP: Authorize.res 전달 (status: Accepted)
+            User->>CP: 커넥터 물리 연결
+            CP->>GW: StartTransaction.req(idTag, meterStart)
+            GW->>Kafka: raw-events 토픽 발행 (트랜잭션 시작)
+            Kafka->>Core: raw-events 컨슘
+            Core->>PG: 트랜잭션 생성 및 ID 발급 (status: Charging)
+            Core->>Kafka: control-commands 토픽 발행 (트랜잭션 결과)
+            Kafka->>GW: control-commands 컨슘
+            GW-->>CP: StartTransaction.res(transactionId) 전달
+            Note over CP: 충전 개시 및 전력 공급 시작
+
+            %% 2. 실시간 미터 수집 (ClickHouse 단독 적재)
+            loop 15초 주기 실시간 미터링
+                CP->>GW: MeterValues.req(transactionId, meterValue)
+                GW->>Kafka: raw-events 토픽 발행 (미터 값)
+                Kafka->>Core: raw-events 컨슘
+                Core->>CH: Bulk Insert (전류/전압/누적 전력량 시계열 저장)
+            end
+
+            %% 3. 충전 종료 및 정산
+            User->>CP: 충전 중단 (RFID 태깅 또는 완충)
+            CP->>GW: StopTransaction.req(transactionId, meterStop, timestamp)
+            GW->>Kafka: raw-events 토픽 발행 (트랜잭션 종료)
+            Kafka->>Core: raw-events 컨슘
+            Core->>PG: 트랜잭션 정보 업데이트 (종료 미터값 저장)
+            Core->>PG: TOU 요금제 단가 및 회원 할인율 조회
+            PG-->>Core: 요금제 및 할인 테이블 응답
+            Note over Core: 최종 사용 전력량 계산 (Stop - Start) 및 최종 이용 금액 산출
+            Core->>PG: 최종 CDR(충전 상세 기록) 정산 원장 저장 (PostgreSQL)
+            Core->>Kafka: control-commands 토픽 발행 (트랜잭션 종료 결과)
+            Kafka->>GW: control-commands 컨슘
+            GW-->>CP: StopTransaction.res 전달
+            Note over CP: 커넥터 잠금 해제 및 사용자 안내
+      </div>
+    </section>
+
+    <!-- Section 3: Core Features -->
+    <section id="features">
+      <h2>3. 핵심 기능 목록 (Core Features Detail)</h2>
+      
+      <h3 id="features-assets">3.1. 자산 및 인프라 관리</h3>
+      <p>인프라를 CPO &gt; 파트너 &gt; 충전소 &gt; 충전기 &gt; 커넥터 계층으로 트리 관리합니다.</p>
+      <ul>
+        <li><strong>충전소:</strong> 명칭, GPS 위도/경도, 허용 최대 합산 전력(kW), 파트너 매핑.</li>
+        <li><strong>충전기:</strong> 시리얼 넘버, 제조사/모델, 입력 정격 사양, OCPP 지원 버전 (Phase 1: 1.6J, Phase 2: 1.6J / 2.0.1), 연결 Gateway 노드 ID, 상태값.</li>
+        <li><strong>커넥터:</strong> 커넥터 ID, 충전 타입(급속/완속 및 포트 종류), 최대 허용 전류, 최근 미터값.</li>
+      </ul>
+
+      <h3 id="features-ocpp">3.2. OCPP 제어 및 프로파일별 지원 명세 (OCPP Spec Matrix)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>기능 분류 (Profile)</th>
+            <th>OCPP 1.6J 메시지 (Phase 1/2)</th>
+            <th>OCPP 2.0.1 메시지 (Phase 2)</th>
+            <th>설명 및 필수 조건</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Core (기본 제어)</strong></td>
+            <td>BootNotification, Heartbeat, StatusNotification, Authorize, StartTransaction, StopTransaction, MeterValues</td>
+            <td>BootNotification, Heartbeat, StatusNotification, Authorize, TransactionEvent</td>
+            <td>부팅 및 상태 전이 관리, 세션 수명 주기 및 정기 전력 데이터 수집.</td>
+          </tr>
+          <tr>
+            <td><strong>Firmware Mgmt</strong></td>
+            <td>UpdateFirmware, FirmwareStatusNotification, GetDiagnostics, DiagnosticsStatusNotification</td>
+            <td>UpdateFirmware, FirmwareStatusNotification, GetLog, LogStatusNotification</td>
+            <td>폐쇄망 내부 FOTA 스토리지 파일 연동을 통한 다운로드 명령 및 진행 모니터링.</td>
+          </tr>
+          <tr>
+            <td><strong>Remote Control</strong></td>
+            <td>RemoteStartTransaction, RemoteStopTransaction, Reset, UnlockConnector, TriggerMessage</td>
+            <td>RequestStartTransaction, RequestStopTransaction, Reset, UnlockConnector, TriggerMessage</td>
+            <td>원격 강제 제어 및 하드웨어 물리 상태 복구 명령 전송.</td>
+          </tr>
+          <tr>
+            <td><strong>Smart Charging</strong></td>
+            <td>SetChargingProfile, ClearChargingProfile, GetCompositeSchedule</td>
+            <td>SetChargingProfiles, ClearChargingProfiles, GetCompositeSchedule</td>
+            <td>스케줄링 기반 충전 전류/전력 제한 스케줄 제어.</td>
+          </tr>
+          <tr>
+            <td><strong>Device Mgmt (설정 변경)</strong></td>
+            <td>GetConfiguration, ChangeConfiguration</td>
+            <td>GetVariables, SetVariables</td>
+            <td>충전기 내부 파라미터(인증 주기, 하트비트 주기, 최대 전류 등) 상세 조회 및 설정 변경.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 id="features-alarms">3.3. 실시간 알림 등급 (Alarms Severity)</h3>
+      <ul>
+        <li><span class="status-badge status-available">CRITICAL</span> 화재/연기 감지, 누전/지락 발생, Emergency Stop 눌림 등 즉시 서비스 긴급 중단 및 알림 전송.</li>
+        <li><span class="status-badge status-preparing">MAJOR</span> 커넥터 잠금 모듈 결함, 통신 칩 영구 불능 등 해당 커넥터 결함으로 이용 불가.</li>
+        <li><span class="status-badge status-preparing">MINOR</span> 허용 범위 밖의 전압 미세 변동, 내부 팬(Fan) 회전 이상 등 상시 모니터링 대상.</li>
+        <li><span class="status-badge status-available">INFO</span> Available/Charging 통상 상태 전이 및 단순 펌웨어 이력.</li>
+      </ul>
+    </section>
+
+    <!-- Section 4: Technical Specifications -->
+    <section id="specs">
+      <h2>4. 상세 기술 명세 (Technical Specifications)</h2>
+      
+      <h3 id="specs-stack">4.1. 기술 스택 (Technical Stack)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>Phase 1 (1대 운영 모드)</th>
+            <th>Phase 2 (분산 확장 모드)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Runtime/Backend</strong></td>
+            <td colspan="2">Java 25 (LTS) (가상 스레드 적극 활용) / Spring Boot 3.x/4.x</td>
+          </tr>
+          <tr>
+            <td><strong>Message Queue</strong></td>
+            <td>Apache Kafka (단일 브로커, KRaft 모드)</td>
+            <td>Apache Kafka (분산 클러스터 구성)</td>
+          </tr>
+          <tr>
+            <td><strong>Relational Database</strong></td>
+            <td>PostgreSQL (단일 인스턴스)</td>
+            <td>PostgreSQL (Primary-Standby 클러스터)</td>
+          </tr>
+          <tr>
+            <td><strong>Analytical Database</strong></td>
+            <td>ClickHouse (단일 인스턴스)</td>
+            <td>ClickHouse (분산/레플리카 클러스터)</td>
+          </tr>
+          <tr>
+            <td><strong>Cache & Routing</strong></td>
+            <td>비활성화 (JVM ConcurrentHashMap 활용)</td>
+            <td>Redis (Active Connection Map & Pub/Sub)</td>
+          </tr>
+          <tr>
+            <td><strong>Frontend</strong></td>
+            <td colspan="2">Vue 3 (Composition API) / Pinia / Three.js (3D 시각화) / Tailwind CSS</td>
+          </tr>
+          <tr>
+            <td><strong>Deployment</strong></td>
+            <td>Executable JAR (Tomcat 내장) / Local Docker</td>
+            <td>Native Image (GraalVM) / Kubernetes 배포</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 id="specs-db">4.2. 하이브리드 데이터베이스 분리 아키텍처</h3>
+      <p>대용량 트래픽 수용 및 초고속 조회를 위해 OLTP 데이터베이스(PostgreSQL)와 OLAP 데이터베이스(ClickHouse)를 이원화하여 연동합니다.</p>
+      
+      <div class="callout">
+        <div class="callout-title">💡 하이브리드 DB 역할 정의</div>
+        <div class="callout-content">
+          <strong>1. PostgreSQL (관계형, 트랜잭션 보장):</strong> 충전기 및 자산 정보, 회원/카드 마스터 데이터, 결제 및 매출 통계 결과, 최종 CDR 정산 원장(충전 시작/종료 값 등 신뢰성이 극도로 중요한 데이터).<br>
+          <strong>2. ClickHouse (열 지향, 초고속 집계):</strong> 초 단위 실시간 수집 데이터(MeterValues 전류/전압 상세 기록, 하트비트 수집 이력, OCPP 원본 JSON 로그, 알림 히스토리).
+        </div>
+      </div>
+
+      <h3 id="specs-schema">4.3. 데이터베이스 스키마 가이드라인</h3>
+      
+      <h4>4.3.1. PostgreSQL 핵심 테이블 설계 (OLTP)</h4>
+      <pre><code>-- 충전기 자산 마스터 테이블
+CREATE TABLE charge_point (
+    cp_id VARCHAR(50) PRIMARY KEY,
+    station_id VARCHAR(50) NOT NULL,
+    vendor VARCHAR(100),
+    model_name VARCHAR(100),
+    firmware_version VARCHAR(50),
+    ocpp_version VARCHAR(20) NOT NULL DEFAULT '1.6J', -- '1.6J' (Phase 2에서 '2.0.1' 추가 지원)
+    status VARCHAR(30) DEFAULT 'Offline',
+    node_id VARCHAR(50), -- Phase 2 활성화 시 매핑 노드 식별자
+    last_heartbeat TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 최종 정산용 충전 데이터 레코드 (CDR 원본)
+CREATE TABLE charging_transaction (
+    transaction_id VARCHAR(50) NOT NULL,
+    cp_id VARCHAR(50) NOT NULL,
+    connector_id INT NOT NULL,
+    id_tag VARCHAR(50) NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE,
+    start_meter NUMERIC(12, 3) NOT NULL,
+    end_meter NUMERIC(12, 3),
+    total_energy_kwh NUMERIC(8, 3),
+    total_amount NUMERIC(10, 2),
+    settlement_status VARCHAR(20) DEFAULT 'Pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (transaction_id, start_time)
+) PARTITION BY RANGE (start_time);</code></pre>
+
+      <h4>4.3.2. ClickHouse 이력 테이블 설계 (OLAP - MergeTree 엔진)</h4>
+      <p>대용량 시계열 이력 조회를 위해 클릭하우스의 <code>MergeTree</code> 엔진 계열을 적용하여 일 단위 정렬 및 파티셔닝을 구성합니다.</p>
+      <pre><code>-- 실시간 미터 이력 로그 테이블
+CREATE TABLE default.meter_value_history (
+    cp_id String,
+    connector_id UInt8,
+    transaction_id String,
+    event_time DateTime,
+    current_l1 Float32,
+    voltage_l1 Float32,
+    active_power Float32,
+    energy_active_wh Float32,
+    created_date Date DEFAULT toDate(event_time)
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(created_date)
+ORDER BY (cp_id, transaction_id, event_time)
+SETTINGS index_granularity = 8192;
+
+-- OCPP 통신 패킷 수집 원본 로그 테이블
+CREATE TABLE default.ocpp_raw_log (
+    cp_id String,
+    direction Enum8('IN' = 1, 'OUT' = 2),
+    message_type Enum8('Call' = 1, 'CallResult' = 2, 'CallError' = 3),
+    message_id String,
+    action String,
+    payload String,
+    event_time DateTime64(3),
+    created_date Date DEFAULT toDate(event_time)
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(created_date)
+ORDER BY (cp_id, event_time)
+SETTINGS index_granularity = 8192;</code></pre>
+    </section>
+
+    <!-- Section 5: Design Guide -->
+    <section id="design">
+      <h2>5. 디자인 가이드 및 UI/UX 요구사항 (Design & UI/UX)</h2>
+      
+      <h3 id="design-style">5.1. 디자인 스타일 맵</h3>
+      <ul>
+        <li><strong>스타일 컨셉:</strong> 고화질 화사한 라이트 테마 기반의 모던 테크니컬 어드민 웹 스타일.</li>
+        <li><strong>컬러 토큰:</strong>
+          <ul>
+            <li>배경색 (Background): Slate 50 (<code>#f8fafc</code>)</li>
+            <li>컨테이너 및 카드: White (<code>#ffffff</code>) 및 밝은 테두리(<code>#cbd5e1</code>)</li>
+            <li>포인트 브랜드 컬러: Indigo 600 (<code>#4f46e5</code>) 및 Blue 500 (<code>#3b82f6</code>)</li>
+          </ul>
+        </li>
+        <li><strong>서체:</strong> <code>Inter</code> (영문/숫자 가독성), <code>Pretendard</code> (국문 부드러운 렌더링).</li>
+      </ul>
+
+      <h3 id="design-3d">5.2. 3D 디지털 트윈 대시보드 스펙</h3>
+      <p>Three.js WebGL 뷰포트를 사용하여 충전소 공간을 렌더링합니다. 충전기 Mesh는 가동 상태에 따라 실시간으로 아우라(Glow) 효과의 색상 색조(Available: Emerald, Charging: Sky, Faulted: Rose)를 실시간 반영하고 전력 사용 흐름을 애니메이션 레이저 라인으로 표현합니다.</p>
+    </section>
+
+    <!-- Section 6: Constraints -->
+    <section id="constraints">
+      <h2>6. 제약 사항 및 서버 스펙 (Constraints & Specs)</h2>
+      
+      <h3 id="constraints-hw">6.1. 하드웨어 권장 스펙 (Hardware Specifications)</h3>
+      <p>PostgreSQL과 ClickHouse, Kafka를 동시에 효율적으로 가동하기 위해 설계된 단계별 하드웨어 가이드라인입니다.</p>
+
+      <h4>6.1.1. Phase 1 (단일 서버 기동 시 - Standalone)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>최소 하드웨어 요구사항</th>
+            <th>권장 하드웨어 요구사항</th>
+            <th>비고 / 내부 자원 할당</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>CPU</strong></td>
+            <td>8 Cores (x86_64 or ARM64)</td>
+            <td>16 Cores 이상</td>
+            <td>Java Virtual Threads 및 ClickHouse 분석 병렬 처리용.</td>
+          </tr>
+          <tr>
+            <td><strong>Memory (RAM)</strong></td>
+            <td>32 GB RAM</td>
+            <td>64 GB RAM 이상</td>
+            <td>Spring Boot (4GB), Kafka (2GB), PostgreSQL (4GB), ClickHouse (8GB), 여유 OS 페이지 캐시 영역 필수.</td>
+          </tr>
+          <tr>
+            <td><strong>Storage</strong></td>
+            <td>OS(256GB SSD x1) + Data(1TB SSD x1) <br><strong>[총 2개]</strong></td>
+            <td>OS(256GB SSD x1) + PG(1TB SSD x1) + Kafka(500GB SSD x1) + CH(2TB NVMe SSD x1) <br><strong>[총 4개]</strong></td>
+            <td>OS 구동, Kafka 순차 쓰기, PG 트랜잭션, ClickHouse 벌크 적재 간 I/O 경합(Contention) 방지를 위해 물리 디스크를 완전히 분리하여 마운트 필수.</td>
+          </tr>
+          <tr>
+            <td><strong>Network</strong></td>
+            <td>1 Gbps NIC x2 <br><strong>[총 2개]</strong></td>
+            <td>10 Gbps NIC x2 <br><strong>[총 2개]</strong></td>
+            <td>충전기 접속용 외부 서비스망(NIC #1)과 DB 및 시스템 관리 전용 내부망(NIC #2)을 물리적으로 분리하여 대역폭 간섭 배제 및 보안성 강화.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="background-color: rgba(79, 70, 229, 0.04); border-left: 4px solid #4f46e5; border-radius: 4px 12px 12px 4px; padding: 16px 20px; margin: 20px 0;">
+        <strong style="color: #0f172a; display: block; margin-bottom: 6px;">💡 Phase 1 예상 인프라 구축 비용:</strong>
+        <ul style="margin-bottom: 0; margin-left: 20px; color: #475569; font-size: 0.95rem;">
+          <li><strong>시나리오 A (AWS 클라우드 임대):</strong> m6i.2xlarge 인스턴스 (8vCPU, 32GB RAM) + EBS gp3 스토리지 구성 시 <strong>월 약 $280 (약 370,000 KRW/월)</strong></li>
+          <li><strong>시나리오 B (On-Premise 물리 서버 도입):</strong> 하드웨어 디스크 분리형 단독 엔트리급 서버 도입 시 <strong>초기 구매비 약 2,500,000 ~ 3,500,000 KRW (1회성)</strong></li>
+        </ul>
+      </div>
+
+      <h4>6.1.2. Phase 2 (분산 확장 클러스터 구성 시 - 노드별 사양)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>노드 분류</th>
+            <th>권장 하드웨어 사양</th>
+            <th>필수 탑재 소프트웨어 / 런타임</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Application Node (x2대)</strong></td>
+            <td>4 Cores CPU / 8 GB RAM / 100 GB SSD / **1 Gbps NIC**</td>
+            <td>JDK 25, Spring Boot 3.x (Web소켓 세션 맵 탑재)</td>
+          </tr>
+          <tr>
+            <td><strong>Kafka Broker Node (x3대)</strong></td>
+            <td>4 Cores CPU / 8 GB RAM / **500 GB 이상 SSD** / **10 Gbps NIC**</td>
+            <td>Apache Kafka (KRaft Mode 실행, JVM 메모리 4G 할당, 백로그 누적 대비)</td>
+          </tr>
+          <tr>
+            <td><strong>PostgreSQL Database Node (x1대)</strong></td>
+            <td>8 Cores CPU / 16 GB RAM / **1 TB 이상 SSD** / **10 Gbps NIC**</td>
+            <td>PostgreSQL 15/16 (OLTP 튜닝 및 WAL 로그 버퍼 조정, 복제 지연 최소화, 트랜잭션/CDR 이력용)</td>
+          </tr>
+          <tr>
+            <td><strong>ClickHouse Database Node (x1대)</strong></td>
+            <td>16 Cores CPU / 32 GB RAM / **2 TB 이상 NVMe SSD** / **10 Gbps NIC**</td>
+            <td>ClickHouse DB (벡터화 병렬 처리 극대화를 위한 다중 코어 권장, 클러스터 동기화용, 대용량 원본 로그 적재)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="background-color: rgba(79, 70, 229, 0.04); border-left: 4px solid #4f46e5; border-radius: 4px 12px 12px 4px; padding: 16px 20px; margin: 20px 0;">
+        <strong style="color: #0f172a; display: block; margin-bottom: 6px;">💡 Phase 2 예상 인프라 구축 비용 (HA 분산 확장 운영서버군):</strong>
+        <ul style="margin-bottom: 0; margin-left: 20px; color: #475569; font-size: 0.95rem;">
+          <li><strong>시나리오 A (AWS 클라우드 분산 구성):</strong> App 노드 2대, Kafka 3대, DB 2대, Redis 및 로드밸런서 전체 패키지 구성 시 <strong>월 약 $2,630 (약 3,500,000 KRW/월)</strong></li>
+          <li><strong>시나리오 B (On-Premise 물리 서버 도입):</strong> 랙 장착형 호스트 서버 2대, 16TB NAS 백업 장비, 10G 스위칭 허브 전체 구성 시 <strong>초기 구매비 약 35,000,000 KRW (1회성, 내구연한 5년)</strong></li>
+        </ul>
+      </div>
+
+      <h3 id="constraints-tuning">6.2. 1대 기동 모드(Phase 1)를 위한 경량화 튜닝 설정</h3>
+      <p>단일 컴퓨터 안에서 Kafka 및 ClickHouse의 메모리 충돌을 예방하기 위해 아래의 구동 튜닝 설정을 필수 적용합니다.</p>
+      <ul>
+        <li><strong>Kafka Heap Size 제약:</strong>
+          <pre><code>export KAFKA_HEAP_OPTS="-Xms512M -Xmx512M"</code></pre>
+          기본 1G 할당을 512MB로 강제 제한하여 1대 구동 환경의 오버헤드를 낮춥니다.
+        <li><strong>Kafka 데이터 Retension 최적화:</strong> 1대 환경의 디스크 고갈 방지를 위해 <code>log.retention.hours=24</code>로 설정하여 하루가 지나면 큐 데이터를 자동 파기합니다.</li>
+        <li><strong>ClickHouse 메모리 제한 설정:</strong> <code>users.xml</code> 설정 내에서 단일 쿼리당 최대 메모리 사용 임계치를 제한(<code>max_memory_usage = 4000000000</code> - 4GB)하여 OOM을 원천 차단합니다.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Sticky Active Menu Script -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const id = entry.target.getAttribute('id');
+          if (entry.intersectionRatio > 0.0) {
+            const targetLink = document.querySelector(`a[href="#${id}"]`);
+            if (targetLink) {
+              // Remove active from previous items
+              document.querySelector(`.nav-item.active`)?.classList.remove('active');
+              document.querySelector(`.sub-nav-item.active`)?.classList.remove('active');
+              
+              const parentListItem = targetLink.parentElement;
+              if (parentListItem.classList.contains('nav-item')) {
+                parentListItem.classList.add('active');
+              } else if (parentListItem.classList.contains('sub-nav-item')) {
+                parentListItem.classList.add('active');
+                parentListItem.closest('.nav-item')?.classList.add('active');
+              }
+            }
+          }
+        });
+      }, { rootMargin: '0px 0px -60% 0px' });
+
+      document.querySelectorAll('section[id], h3[id]').forEach(el => {
+        observer.observe(el);
+      });
+    });
+  </script>
+</body>
+</html>
