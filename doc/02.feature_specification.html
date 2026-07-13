@@ -110,40 +110,6 @@
       background-color: var(--primary-color);
     }
 
-    /* Sub-navigation style */
-    .sub-nav-list {
-      list-style: none;
-      margin-left: 16px;
-      margin-top: 4px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      border-left: 1.5px solid var(--border-color);
-      padding-left: 12px;
-    }
-
-    .sub-nav-item a {
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 0.825rem;
-      font-weight: 500;
-      padding: 4px 8px;
-      border-radius: 6px;
-      display: block;
-      transition: all 0.2s ease;
-    }
-
-    .sub-nav-item a:hover {
-      color: var(--primary-color);
-      background-color: rgba(79, 70, 229, 0.05);
-    }
-
-    .sub-nav-item.active a {
-      color: var(--primary-color);
-      font-weight: 600;
-      background-color: rgba(79, 70, 229, 0.08);
-    }
-
     /* Main Content Area */
     .content-wrapper {
       margin-left: 280px;
@@ -178,35 +144,10 @@
       border-radius: 2px;
     }
 
-    h3 {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin: 28px 0 16px 0;
-      color: var(--primary-color);
-    }
-
-    h4 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin: 20px 0 10px 0;
-      color: var(--text-primary);
-    }
-
     p {
       color: var(--text-secondary);
       margin-bottom: 16px;
       font-size: 0.975rem;
-    }
-
-    ul {
-      margin-left: 24px;
-      margin-bottom: 20px;
-      color: var(--text-secondary);
-      font-size: 0.95rem;
-    }
-
-    li {
-      margin-bottom: 8px;
     }
 
     strong {
@@ -255,21 +196,24 @@
     /* Badge styles */
     .badge {
       display: inline-block;
-      padding: 4px 8px;
+      padding: 4px 10px;
       border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
+      font-size: 0.775rem;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
     }
 
     .badge-p1 {
-      background-color: rgba(79, 70, 229, 0.1);
+      background-color: rgba(79, 70, 229, 0.08);
       color: var(--primary-color);
+      border: 1px solid rgba(79, 70, 229, 0.2);
     }
 
     .badge-p2 {
-      background-color: rgba(2, 132, 199, 0.1);
+      background-color: rgba(2, 132, 199, 0.08);
       color: var(--accent-color);
+      border: 1px solid rgba(2, 132, 199, 0.2);
     }
 
     /* Notification / Callouts */
@@ -317,22 +261,7 @@
         <a href="#criteria">1. 기능 분류 기준</a>
       </li>
       <li class="nav-item">
-        <a href="#phase1-features">2. Phase 1 필수 기능</a>
-        <ul class="sub-nav-list">
-          <li class="sub-nav-item"><a href="#p1-monitoring">2.1. 모니터링 & 인프라</a></li>
-          <li class="sub-nav-item"><a href="#p1-ops">2.2. 운영 및 제어</a></li>
-          <li class="sub-nav-item"><a href="#p1-faults">2.3. 장애 관리 & 인증</a></li>
-          <li class="sub-nav-item"><a href="#p1-system">2.4. 시스템 공통 & 로그</a></li>
-        </ul>
-      </li>
-      <li class="nav-item">
-        <a href="#phase2-features">3. Phase 2 선택 & 고도화</a>
-        <ul class="sub-nav-list">
-          <li class="sub-nav-item"><a href="#p2-bus">3.1. 버스 특화 물류</a></li>
-          <li class="sub-nav-item"><a href="#p2-smart">3.2. 스마트 차징 & FOTA</a></li>
-          <li class="sub-nav-item"><a href="#p2-roaming">3.3. 대외 로밍 & 정산</a></li>
-          <li class="sub-nav-item"><a href="#p2-reports">3.4. 배치 & 청구 리포트</a></li>
-        </ul>
+        <a href="#matrix">2. 통합 기능 매트릭스</a>
       </li>
     </ul>
   </aside>
@@ -360,19 +289,19 @@
       </div>
     </section>
 
-    <!-- Section 2: Phase 1 Core Features -->
-    <section id="phase1-features">
-      <h2>2. Phase 1 필수 기능 목록 (Standalone Core Features)</h2>
-      <p>M1 마일스톤 완수를 위해 단일 가상 가상서버 내에서 기동되어야 하는 필수 관리 포털 화면 목록입니다.</p>
+    <!-- Section 2: Unified Feature Matrix -->
+    <section id="matrix">
+      <h2>2. 통합 기능 분류 매트릭스 (Unified Feature Matrix)</h2>
+      <p>전체 150개의 AS-IS 프로그램 메뉴 화면들을 기능 카테고리별로 취합하여 Phase 1(필수)과 Phase 2(선택) 분류로 구분한 하나의 단일 테이블입니다.</p>
 
-      <h3 id="p1-monitoring">2.1. 모니터링 및 인프라 등록 (Monitoring & Assets)</h3>
       <table>
         <thead>
           <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>필수 범위 및 세부 요건</th>
+            <th>대분류 (Subsystem)</th>
+            <th>중분류 (Category)</th>
+            <th>화면명 (Program)</th>
+            <th style="width: 130px; text-align: center;">적용 구분 (Phase)</th>
+            <th>세부 범위 및 구축 요건</th>
           </tr>
         </thead>
         <tbody>
@@ -380,561 +309,428 @@
             <td><strong>모니터링</strong></td>
             <td>대시보드</td>
             <td>대시보드</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
             <td>실시간 기기 접속률, 당일 누적 충전량, 가동 요약 정보를 노출하는 관리자 홈</td>
           </tr>
           <tr>
             <td><strong>모니터링</strong></td>
             <td>대시보드</td>
             <td>충전기 상태 조회</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
             <td>충전기별 활성 커넥터 상태(Available, Charging, Faulted) 및 전압/전류 수치 모니터링</td>
           </tr>
           <tr>
             <td><strong>모니터링</strong></td>
             <td>대시보드</td>
-            <td>지도 기반 모니터링</td>
-            <td>Leaflet.js 및 로컬 GeoJSON 타일을 활용한 폐쇄망 오프라인 지도상 충전소 위치 핀 표출</td>
+            <td>버스충전기상태조회(배치도편집)</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>차고지 배치도를 Canvas 상에 드래그하여 매핑 및 관제하는 특화 화면</td>
           </tr>
-          <tr>
-            <td><strong>충전소 등록</strong></td>
-            <td>법인관리</td>
-            <td>법인관리</td>
-            <td>CPO 등록 운영 법인 및 위탁 회원사 정보 입력</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 등록</strong></td>
-            <td>사업장목록</td>
-            <td>사업장목록</td>
-            <td>법인 직할 충전 사업장(영업소/차고지) 주소 및 전력 수전 한도 정보 관리</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 등록</strong></td>
-            <td>한전계약단가 관리</td>
-            <td>한전계약단가 관리</td>
-            <td>한국전력 요금제 단가(계절/시간대별 기본 기준요금) 조회 및 입력</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 등록</strong></td>
-            <td>충전소목록</td>
-            <td>충전소목록</td>
-            <td>충전소 기본 명칭, 주소, 경도/위도 좌표 등록 및 관리</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 등록</strong></td>
-            <td>충전기관리</td>
-            <td>충전기관리 (등록/상세 팝업)</td>
-            <td>충전기별 시리얼 넘버, 통신 IP, 게이트웨이 노드 ID 및 1.6J 버전 정보 매핑</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 등록</strong></td>
-            <td>충전기목록</td>
-            <td>충전기목록</td>
-            <td>전체 충전소 소속 충전기 리스트 및 연결 상태 그리드</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템운영</td>
-            <td>충전기모델관리 (등록 팝업)</td>
-            <td>충전기 제조사, 정격 전력량(급속 200kW/완속 7kW 등), 커넥터 수량 관리</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3 id="p1-ops">2.2. 일반 충전소 운영 및 제어 (General Ops & OCPP Control)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>필수 범위 및 세부 요건</th>
-          </tr>
-        </thead>
-        <tbody>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>충전이력현황(일반)</td>
             <td>충전이력상세조회(NEW) / 상세조회</td>
-            <td>일반 일반 차량의 승인 카드번호(idTag), 시작/종료 미터량(Wh), 총 사용량 및 상세 CDR 이력</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>일반 승용 차종의 충전 완료 세션 및 시작/종료 전력량 상세 CDR 이력</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>충전이력현황(일반)</td>
             <td>법인관리차량 충전이력상세조회</td>
-            <td>특정 협력 법인 등록 차량들의 충전 세션 전용 이력 그리드</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>협약 법인 소속 차량들의 전용 충전 세션 이력 필터링</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>충전이력현황(일반)</td>
-            <td>법인별매출현황 / 사용자유형별 현황</td>
-            <td>법인 계약 회원 및 비회원 단가 구분에 따른 매출 연산 이력 현황</td>
+            <td>법인별매출현황 / 사용자유형별 매출</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>법인 계약 회원 및 비회원 단가 구분에 따른 매출액 통계 산출</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전이력현황(일반)</td>
+            <td>지도 기반 모니터링</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>Leaflet.js를 통한 폐쇄망 오프라인 지도 기반 충전소 위치 핀 표출</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>충전이력현황(일반)</td>
             <td>사업장/충전소 별 현황 분석</td>
-            <td>사업장별 월간 충전 이용 횟수, 총 소모 전력 통계 보고서</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>사업장별 일일/주간 충전 횟수, 누적 전력 사용량 통계 레포트</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>충전이력현황(일반)</td>
             <td>사업장/충전소/충전기 별 추이 분석</td>
-            <td>ClickHouse 시계열 기반 일별/주간 충전량 변동 곡선 시각화</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>일별/주간 충전 패턴 변동 곡선 시각화 그래프</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>충전이력현황(일반)</td>
             <td>시간대 충전량 추이 분석</td>
-            <td>시간대별(TOU 요금대별) 충전량 밀집도 분석을 위한 차트</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>ClickHouse 데이터를 활용한 1시간 단위 피크 충전 시간대 시각화</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>충전이력현황(일반)</td>
             <td>사업장/충전소별 비교분석 / 월별</td>
-            <td>복수 충전소 간의 가동 시간 및 전력 판매 효율 대조 차트</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>복수 충전소 간의 가동 시간 및 전력 판매 효율 대조 분석</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전이력현황(버스)</td>
+            <td>법인별/운수사별 매출현황</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>정기 노선 버스 운수사별 사용 전력 및 전용 할인 매출 정산서</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전이력현황(버스)</td>
+            <td>충전이력상세조회(NEW)</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>노선 버스 충전 전력량(kWh) 및 전용 요율 상세 내역 조회</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전이력현황(버스)</td>
+            <td>차량별 / 차량별(운수사) 통계현황</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>차고지 버스 차량별 일별 전력 소모량 추이 통계</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전이력현황(버스)</td>
+            <td>가동률 대시보드 (버스)</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>배차 일정 대비 충전기의 회전 가동률 분석 대시보드</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전이력현황(버스)</td>
+            <td>운수사별 충전량비교 분석</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>차고지별 월별 전기 사용 한도 준수 여부 대조 시각화</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전이력현황(버스)</td>
+            <td>개금차고지 / 웰컴 / 포항 충전현황</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>특정 주요 거점 차고지 전용 모니터링 보드 화면</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>결제정보관리</td>
             <td>결제이력현황 / 바로정산결제이력</td>
-            <td>기본 카드 승인 데이터 로그 및 충전 완료 즉시 실행된 바로정산 통계 정보</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>결제 승인 데이터 로그 및 충전 완료 후 실시간 정산 처리 결과</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>결제정보관리</td>
             <td>판매단가정보관리</td>
-            <td>시간대별(경부하/중부하/최대부하) 판매 충전 전력 요금 단가표 작성</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>요일별, 시간대별(경부하/중부하/최대부하) 판매 충전 요금 설정</td>
           </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>충전기 상태 원격제어</td>
-            <td>원격 원격제어 5대 필수 커맨드(Reset, UnlockConnector, ClearCache, ChangeConfiguration, TriggerMessage) 개별 전송</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>웹소켓 연결정보 설정</td>
-            <td>충전기가 접속할 WS Gateway 포트 및 도메인 접속 룰 바인딩</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>충전기 인증 설정</td>
-            <td>충전기가 WS 최초 핸드셰이크 시 제출할 Basic Auth 보안 값 확인</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3 id="p1-faults">2.3. 장애 관리 및 RFID 인증 (Faults & Auth)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>필수 범위 및 세부 요건</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 장애/고장</td>
-            <td>제조사별 장애코드관리 (등록 팝업)</td>
-            <td>제조사 고유 Diagnostic ErrorCode와 표준 OCPP StatusNotification 사상 기준 입력</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 장애/고장</td>
-            <td>충전기 장애 이력 조회</td>
-            <td>소켓을 통해 인입된 기기 하드웨어 장애(LockFailure, OverCurrent 등) 수신 이력 조회</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 장애/고장</td>
-            <td>고장접수</td>
-            <td>대시보드 실시간 브로드캐스팅 장애 발생 시 유지보수 접수 처리 관리</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>인증관리</td>
-            <td>RFID 정보</td>
-            <td>RFID 태그 카드 마스터 등록, 승인(Accepted) / 정지 상태 관리</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>인증관리</td>
-            <td>RFID 요청 처리</td>
-            <td>회원 카드의 분실, 해지 및 신규 등록 요청 대기열 승인 프로세스</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3 id="p1-system">2.4. 시스템 공통 및 로그 관리 (System Admin)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>필수 범위 및 세부 요건</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템공통</td>
-            <td>역할관리 / 역할별메뉴관리 / 사용자관리</td>
-            <td>CPO 어드민, 파트너사, 일반 사업장별 관리자 계정 생성 및 노출 메뉴 그룹 지정</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템공통</td>
-            <td>메뉴관리 / 그룹코드 / 시스템공통코드</td>
-            <td>CSMS 시스템 전반의 속성 코드, 공통 상태 정의값 바인딩</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템공통</td>
-            <td>운영사업자 / 법인 공통코드 / 관리</td>
-            <td>멀티 테넌시 구동을 위한 최상위 운영사업자 정보 등록</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템공통</td>
-            <td>휴일관리</td>
-            <td>TOU 판매 단가 적용 시 법정공휴일/대체휴일 요금 자동 매핑 기준</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템운영</td>
-            <td>공지사항</td>
-            <td>운영 대리점 및 내부 관리자 전용 정보 게시판</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템운영</td>
-            <td>통신로그</td>
-            <td>ClickHouse 적재 OCPP 원본 JSON 패킷 패킷 탐색 및 필터링 뷰어</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템운영</td>
-            <td>시스템 접속기록</td>
-            <td>운영자 계정의 메뉴 접근, 엑셀 다운로드, 개인정보 조작 감사 로그 저장</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템운영</td>
-            <td>충전기 개소 관리 (페이지/팝업)</td>
-            <td>물리 충전 커넥터별 실제 배치 주차면 속성 설정</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>시스템운영</td>
-            <td>OCPP 기준정보 관리</td>
-            <td>충전기 런타임 Configuration Key(HeartbeatInterval 등) 조회 및 원격 수정 전송 제어</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- Section 3: Phase 2 Advanced Features -->
-    <section id="phase2-features">
-      <h2>3. Phase 2 선택 및 고도화 기능 목록 (Scale-out & Advanced)</h2>
-      <p>분산 서버 이중화 구성 또는 스마트 스마트차징, 타 CPO 연동(로밍), 운수사 버스 차고지 특화 비즈니스 관리에 적용되는 고도화 화면 목록입니다.</p>
-
-      <h3 id="p2-bus">3.1. 버스 운수사 특화 물류 및 모니터링 (Bus Logistics & Fleet)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>고도화 범위 및 세부 요건</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>모니터링</strong></td>
-            <td>대시보드</td>
-            <td>버스충전기상태조회(배치도편집)</td>
-            <td>차고지 평면도 캔버스(Canvas) 위에 충전기를 실제 위치에 배치하고 충전선 길이, 차량 매핑 등을 수동 편집하여 실시간 버스 상태를 관제하는 레이아웃 화면</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전이력현황(버스)</td>
-            <td>법인별매출현황 / 운수사별매출현황</td>
-            <td>특정 시내/시외 버스 운수사 법인의 운행 노선별 전기 버스 충전 요금 할인 및 매출 정산서</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전이력현황(버스)</td>
-            <td>충전이력상세조회 / 시간대 충전량 추이</td>
-            <td>운수사 전용 충전 세션 이력 및 노선 출차 시간대에 집중되는 충전 전력 피크치 모니터링</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전이력현황(버스)</td>
-            <td>개금차고지 / 충전이력-웰컴 / 포항</td>
-            <td>특정 거점 버스 차고지 전용 통합 키오스크 연동 및 충전 모니터링 보드</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전이력현황(버스)</td>
-            <td>차량별통계현황 / 운수사 차량별 통계</td>
-            <td>노선 버스 차량별 일별 전력 누적 충전 통계 및 에너지 사용 추이</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전이력현황(버스)</td>
-            <td>가동률 대시보드 / 월별 운수사 비교</td>
-            <td>배차 스케줄에 따른 대기 대비 순수 충전 가동율 대조 화면</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>차량관리</td>
-            <td>버스모델관리</td>
-            <td>버스 차종별 배터리 스펙(kWh) 및 권장 고속 충전 전압 한계 매핑</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>차량관리</td>
-            <td>차량목록 (차량정보, 로컬인증 팝업)</td>
-            <td>운수사 버스 번호, idTag 매핑 및 오프라인 기동을 대비한 기기 로컬 캐싱 인증 파일(Local Auth List) 조작</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>차량관리</td>
-            <td>차량목록 팝업 (SOH 정보 확인)</td>
-            <td>배터리 충전 곡선 분석을 통한 잔여 수명 노화도(State of Health) 모니터링 팝업</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>차량관리</td>
-            <td>노선정보 관리</td>
-            <td>시내버스 운행 노선 및 배차 조별 출/퇴근 충전 스케줄링 관리</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>모니터링</td>
-            <td>최적 SOC 현황</td>
-            <td>다음 운행 배차 전까지 차량 배터리가 80% 이상 충전될 수 있는지 실시간 예측하여 충전 순위를 연산해 주는 관제 화면</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3 id="p2-smart">3.2. 스마트 차징 및 원격 펌웨어 제어 (Smart Charging & FOTA)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>고도화 범위 및 세부 요건</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>펌웨어 관리 / 펌웨어 업데이트</td>
-            <td>펌웨어 버전별 바이너리 파일 업로드 모듈 및 예약 FOTA 업데이트(`UpdateFirmware`) 전송</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>충전기모드설정 / 충전기 사용일정 관리</td>
-            <td>충전기 대기 전환 스케줄 및 휴지기 전력 세이빙 설정</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>충전 전력 설정 / 충전기 SOC 설정</td>
-            <td>OCPP Smart Charging 프로파일(`SetChargingProfile`) 발송을 통한 동적 전력 분배 제어 및 완충 상한 락(Lock) 제어</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>스마트충전암호화키관리</td>
-            <td>OCPP TLS 통신에 사용되는 2방향 CA 인증서 암호키 등록</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 제어</td>
-            <td>스마트충전제어인증서 관리</td>
-            <td>충전기 펌웨어 서명 검증을 위한 퍼블릭 인증서 등록 및 갱신 프로세스</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 장애/고장</td>
-            <td>충전이력검증</td>
-            <td>기기 전송 원장과 ClickHouse 수집 미터값 통계를 배치 연산하여 불일치(수집 유실) 세션을 자동 감별하는 데이터 정합성 검증 화면</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 운영</strong></td>
-            <td>충전기 장애/고장</td>
-            <td>충전종료 이상 현황</td>
-            <td>충전 도중 커넥터 탈거, 전류 이상 드롭 등 비정상 단절 세션 자동 트래킹</td>
-          </tr>
-          <tr>
-            <td><strong>충전소 등록</strong></td>
-            <td>파워뱅크관리</td>
-            <td>파워뱅크관리</td>
-            <td>1개 파워 디스펜서 노드가 다중 디스펜서로 전력을 쉐어링하는 특수 파워뱅크 스펙 관리</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>정비관리</td>
-            <td>부품협력사 / 정비카테고리 / 정비부품</td>
-            <td>충전소 현장 AS 유지보수용 소모성 부품(커넥터, 서지보호기 등) 부품 재고 관리</td>
-          </tr>
-          <tr>
-            <td><strong>차량/인증 관리</strong></td>
-            <td>정비관리</td>
-            <td>정비내역등록 / 정비내역조회</td>
-            <td>기술 정비사 현장 실사 보고서 보존 및 AS 접수 이력 대장</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3 id="p2-roaming">3.3. 대외 로밍 및 정산 지급 관리 (Roaming & Financials)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>고도화 범위 및 세부 요건</th>
-          </tr>
-        </thead>
-        <tbody>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>결제정보관리</td>
-            <td>취소/부분취소 미처리 / 조치 내역</td>
-            <td>PG사 연동 에러로 인한 미결제, 중복 결제 및 부분 취소 실패 건에 대한 강제 조치 및 조치 내역 기록</td>
+            <td>취소/부분취소 미처리 / 조치 조회</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>PG사 승인 취소 오류 건 수동 조치 및 강제 부분 취소 제어 화면</td>
           </tr>
           <tr>
             <td><strong>충전소 운영</strong></td>
             <td>결제정보관리</td>
             <td>월별 고지서 관리</td>
-            <td>법인 정기 사용 요금을 합산하여 월별 청구서 템플릿(PDF) 생성 및 저장</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>법인 정기 회원 대상 전월 합산 요율 기반 청구서 PDF 생성</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 제어</td>
+            <td>충전기 상태 원격제어</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>OCPP 표준 원격제어 커맨드(Reset, Unlock, CacheClear 등) 발송</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 제어</td>
+            <td>웹소켓 연결정보 설정 / 인증 설정</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>게이트웨이 노드별 접속 주소 및 충전기 Basic Auth 보안키 셋업</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 제어</td>
+            <td>펌웨어 관리 / 펌웨어 업데이트</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>FOTA 스케줄러를 통한 버전별 펌웨어 자동 배포 제어</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 제어</td>
+            <td>충전기모드 / 충전 전력 / SOC 설정</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>스마트 차징 프로파일 전송(`SetChargingProfile`) 및 배터리 상한 설정</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 제어</td>
+            <td>충전기 사용일정 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>충전기 대기 전환 및 특정 시간 기기 가동 스케줄 배포</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 제어</td>
+            <td>스마트충전암호화키 / 인증서 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>OCPP 2.0.1 및 1.6J 보안 등급용 TLS 암호화 키 관리</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 장애/고장</td>
+            <td>제조사별 장애코드관리 (등록/상세)</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>제조사 장애코드 및 표준 OCPP StatusNotification 매핑 기준 정보</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 장애/고장</td>
+            <td>충전기 장애 이력 조회 / 고장접수</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>수신 고장 로그 관리 및 CSMS 관리자 장애 수동 접수 처리</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 운영</strong></td>
+            <td>충전기 장애/고장</td>
+            <td>충전이력검증 / 충전종료 이상 현황</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>계측 오차 검증 및 비정상 강제 단절 세션 자동 트래킹</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 등록</strong></td>
+            <td>마스터</td>
+            <td>법인관리 / 사업장목록 / 충전소목록</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>CPO 테넌트 법인, 직할 사업장 및 물리 충전소 정보 등록</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 등록</strong></td>
+            <td>마스터</td>
+            <td>한전계약단가 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>한국전력 요금제 단가(계절/시간대별 기준요금) 매핑 기준 입력</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 등록</strong></td>
+            <td>마스터</td>
+            <td>충전기관리 (등록/상세) / 충전기목록</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>충전기 물리 시리얼 및 게이트웨이 노드 매핑 마스터 관리</td>
+          </tr>
+          <tr>
+            <td><strong>충전소 등록</strong></td>
+            <td>마스터</td>
+            <td>파워뱅크관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>전력 분배 방식(Power Sharing) 다기능 충전소 제어 속성 관리</td>
+          </tr>
+          <tr>
+            <td><strong>차량/인증 관리</strong></td>
+            <td>차량관리</td>
+            <td>RFID 정보 / RFID 요청 처리</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>회원 카드(idTag) 신규 생성, 발급 승인 및 분실/정지 제어</td>
+          </tr>
+          <tr>
+            <td><strong>차량/인증 관리</strong></td>
+            <td>차량관리</td>
+            <td>버스모델관리 / 차량목록</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>전기 버스 차종 배터리 용량 및 노선 버스 차량 정보 매핑</td>
+          </tr>
+          <tr>
+            <td><strong>차량/인증 관리</strong></td>
+            <td>차량관리</td>
+            <td>차량목록 팝업 (SOH / 로컬인증정보)</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>배터리 노화도(SOH) 추적 및 오프라인 대비 화이트리스트 캐싱 파일 작성</td>
+          </tr>
+          <tr>
+            <td><strong>차량/인증 관리</strong></td>
+            <td>차량관리</td>
+            <td>노선정보 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>차고지별 노선 운행 정보 및 출/퇴근 충전 스케줄링 관리</td>
+          </tr>
+          <tr>
+            <td><strong>차량/인증 관리</strong></td>
+            <td>모니터링</td>
+            <td>최적 SOC 현황</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>다음 출차 전까지 충전 우선순위를 자동 계산해 주는 지능형 관제</td>
+          </tr>
+          <tr>
+            <td><strong>차량/인증 관리</strong></td>
+            <td>정비관리</td>
+            <td>부품협력사 / 정비카테고리 / 정비부품 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>유지 보수 소모성 부품 관리 및 장애 현장 정비 카테고리 셋업</td>
+          </tr>
+          <tr>
+            <td><strong>차량/인증 관리</strong></td>
+            <td>정비관리</td>
+            <td>정비내역등록 / 정비내역조회</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>현장 정비사 점검 보고서 보존 및 제조사 AS 접수 대장</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
-            <td>로밍/결제 정보</td>
-            <td>운영사업자 법인관리</td>
-            <td>로밍 파트너 협약 법인 마스터 세부 조건 설정</td>
+            <td>시스템공통</td>
+            <td>사용자 / 역할 / 메뉴 권한 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>CSMS 운영 운영자 계정 생성 및 세부 기능 권한 지정</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
-            <td>로밍/결제 정보</td>
-            <td>로밍정보관리</td>
-            <td>환경부, 한국전력 회원들의 로밍 메시지 중계 규격 프로파일 설정</td>
+            <td>시스템공통</td>
+            <td>그룹코드 / 공통코드 / 운영사업자 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>사이트 전반의 코드 마스터 및 다중 테넌시 기본 사업자 설정</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
-            <td>로밍/결제 정보</td>
-            <td>결제인증정보관리</td>
-            <td>가맹점 PG사 키(Merchant Key) 및 통신 API 자격 증명 설정</td>
+            <td>시스템공통</td>
+            <td>휴일관리</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>주말 및 법정 공휴일 요금 자동 매핑을 위한 달력 설정</td>
           </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>로밍/결제 정보</td>
-            <td>바로정산관리 (고도화)</td>
-            <td>PnC(Plug and Charge) 지능형 RFID 자동 자동결제 스토어 관리</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>지급관리</td>
-            <td>지급대행관리 / 지급요청</td>
-            <td>외부 위탁 CPO 충전소 소유주로의 대금 송금 자동 요청 리스트</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>지급관리</td>
-            <td>정산결과현황 / 송금결과</td>
-            <td>계좌 이체 최종 송금 성공 여부 대조 및 회계 정합성 확인</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3 id="p2-reports">3.4. 배치 관리 및 청구 리포트 발송 (Reporting & Batch)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>대분류</th>
-            <th>중분류</th>
-            <th>화면명</th>
-            <th>고도화 범위 및 세부 요건</th>
-          </tr>
-        </thead>
-        <tbody>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>시스템운영</td>
-            <td>배치 로그 / 배치 관리</td>
-            <td>대용량 시계열 이력 압축, 매일 자정 시간대별 정산, 로밍 비용 중계 정기 배치 실행 통제</td>
+            <td>공지사항 / 시스템 접속기록</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>운영자 정보 공지 게시판 및 계정 접근/다운로드 이력 감사 로그</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>시스템운영</td>
-            <td>법인 관리자 앱 관리 / BID 관리</td>
-            <td>모바일 전용 간이 앱 스토어 설정 및 환경부 가맹점 매핑 번호 일괄 변경</td>
+            <td>통신로그</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>ClickHouse 적재 OCPP 원본 JSON 패킷 패킷 탐색 및 필터링 뷰어</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>시스템운영</td>
-            <td>서울시 보조금 / 사용자 개인화</td>
-            <td>지자체 보조금 청구 데이터 가공 및 개인별 대시보드 템플릿 제어</td>
+            <td>충전기 개소 / 커넥터 QR / OCPP 기준</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>충전 주차면 QR 코드 조회 및 기기 Configuration Key 일괄 제어</td>
+          </tr>
+          <tr>
+            <td><strong>시스템관리</strong></td>
+            <td>시스템운영</td>
+            <td>충전기모델관리 (등록/상세)</td>
+            <td style="text-align: center;"><span class="badge badge-p1">필수 (Phase 1)</span></td>
+            <td>제조사별 모델명, 커넥터 규격, 정격 충전 용량 관리</td>
+          </tr>
+          <tr>
+            <td><strong>시스템관리</strong></td>
+            <td>시스템운영</td>
+            <td>서울시 보조금 / 사용자 개인화 / 환경부BID관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>보조금 정산 검증용 BID 및 국가 연동 고유 식별 번호 관리</td>
+          </tr>
+          <tr>
+            <td><strong>시스템관리</strong></td>
+            <td>시스템운영</td>
+            <td>법인 관리자 앱 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>모바일 전용 간이 앱 스토어 설정 및 배포 파일 관리</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>알람관리</td>
             <td>알람메일 / 알람문자전송 / 알람설정</td>
-            <td>설비 Critical 장애 도달 시 자동 SMS/이메일 발송용 템플릿 및 긴급 통보 시나리오 연동</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>Critical 장애 도달 시 자동 SMS/이메일 발송용 템플릿 설정</td>
+          </tr>
+          <tr>
+            <td><strong>시스템관리</strong></td>
+            <td>로밍/결제 정보</td>
+            <td>운영사업자 법인관리 / 로밍정보관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>환경부/한전 등 타 CPO 로밍 중계 통신 프로파일 연동 설정</td>
+          </tr>
+          <tr>
+            <td><strong>시스템관리</strong></td>
+            <td>로밍/결제 정보</td>
+            <td>결제인증정보관리 / 바로정산관리 (고도화)</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>PG사 Merchant Key 관리 및 PnC 지능형 결제 스토어 제어</td>
+          </tr>
+          <tr>
+            <td><strong>시스템관리</strong></td>
+            <td>지급관리</td>
+            <td>지급대행관리 / 지급요청</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>위탁 충전소 점주 정산 대금 자동 송금 요청 및 지시 리스트</td>
+          </tr>
+          <tr>
+            <td><strong>시스템관리</strong></td>
+            <td>지급관리</td>
+            <td>정산결과현황 / 송금결과</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>이체 성공 여부 대조 및 회계 정합성 확인 보드</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>리포트관리</td>
             <td>공급업체 / 상호등록 / 용역업체관리</td>
-            <td>충전 부지 위탁 계약사 및 청소/소방/안전관리 용역 협력업체 이력 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>소방/안전/청소 위탁 점검 협력업체 정보 관리</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>리포트관리</td>
-            <td>리포트출력 / 이력 / 발송 / 이메일템플릿</td>
-            <td>정기 월간 레포트 자동 생성 양식 및 발송 성공 통계</td>
+            <td>리포트출력 / 이력 / 발송 / 메일템플릿</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>월간 안전 점검 결과 및 정기 리포트 자동 메일 발송 설정</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>리포트관리</td>
             <td>전기안전설비 / 전기설비점검 이력</td>
-            <td>법정 안전 검사 결과 리포트 등록 및 소방 점검 이력 보존</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>법정 안전 검사 결과 리포트 등록 및 점검 대장 보존</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>리포트관리2</td>
             <td>충전서비스업체 / 거래처 / 계약관리</td>
-            <td>기업형 충전 전용 거래처(운수사 등) 계약 단위, 보증 요율 기간 락 관리</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>기업형 충전 계약 거래처 정보 및 보증 요율 기간 관리</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>리포트관리2</td>
-            <td>리포트발송 (거래명세서 팝업)</td>
-            <td>거래처용 사용 내역 거래명세표 PDF 실시간 생성 및 발송</td>
-          </tr>
-          <tr>
-            <td><strong>시스템관리</strong></td>
-            <td>리포트관리2</td>
-            <td>리포트발송 (사용전력요금 청구서)</td>
-            <td>영업소/차고지별 전력량 청구서 자동 산출 대장</td>
+            <td>리포트발송 (청구서 / 거래명세서 팝업)</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>거래처별 상세 거래명세표 PDF 실시간 생성 및 청구 발송</td>
           </tr>
           <tr>
             <td><strong>시스템관리</strong></td>
             <td>리포트관리2</td>
             <td>임대료 / 용역 팝업</td>
-            <td>임대 구역 입주 수수료 정산 팝업 가이드 및 출력</td>
+            <td style="text-align: center;"><span class="badge badge-p2">선택 (Phase 2)</span></td>
+            <td>충전 부지 위탁 계약사 임대 수수료 정산서 출력 및 가이드</td>
           </tr>
         </tbody>
       </table>
@@ -952,21 +748,17 @@
             if (targetLink) {
               // Remove active from previous items
               document.querySelector(`.nav-item.active`)?.classList.remove('active');
-              document.querySelector(`.sub-nav-item.active`)?.classList.remove('active');
               
               const parentListItem = targetLink.parentElement;
               if (parentListItem.classList.contains('nav-item')) {
                 parentListItem.classList.add('active');
-              } else if (parentListItem.classList.contains('sub-nav-item')) {
-                parentListItem.classList.add('active');
-                parentListItem.closest('.nav-item')?.classList.add('active');
               }
             }
           }
         });
       }, { rootMargin: '0px 0px -60% 0px' });
 
-      document.querySelectorAll('section[id], h3[id]').forEach(el => {
+      document.querySelectorAll('section[id]').forEach(el => {
         observer.observe(el);
       });
     });
