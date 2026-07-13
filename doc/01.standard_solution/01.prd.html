@@ -792,38 +792,38 @@
             GW1 --> Session1
             GW2 --> Session2
 
-            GW1 -->|수동 발행| KT1
-            GW2 -->|수동 발행| KT2
-            KT1 -->|raw-events 토픽| KafkaCluster
-            KT2 -->|raw-events 토픽| KafkaCluster
+            GW1 -->|"수동 발행"| KT1
+            GW2 -->|"수동 발행"| KT2
+            KT1 -->|"raw-events 토픽"| KafkaCluster
+            KT2 -->|"raw-events 토픽"| KafkaCluster
 
-            KafkaCluster -->|@KafkaListener| Listener1
-            KafkaCluster -->|@KafkaListener| Listener2
+            KafkaCluster -->|"@KafkaListener"| Listener1
+            KafkaCluster -->|"@KafkaListener"| Listener2
 
             Listener1 --> Core1
             Listener2 --> Core2
 
-            Core1 -->|SQL CRUD| PostgresPrimary
-            Core2 -->|SQL CRUD| PostgresPrimary
-            PostgresPrimary -.->|Replication| PostgresStandby
+            Core1 -->|"SQL CRUD"| PostgresPrimary
+            Core2 -->|"SQL CRUD"| PostgresPrimary
+            PostgresPrimary -.->|"Replication"| PostgresStandby
 
-            Core1 -->|Bulk Insert| ClickHouseCluster
-            Core2 -->|Bulk Insert| ClickHouseCluster
+            Core1 -->|"Bulk Insert"| ClickHouseCluster
+            Core2 -->|"Bulk Insert"| ClickHouseCluster
 
-            Core1 -->|Session 위치 등록| Redis
-            Core2 -->|Session 위치 등록| Redis
+            Core1 -->|"Session 위치 등록"| Redis
+            Core2 -->|"Session 위치 등록"| Redis
 
             Core1 --> VueApp
             Core2 --> VueApp
 
             %% 다운링크 제어 명령 흐름 (수동 Redis Pub/Sub 라우팅)
-            VueApp -.->|API Request| Core1 & Core2
-            Core1 & Core2 -.->|RedisTemplate.convertAndSend 수동| Redis
-            Redis -.->|수동 Subscription| RedisListener1 & RedisListener2
+            VueApp -.->|"API Request"| Core1 & Core2
+            Core1 & Core2 -.->|"RedisTemplate.convertAndSend 수동"| Redis
+            Redis -.->|"수동 Subscription"| RedisListener1 & RedisListener2
             RedisListener1 -.-> GW1
             RedisListener2 -.-> GW2
-            GW1 -.->|OCPP Command| CP1
-            GW2 -.->|OCPP Command| CP2
+            GW1 -.->|"OCPP Command"| CP1
+            GW2 -.->|"OCPP Command"| CP2
       </div>
       <p class="mermaid-caption"><strong>제 2안 특징:</strong> Kafka 메시지 브로커를 도입하여 수집과 처리를 비동기 분리하지만, Spring Integration EIP 채널 추상화가 적용되지 않아 인프라(Kafka)에 대한 의존성이 비즈니스 로직 코드에 강하게 결합됩니다. 이로 인해 Phase 2(분산 스케일 아웃) 및 다중 노드 라우팅 적용 시 대대적인 코드 수정 및 수동 Redis Pub/Sub 연동 코딩(RedisTemplate, MessageListenerContainer 직접 설정)이 수반됩니다.</p>
 
