@@ -339,6 +339,9 @@
       <li class="nav-item">
         <a href="#routing">4. 분산 원격 제어 라우팅</a>
       </li>
+      <li class="nav-item">
+        <a href="#eai">5. EAI 관점 통합 매핑</a>
+      </li>
     </ul>
   </aside>
 
@@ -499,6 +502,84 @@
           <ul>
             <li><strong>노드 맵 등록:</strong> 충전기 소켓 세션 연결 수립 시 게이트웨이 노드는 즉시 Redis Hash 테이블인 <code>active_session_map</code>에 <code>[충전기ID] : [노드ID]</code> 데이터를 기록합니다. 소켓 해제 시 해당 데이터를 자가 삭제(Clean) 처리합니다.</li>
             <li><strong>장애 극복 라우팅:</strong> 대상 노드가 순간적인 크래시(Crash)로 인해 Redis Pub/Sub을 받지 못할 경우, 즉각 에러 처리를 하지 않고 Apache Kafka <code>control-commands-retry</code> 토픽으로 제어 명령을 재우회 전송하여 3회 재시도를 보장합니다.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: EAI Map -->
+    <section id="eai">
+      <h2>5. EAI 관점의 통합 아키텍처 매핑 (EAI Integration Architecture Map)</h2>
+      <p>솔루션의 통합 구성 요소를 고전적 EAI(Enterprise Application Integration) 엔터프라이즈 통합 유형과 비교 매핑하여 시스템 결합도를 도식화한 내용입니다.</p>
+
+      <div class="mermaid">
+        flowchart LR
+            %% Source systems & Adapters
+            subgraph Sources ["원천 시스템 및 어댑터 (Source Adapters)"]
+                CP["전기차 충전기 군 (OCPP 1.6/2.0.1)"] -->|WebSocket| WS_Adapt["웹소켓 어댑터 (Gateway Node)"]
+                AdminUI["CPO 관제 웹 UI / 외부 API"] -->|REST API| REST_Adapt["REST API 어댑터"]
+            end
+
+            %% Enterprise Message Bus
+            subgraph MessageBus ["엔터프라이즈 메시지 버스 (EAI Message Bus - Kafka)"]
+                direction TB
+                RawTopic["Uplink Event Queue: raw-events"]
+                CmdTopic["Downlink Command Queue: control-commands"]
+            end
+
+            %% Routing & Transforming Engine
+            subgraph EAI_Engine ["메시지 라우터 & 트랜스포머 (EAI Router & Transformer - Spring Core)"]
+                direction TB
+                Parser["프로토콜 파서 & 유효성 검증 (Translation/Validation)"]
+                Enricher["TOU 요금 정산 & 데이터 보강 (Enrichment/Calculation)"]
+                Distributor["장애 전이/이벤트 분배기 (Routing/Distribution)"]
+                
+                Parser --> Enricher --> Distributor
+            end
+
+            %% Target Adapters & Systems
+            subgraph Targets ["대상 시스템 연동 어댑터 (Target Systems / Adapters)"]
+                PG_Adapt["PG 결제 연동 어댑터"]
+                Roam_Adapt["한전/로밍 중계 연동 어댑터"]
+                
+                DB_OLTP["PostgreSQL 어댑터 (OLTP 저장소)"]
+                DB_OLAP["ClickHouse 어댑터 (OLAP 저장소)"]
+                Cache_Session["Redis 세션 동기화 어댑터"]
+            end
+
+            %% EAI Flow Connections
+            WS_Adapt -->|Publish Raw Event| RawTopic
+            REST_Adapt -->|Publish Command| CmdTopic
+            
+            RawTopic -->|Consume| Parser
+            Distributor -->|Load / Sink| DB_OLTP
+            Distributor -->|Bulk Load / Sink| DB_OLAP
+            Distributor -->|Session Read/Write| Cache_Session
+            Distributor -->|External Call| PG_Adapt
+            Distributor -->|External Call| Roam_Adapt
+            
+            CmdTopic -->|Routing to GW| WS_Adapt
+      </div>
+
+      <div class="callout" style="background-color: rgba(79, 70, 229, 0.04); border-left: 4px solid var(--primary-color);">
+        <div class="callout-title">📌 EAI 설계 구성 요소 분석</div>
+        <div class="callout-content">
+          <ul>
+            <li><strong>Source Adapters (송신 어댑터):</strong> 
+              <ul>
+                <li><code>WebSocket Gateway</code>: OCPP 프로토콜을 전송 매체(TCP/IP 소켓)로부터 발췌하는 입력 어댑터.</li>
+                <li><code>REST API Adapter</code>: 내부 어드민 및 외부 파트너 시스템의 HTTP 트랜잭션 수신 어댑터.</li>
+              </ul>
+            </li>
+            <li><strong>EAI Message Bus (메시지 통신 채널 - Kafka):</strong> 중앙 메시지 백본으로서 비동기 큐잉(Queueing)과 브로드캐스트 분배를 도맡으며 메시지 순서 및 백로그 자가 제어 담당.</li>
+            <li><strong>EAI Router & Transformer (통합 변환 엔진 - Spring Core):</strong>
+              <ul>
+                <li><code>Translation & Validation (파싱 & 검증)</code>: 다양한 버전(OCPP 1.6 / 2.0.1)의 이기종 프로토콜 JSON을 플랫폼 내부 표준 자바 DTO(Canonical Data Model)로 공통 변환 및 유효성 검증.</li>
+                <li><code>Enrichment & Calculation (정산 & 보강)</code>: 충전기 원천 데이터에 한전 요율 정보 및 충전소 자산 메타 정보를 결합하여 충전 금액 연산 및 프로파일 추가.</li>
+                <li><code>Routing & Distribution (분배)</code>: 가공된 데이터를 목적에 맞게 실시간 트래픽, 정산 원장, 외부 통신 어댑터 등으로 분류하여 실시간 유도.</li>
+              </ul>
+            </li>
+            <li><strong>Target Adapters (수신/적재 어댑터):</strong> DB 라이터 모듈(JPA/ClickHouse Bulk Writer)과 외부 시스템 프록시 클라이언트(Payment Gateway, Roaming API Client)들이 해당 데이터 구조를 최종 적재 또는 대외 전송하는 수신 어댑터(Target Adapters) 역할을 성실히 대행합니다.</li>
           </ul>
         </div>
       </div>
