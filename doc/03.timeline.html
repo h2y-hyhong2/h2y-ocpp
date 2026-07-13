@@ -335,7 +335,6 @@
           <li class="sub-nav-item"><a href="#weekly-w37-40">2.10. 스마트차징 & FOTA (W37-40)</a></li>
           <li class="sub-nav-item"><a href="#weekly-w41-44">2.11. 로밍 & 결제취소 (W41-44)</a></li>
           <li class="sub-nav-item"><a href="#weekly-w45-48">2.12. 지급대행 & M3 완료 (W45-48)</a></li>
-          <li class="sub-nav-item"><a href="#weekly-w3d">2.13. 3D 디지털트윈 트랙 (별도)</a></li>
         </ul>
       </li>
       <li class="nav-item">
@@ -354,7 +353,7 @@
     <section id="milestones">
       <h2>1. 프로젝트 마일스톤 (Project Milestones)</h2>
       <p>본 프로젝트는 Phase 1 (단일 서버 기동 모드 - 필수 기능)의 안정성을 최적화하기 위해 초기 6개월(24주)의 충분한 개발 및 검증 기간을 적용하고, 이후 Phase 2 (HA 분산 확장 및 고도화 기능) 단계를 6개월 동안 고도화하는 총 12개월(1년)의 장기 안정 일정을 따릅니다.</p>
-      <p>※ <strong>3D 디지털 트윈 관제 기능</strong>은 필수 마일스톤에서 제외되어, 프로젝트에 영향을 주지 않도록 <strong>별도의 독립된 추가 트랙 (Optional)</strong>으로 이관되었습니다.</p>
+      <p>※ <strong>3D 디지털 트윈 관제 기능</strong>은 본 프로젝트 구축 범위에서 제외되었으며, 필요 시 별도 독립 프로젝트로 조율합니다.</p>
       
       <table>
         <thead>
@@ -369,7 +368,7 @@
           <tr>
             <td><strong>M1: Phase 1 완료</strong></td>
             <td>단일 호스트 기동 모드 구현</td>
-            <td>통합 기능 정의서 상의 Phase 1 필수 기능(OCPP 1.6J 연동, 일반 관제 대시보드, 정산 원장 저장 및 단독 튜닝)의 100% 완료 및 안정화 검증 (3D 관제 제외)</td>
+            <td>통합 기능 정의서 상의 Phase 1 필수 기능(OCPP 1.6J 연동, 일반 관제 대시보드, 정산 원장 저장 및 단독 튜닝)의 100% 완료 및 안정화 검증</td>
             <td><strong>24주차 말 (6개월차)</strong></td>
           </tr>
           <tr>
@@ -414,9 +413,6 @@
             스마트차징 & FOTA 관리 고도화   : p2_smart, after p2_bus, 28d
             로밍 연동 & 결제 취소 관리      : p2_roam, after p2_smart, 28d
             지급대행, 리포트 & 최종 M3 검증   : p2_final, after p2_roam, 28d
-            
-            section 별도 추가 트랙 (Optional)
-            3D 디지털 트윈 관제 개발 (별도 일정) : p3_twin, after p2_final, 28d
       </div>
 
       <h3 id="weekly-w1-4">2.1. [Phase 1 - 1개월차] 개발 환경 & 인프라 및 상세 설계 (Week 1 - 4)</h3>
@@ -456,7 +452,7 @@
       </ul>
 
       <h3 id="weekly-w17-20">2.5. [Phase 1 - 5개월차] 정산 엔진 및 장애 관리 구축 (Week 17 - 20)</h3>
-      <p>사용 요금 정산 연산 처리 및 실시간 기기 고장 접수 백엔드 기능을 완성합니다. (※ 3D 디지털 트윈은 제외)</p>
+      <p>사용 요금 정산 연산 처리 및 실시간 기기 고장 접수 백엔드 기능을 완성합니다.</p>
       <ul>
         <li><strong>TOU (Time-of-Use) 정산 엔진:</strong> 계절별, 시간대별 및 회원 등급별 할인 룰이 적용된 사용 요금 실시간 정산 로직 탑재.</li>
         <li><strong>바로정산 연동:</strong> OCPP 미터값 연동 실시간 바로정산 API 및 PostgreSQL CDR(Charge Detail Record) 저장 로직 구현.</li>
@@ -518,13 +514,6 @@
         <li><strong>청구서 및 명세서 PDF:</strong> 거래처별 거래명세서 실시간 생성 및 청구용 PDF 메일 자동 발송 배치 구축.</li>
         <li><strong>2,000 TPS 부하 검증:</strong> 충전기 대량 가상 트래픽 유입 테스트 및 Kubernetes Helm Chart 패키징 배포 검증 완료.</li>
       </ul>
-
-      <h3 id="weekly-w3d">2.13. [별도 추가 트랙] 3D 디지털 트윈 관제 고도화 (별도 프로젝트 일정)</h3>
-      <p>비즈니스 핵심 기동과 독립적으로 진행되는 Three.js WebGL 기반 3D 입체 관제 화면 개발 트랙입니다.</p>
-      <ul>
-        <li><strong>3D Mesh 입체 시각화:</strong> Three.js 기반의 충전소 부지/건물 평면도 2.5D/3D 입체 모델링 및 로딩 최적화.</li>
-        <li><strong>동적 애니메이션:</strong> 충전기 커넥터 상태에 따른 실시간 Glow Aura 효과 및 미터 연동 실시간 상태 정보 오버레이 연계.</li>
-      </ul>
     </section>
 
     <!-- Section 3: Resources -->
@@ -548,7 +537,7 @@
           </tr>
           <tr>
             <td><strong>Front-end Engineer (1명)</strong></td>
-            <td>Vue 3 어드민 대시보드 UI 구현, Leaflet.js 오프라인 지도 서빙 및 실시간 원본 로그 패킷 분석기 개발, (3D 추가 트랙 착수 시) Three.js WebGL 기반 3D 디지털 트윈 렌더링.</td>
+            <td>Vue 3 어드민 대시보드 UI 구현, Leaflet.js 오프라인 지도 서빙 및 실시간 원본 로그 패킷 분석기 개발.</td>
             <td>대용량 로그 렌더링 시 브라우저 OOM 방지 및 오프라인 지도 벡터 로딩 속도 최적화.</td>
           </tr>
           <tr>
