@@ -351,8 +351,7 @@
 
     <!-- Section 1: Milestones -->
     <section id="milestones">
-      <h2>1. 프로젝트 마일스톤 (Project Milestones)</h2>
-      <p>본 프로젝트는 Phase 1 (단일 서버 기동 모드 - 필수 기능)의 안정성을 최적화하기 위해 초기 6개월(24주)의 충분한 개발 및 검증 기간을 적용하고, 이후 Phase 2 (HA 분산 확장 및 고도화 기능) 단계를 6개월 동안 고도화하는 총 12개월(1년)의 장기 안정 일정을 따릅니다.</p>
+      <p>본 프로젝트는 Phase 1 (단일 서버 기동 모드 - 필수 기능 / 기술 검증 POC)의 안정성을 최적화하기 위해 초기 6개월(24주)의 충분한 개발 및 검증(POC) 기간을 적용하고, 이후 Phase 2 (HA 분산 확장 및 고도화 기능) 단계를 6개월 동안 고도화하는 총 12개월(1년)의 장기 안정 일정을 따릅니다.</p>
       <p>※ <strong>3D 디지털 트윈 관제 기능</strong>은 본 프로젝트 구축 범위에서 제외되었으며, 필요 시 별도 독립 프로젝트로 조율합니다.</p>
       
       <table>
@@ -366,8 +365,8 @@
         </thead>
         <tbody>
           <tr>
-            <td><strong>M1: Phase 1 완료</strong></td>
-            <td>단일 호스트 기동 모드 구현</td>
+            <td><strong>M1: Phase 1 (POC) 완료</strong></td>
+            <td>단일 호스트 (POC) 기동 검증</td>
             <td>통합 기능 정의서 상의 Phase 1 필수 기능(OCPP 1.6J 연동, 일반 관제 대시보드, 정산 원장 저장 및 단독 튜닝)의 100% 완료 및 안정화 검증</td>
             <td><strong>24주차 말 (6개월차)</strong></td>
           </tr>
@@ -385,6 +384,13 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="callout" style="background-color: rgba(79, 70, 229, 0.04); border-left: 4px solid var(--primary-color);">
+        <div class="callout-title">💡 POC 수행 로드맵 동기화 안내</div>
+        <div class="callout-content">
+          Phase 1 기간(초기 6개월)은 단일 서버 구동 모드의 설계/개발과 병행하여 <strong>기술 검증(POC) 수행 단계</strong>로 기획되었습니다. 상세한 월별 기술 검증 일정과 검증 체크리스트는 <a href="file:///d:/project/lselink/ocpp-lite/git/h2y-ocpp/doc/05.poc.html">Phase 1 기술 검증 정의서 (05.poc)</a>에서 정의한 로드맵과 100% 일치합니다.
+        </div>
+      </div>
     </section>
 
     <!-- Section 2: Weekly Plan -->
@@ -398,7 +404,7 @@
             dateFormat  YYYY-MM-DD
             axisFormat  %Y-%m-%d
             
-            section Phase 1 (★ Standalone 필수 개발 및 안착 - 6개월)
+            section Phase 1 (★ Standalone 기술 검증 POC - 6개월)
             인프라 구성 및 설계        :crit, active, p1_infra, 2026-07-13, 28d
             OCPP 1.6J GW & Uplink 개발   :crit, p1_gw, after p1_infra, 28d
             비즈니스 로직 & 백엔드 코어 개발 :crit, p1_biz, after p1_gw, 28d

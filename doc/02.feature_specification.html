@@ -278,6 +278,9 @@
       <li class="nav-item">
         <a href="#matrix">2. 통합 기능 매트릭스</a>
       </li>
+      <li class="nav-item">
+        <a href="#backend">3. Phase 1 백엔드 코어 시스템 기능 요건</a>
+      </li>
     </ul>
   </aside>
 
@@ -879,6 +882,70 @@
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <!-- Section 3: Phase 1 Backend Core Requirements -->
+    <section id="backend">
+      <h2>3. Phase 1 백엔드 코어 시스템 기능 요건 (Phase 1 Backend Core Requirements)</h2>
+      <p>Phase 1(Standalone 단독 서버 배포 단계)에서 필수적으로 충족해야 하는 백엔드 핵심 시스템 및 프로토콜 기능 요건 목록입니다.</p>
+
+      <h3>3.1. OCPP 1.6J 표준 프로토콜 처리 요건</h3>
+      <ul>
+        <li><strong>세션 기동 및 상태 갱신 (<code>BootNotification</code>, <code>Heartbeat</code>):</strong>
+          <ul>
+            <li>충전기 부팅 시 디바이스 유효성 검증 후 accepted 상태를 반환하고, PostgreSQL 데이터베이스 상의 기기 상태를 <code>Online</code>으로 실시간 갱신합니다.</li>
+            <li>주기적 하트비트 수신에 따른 수신 응답 및 세션 살아있음 정보를 갱신합니다.</li>
+          </ul>
+        </li>
+        <li><strong>사용자 RFID 및 충전 트래픽 제어 (<code>Authorize</code>, <code>StartTransaction</code>, <code>StopTransaction</code>):</strong>
+          <ul>
+            <li>회원 카드 접촉 시 데이터베이스 내 사용 중지, 기간 만료 여부를 검사하여 승인 여부(<code>accepted</code>/<code>invalid</code>)를 실시간 반환합니다.</li>
+            <li>충전 시작 요청 시 고유 Transaction ID를 발급하고 데이터베이스 내에 충전 중 상태의 트랜잭션을 기록합니다.</li>
+            <li>충전 종료 시 누적 사용량(kWh)과 설정 단가를 기반으로 요금을 연산하여 최종 매출 정산서(CDR) 형태의 트랜잭션을 완료 처리합니다.</li>
+          </ul>
+        </li>
+        <li><strong>계측기 수집 및 실시간 감시 (<code>MeterValues</code>, <code>StatusNotification</code>):</strong>
+          <ul>
+            <li>15초 단위로 수입되는 전력량(Wh), 전류(A), 전압(V), SOC(배터리 상태) 등의 시계열 계측 데이터를 실시간 추출하여 ClickHouse에 고속 적재되도록 버퍼링합니다.</li>
+            <li>충전기 커넥터 장애 상태(<code>Faulted</code> 등) 수신 시 장애 코드를 파싱하여 관리자 장애 접수 원장에 자동 등록하고 관제 화면에 실시간 브로드캐스팅합니다.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>3.2. EIP 파이프라인 및 비동기 처리 요건</h3>
+      <ul>
+        <li><strong>Spring Integration 기반 메시지 추상화:</strong>
+          <ul>
+            <li>충전기 인입 원본 패킷은 동기식 스레드 점유 없이 단일 Kafka 브로커(<code>ocpp-raw-events</code> 토픽) 기반의 <code>ocppRawChannel</code>로 큐잉 전송됩니다.</li>
+            <li>JSON Parser 및 DTO Transformer를 거친 구조화 메시지는 Content-Type 기반 Payload-Type Router를 통해 최종 비즈니스 처리 싱글톤 빈(Service Activator)으로 유연하게 비동기 위임됩니다.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>3.3. 가상 스레드 및 CQRS 데이터 적재 요건</h3>
+      <ul>
+        <li><strong>논블로킹 대량 I/O 처리:</strong>
+          <ul>
+            <li>모든 비즈니스 처리 및 외부 DB 쓰기 동작은 Java 25 가상 스레드(Virtual Threads) 위에서 동작하여 디스크/네트워크 블로킹 오버헤드를 배제합니다.</li>
+          </ul>
+        </li>
+        <li><strong>저장 매체별 책임 격리 (CQRS):</strong>
+          <ul>
+            <li><strong>PostgreSQL (OLTP):</strong> 사용자 마스터, 충전기 정보 설정, 최종 과금 매출 정산 내역(무결성 보장).</li>
+            <li><strong>ClickHouse (OLAP):</strong> 대량 시계열 MeterValues 원본 로그 패킷. 1초 또는 1,000건 단위의 인메모리 임시 큐 취합 후 <strong>벌크 인서트(Bulk Insert)</strong> 처리합니다.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>3.4. 오프라인 Air-Gapped 구동 요건</h3>
+      <ul>
+        <li><strong>독립형 외부 서비스 배포:</strong>
+          <ul>
+            <li>폐쇄망 환경의 특성에 따라, 오픈 소스 지도(OpenStreetMap) 타일 이미지를 로컬 서버 내에서 서빙할 수 있도록 Leaflet.js용 타일 맵 파일 API를 탑재합니다.</li>
+            <li>충전기 펌웨어 업그레이드 요청 시 로컬 <code>/resources/firmware</code> 경로 상의 바이너리 파일 리소스를 스트리밍 다운로드할 수 있는 경량 펌웨어 서빙 API를 구비합니다.</li>
+          </ul>
+        </li>
+      </ul>
     </section>
   </main>
 
