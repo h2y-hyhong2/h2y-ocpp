@@ -1004,17 +1004,14 @@ SETTINGS index_granularity = 8192;</code></pre>
             <td>1 Gbps NIC x2 <br><strong>[총 2개]</strong></td>
             <td>10 Gbps NIC x2 <br><strong>[총 2개]</strong></td>
             <td>충전기 접속용 외부 서비스망(NIC #1)과 DB 및 시스템 관리 전용 내부망(NIC #2)을 물리적으로 분리하여 대역폭 간섭 배제 및 보안성 강화.</td>
+          <tr>
+            <td><strong>예상 도입 비용</strong></td>
+            <td><strong>On-Premise:</strong> 약 4,000,000 KRW (1회성)<br><strong>Cloud (AWS):</strong> 월 약 $280 (약 370,000원)</td>
+            <td><strong>On-Premise:</strong> 약 6,000,000 KRW (1회성)<br><strong>Cloud (AWS):</strong> 월 약 $560 (약 740,000원)</td>
+            <td>물리 장비 일시불 구매(워크스테이션/엔트리 서버, 부가세 별도) 또는 AWS 클라우드 월별 임대료 환산.</td>
           </tr>
         </tbody>
       </table>
-
-      <div style="background-color: rgba(79, 70, 229, 0.04); border-left: 4px solid #4f46e5; border-radius: 4px 12px 12px 4px; padding: 16px 20px; margin: 20px 0;">
-        <strong style="color: #0f172a; display: block; margin-bottom: 6px;">💡 Phase 1 예상 인프라 구축 비용:</strong>
-        <ul style="margin-bottom: 0; margin-left: 20px; color: #475569; font-size: 0.95rem;">
-          <li><strong>시나리오 A (AWS 클라우드 임대):</strong> m6i.2xlarge 인스턴스 (8vCPU, 32GB RAM) + EBS gp3 스토리지 구성 시 <strong>월 약 $280 (약 370,000 KRW/월)</strong></li>
-          <li><strong>시나리오 B (On-Premise 물리 서버 도입):</strong> 하드웨어 디스크 및 랜카드 물리 분리형 고성능 워크스테이션 또는 엔트리급 서버 도입 시 <strong>초기 구매비 약 4,000,000 ~ 6,000,000 KRW (1회성, 부가세 별도)</strong></li>
-        </ul>
-      </div>
 
       <h4>6.1.2. Phase 2 (분산 확장 클러스터 구성 시 - 노드별 사양)</h4>
       <table>
