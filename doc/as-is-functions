@@ -1,0 +1,150 @@
+서브시스템	"프로그램
+ 유형"	M1	M2	M3	순번	화면ID	"화면
+ 유형"	화면명
+evcs-ms	Online	대시보드						대시보드
+evcs-ms	Online	충전기 상태 조회						충전기 상태 조회
+evcs-ms	Online	버스충전기상태조회(배치도편집)						버스충전기상태조회(배치도편집)
+evcs-ms	Online	충전소 운영						
+evcs-ms	Online	충전소 운영	충전이력현황(버스)					
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	법인별매출현황				법인별매출현황
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	운수사별매출현황				운수사별매출현황
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	충전이력상세조회				충전이력상세조회
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	사업장/충전소 별 시간대 충전량 추이 분석				사업장/충전소 별 시간대 충전량 추이 분석
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	개금차고지충전현황			페이지	개금차고지충전현황
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	충전이력조회-웰컴			페이지	충전이력조회-웰컴
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	충전이력조회-포항				충전이력조회-포항
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	차량별통계현황			페이지	차량별통계현황
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	차량별(운수사)통계현황				차량별(운수사)통계현황
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	가동률 대시보드				가동률 대시보드
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	월별 운수사별 충전량비교 분석				월별 운수사별 충전량비교 분석
+evcs-ms	Online	충전소 운영	충전이력현황(버스)	충전이력상세조회(NEW)			페이지	충전이력상세조회(NEW)
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	충전이력상세조회(NEW)			페이지	충전이력상세조회(NEW)
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	법인별매출현황				법인별매출현황
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	사용자유형별 매출 현황				사용자유형별 매출 현황
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	충전이력상세조회				충전이력상세조회
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	법인관리차량 충전이력상세조회				법인관리차량 충전이력상세조회
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	지도 기반 모니터링				지도 기반 모니터링
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	사업장/충전소 별 현황 분석				사업장/충전소 별 현황 분석
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	사업장/충전소/충전기 별 추이 분석				사업장/충전소/충전기 별 추이 분석
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	사업장/충전소 별 시간대 충전량 추이 분석				사업장/충전소 별 시간대 충전량 추이 분석
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	사업장/충전소별 비교분석				사업장/충전소별 비교분석
+evcs-ms	Online	충전소 운영	충전이력현황(일반)	사업장/충전소별 비교분석				월별 충전량비교 분석
+evcs-ms	Online	충전소 운영	결제정보관리					
+evcs-ms	Online	충전소 운영	결제정보관리	결제이력현황				결제이력현황
+evcs-ms	Online	충전소 운영	결제정보관리	취소/부분취소 미처리 관리				취소/부분취소 미처리 관리
+evcs-ms	Online	충전소 운영	결제정보관리	취소/부분취소 조치 내역 조회				취소/부분취소 조치 내역 조회
+evcs-ms	Online	충전소 운영	결제정보관리	취소/부분취소 미처리 관리				취소/부분취소 미처리 내역
+evcs-ms	Online	충전소 운영	결제정보관리	월별 고지서 관리				월별 고지서 관리
+evcs-ms	Online	충전소 운영	결제정보관리	판매단가정보관리				판매단가정보관리
+evcs-ms	Online	충전소 운영	결제정보관리	바로정산결제이력				바로정산결제이력
+evcs-ms	Online	충전소 운영	충전기 제어					
+evcs-ms	Online	충전소 운영	충전기 제어	펌웨어 관리				펌웨어 관리
+evcs-ms	Online	충전소 운영	충전기 제어	펌웨어 업데이트				펌웨어 업데이트
+evcs-ms	Online	충전소 운영	충전기 제어	충전기모드설정				충전기모드설정
+evcs-ms	Online	충전소 운영	충전기 제어	충전 전력 설정				충전 전력 설정
+evcs-ms	Online	충전소 운영	충전기 제어	충전기 SOC 설정				충전기 SOC 설정
+evcs-ms	Online	충전소 운영	충전기 제어	충전기 상태 원격제어				충전기 상태 원격제어
+evcs-ms	Online	충전소 운영	충전기 제어	충전기 사용일정 관리				충전기 사용일정 관리
+evcs-ms	Online	충전소 운영	충전기 제어	웹소켓 연결정보 설정				웹소켓 연결정보 설정
+evcs-ms	Online	충전소 운영	충전기 제어	충전기 인증 설정				충전기 인증 설정
+evcs-ms	Online	충전소 운영	충전기 제어	스마트충전암호화키관리				충전기 인증 설정
+evcs-ms	Online	충전소 운영	충전기 제어	스마트충전제어인증서 관리				스마트충전제어인증서 관리
+evcs-ms	Online	충전소 운영	충전기 장애/고장					
+evcs-ms	Online	충전소 운영	충전기 장애/고장	제조사별 장애코드관리			페이지	제조사별 장애코드관리
+evcs-ms	Online	충전소 운영	충전기 장애/고장	제조사별 장애코드관리			팝업	제조사별 장애코드 등록, 상세
+evcs-ms	Online	충전소 운영	충전기 장애/고장	충전기 장애 이력 조회				충전기 장애 이력 조회
+evcs-ms	Online	충전소 운영	충전기 장애/고장	고장접수				고장접수
+evcs-ms	Online	충전소 운영	충전기 장애/고장	충전이력검증				충전이력검증
+evcs-ms	Online	충전소 운영	충전기 장애/고장	충전종료 이상 현황				
+evcs-ms	Online	충전소 등록						
+evcs-ms	Online	충전소 등록	법인관리					
+evcs-ms	Online	충전소 등록	사업장목록					
+evcs-ms	Online	충전소 등록	한전계약단가 관리					
+evcs-ms	Online	충전소 등록	충전소목록					
+evcs-ms	Online	충전소 등록	파워뱅크관리					
+evcs-ms	Online	충전소 등록	충전기관리				페이지	충전기관리
+evcs-ms	Online	충전소 등록	충전기관리				팝업	충전기등록, 상세
+evcs-ms	Online	충전소 등록	충전기목록				페이지	충전기목록
+evcs-ms	Online	차량/인증 관리						
+evcs-ms	Online	차량/인증 관리	차량관리					
+evcs-ms	Online	차량/인증 관리	차량관리	버스모델관리			페이지	버스모델관리
+evcs-ms	Online	차량/인증 관리	차량관리	차량목록			페이지	차량목록
+evcs-ms	Online	차량/인증 관리	차량관리	차량목록			팝업	차량정보
+evcs-ms	Online	차량/인증 관리	차량관리	차량목록			팝업	로컬인증정보확인
+evcs-ms	Online	차량/인증 관리	차량관리	차량목록			팝업	SOH정보확인
+evcs-ms	Online	차량/인증 관리	차량관리	노선정보 관리				노선정보 관리
+evcs-ms	Online	차량/인증 관리	인증관리					
+evcs-ms	Online	차량/인증 관리	인증관리	RFID 정보				RFID 정보
+evcs-ms	Online	차량/인증 관리	인증관리	RFID 요청 처리				RFID 요청 처리
+evcs-ms	Online	차량/인증 관리	정비관리					
+evcs-ms	Online	차량/인증 관리	정비관리	부품협력사관리				
+evcs-ms	Online	차량/인증 관리	정비관리	정비카테고리관리				
+evcs-ms	Online	차량/인증 관리	정비관리	정비부품관리				
+evcs-ms	Online	차량/인증 관리	정비관리	정비내역등록				
+evcs-ms	Online	차량/인증 관리	정비관리	정비내역조회				
+evcs-ms	Online	차량/인증 관리	모니터링					
+evcs-ms	Online	차량/인증 관리	모니터링	최적 SOC 현황				
+evcs-ms	Online	시스템관리						
+evcs-ms	Online	시스템관리	시스템공통					
+evcs-ms	Online	시스템관리	시스템공통	역할관리				
+evcs-ms	Online	시스템관리	시스템공통	역할별메뉴관리				
+evcs-ms	Online	시스템관리	시스템공통	사용자관리				
+evcs-ms	Online	시스템관리	시스템공통	메뉴관리O				
+evcs-ms	Online	시스템관리	시스템공통	그룹코드관리O				
+evcs-ms	Online	시스템관리	시스템공통	시스템공통코드O				
+evcs-ms	Online	시스템관리	시스템공통	운영사업자공통코드O				
+evcs-ms	Online	시스템관리	시스템공통	법인공통코드O				
+evcs-ms	Online	시스템관리	시스템공통	운영사업자 관리O				
+evcs-ms	Online	시스템관리	시스템공통	휴일관리				
+evcs-ms	Online	시스템관리	시스템운영					
+evcs-ms	Online	시스템관리	시스템운영	공지사항				
+evcs-ms	Online	시스템관리	시스템운영	통신로그				
+evcs-ms	Online	시스템관리	시스템운영	배치 로그				
+evcs-ms	Online	시스템관리	시스템운영	배치 관리				
+evcs-ms	Online	시스템관리	시스템운영	시스템 접속기록				
+evcs-ms	Online	시스템관리	시스템운영	충전기 개소 관리			페이지	충전기 개소 관리
+evcs-ms	Online	시스템관리	시스템운영	충전기 개소 관리			팝업	충전기 개소 관리
+evcs-ms	Online	시스템관리	시스템운영	법인 관리자 앱 관리				
+evcs-ms	Online	시스템관리	시스템운영	커넥터 QR 코드 조회				
+evcs-ms	Online	시스템관리	시스템운영	OCPP 기준정보 관리				
+evcs-ms	Online	시스템관리	시스템운영	서울시 보조금 관리				
+evcs-ms	Online	시스템관리	시스템운영	사용자 개인화 관리				
+evcs-ms	Online	시스템관리	시스템운영	환경부BID관리				
+evcs-ms	Online	시스템관리	시스템운영	충전기모델관리			페이지	충전기모델관리
+evcs-ms	Online	시스템관리	시스템운영	충전기모델관리			팝업	충전기모델
+evcs-ms	Online	시스템관리	알람관리					
+evcs-ms	Online	시스템관리	알람관리	알람메일설정				
+evcs-ms	Online	시스템관리	알람관리	알람문자전송설정				
+evcs-ms	Online	시스템관리	알람관리	알람설정				
+evcs-ms	Online	시스템관리	로밍/결제 정보관리					
+evcs-ms	Online	시스템관리	로밍/결제 정보관리	운영사업자 법인관리			페이지	운영사업자 법인관리
+evcs-ms	Online	시스템관리	로밍/결제 정보관리	로밍정보관리				
+evcs-ms	Online	시스템관리	로밍/결제 정보관리	결제인증정보관리			페이지	결제인증정보관리
+evcs-ms	Online	시스템관리	로밍/결제 정보관리	바로정산관리			페이지	바로정산관리
+evcs-ms	Online	시스템관리	지급관리					
+evcs-ms	Online	시스템관리	지급관리	지급대행관리			페이지	지급대행관리
+evcs-ms	Online	시스템관리	지급관리	지급요청				
+evcs-ms	Online	시스템관리	지급관리	정산결과현황				
+evcs-ms	Online	시스템관리	지급관리	송금결과				
+evcs-ms	Online	시스템관리	리포트관리					
+evcs-ms	Online	시스템관리	리포트관리	공급업체관리				
+evcs-ms	Online	시스템관리	리포트관리	상호등록				
+evcs-ms	Online	시스템관리	리포트관리	용역업체관리				
+evcs-ms	Online	시스템관리	리포트관리	리포트출력				
+evcs-ms	Online	시스템관리	리포트관리	리포트이력				
+evcs-ms	Online	시스템관리	리포트관리	리포트발송				
+evcs-ms	Online	시스템관리	리포트관리	리포트이메일템플릿				
+evcs-ms	Online	시스템관리	리포트관리	전기안전설비템플릿				
+evcs-ms	Online	시스템관리	리포트관리	전기설비점검결과이력				
+evcs-ms	Online	시스템관리	리포트관리	전기설비점검결과등록				
+evcs-ms	Online	시스템관리	리포트관리2					
+evcs-ms	Online	시스템관리	리포트관리2	충전서비스업체관리				
+evcs-ms	Online	시스템관리	리포트관리2	거래처관리				
+evcs-ms	Online	시스템관리	리포트관리2	계약관리				
+evcs-ms	Online	시스템관리	리포트관리2	리포트관리				
+evcs-ms	Online	시스템관리	리포트관리2	리포트발송			페이지	리포트 발송
+evcs-ms	Online	시스템관리	리포트관리2	리포트발송			팝업	거래명세서 리포트 팝업
+evcs-ms	Online	시스템관리	리포트관리2	리포트발송			팝업	사용전력요금 청구서 팝업
+evcs-ms	Online	시스템관리	리포트관리2	리포트발송			팝업	충전이력 팝업
+evcs-ms	Online	시스템관리	리포트관리2	리포트발송			팝업	임대료 팝업
+evcs-ms	Online	시스템관리	리포트관리2	리포트발송			팝업	용역 팝업
