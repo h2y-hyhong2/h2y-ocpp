@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CPO 통합 운영 솔루션 Phase 1 POC 정의서</title>
+  <title>CPO CSMS Lite Phase 1 POC 정의서</title>
   <!-- Google Fonts & Pretendard -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -366,7 +366,7 @@
   <!-- Navigation Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1>CPO CSMS Platform<span>Phase 1 POC Guide</span></h1>
+      <h1>CPO CSMS Lite<span>Phase 1 POC Guide</span></h1>
     </div>
     <ul class="nav-list">
       <li class="nav-item active">
@@ -570,7 +570,7 @@
         </li>
         <li><strong>24주차 (Week 24):</strong>
           <ul>
-            <li><strong>[인프라/배포]</strong> 완전 폐쇄망(Air-Gapped) 내 독립 실행 배포본 패키징 및 최종 통합 검증 완료 (M1 달성).</li>
+            <li><strong>[인프라/배포]</strong> Makeself(Linux .run) 및 Inno Setup(Windows .exe) 기반 단일 실행 파일(Single Installer) 오프라인 패키징 빌드 스크립트 작성, 완전 폐쇄망(Air-Gapped) 내 독립 실행 배포본 패키징 및 최종 통합 검증 완료 (M1 달성).</li>
           </ul>
         </li>
       </ul>
@@ -673,6 +673,22 @@
           <ul>
             <li>특정 충전기에 기기 통신 장애가 발생하여 관제사가 정밀 디버깅을 원할 경우, 시스템 재기동 없이 해당 충전기 ID에 대해서만 동적으로 <code>WireTap</code> 패턴을 활성화합니다.</li>
             <li>실시간 수신되는 OCPP 메시지의 복사본을 디버깅용 웹소켓 채널(<code>debugConsoleChannel</code>)로 분기 유도하여 관리자 화면의 실시간 로그 뷰어에 통신 디버깅 스트림을 노출합니다.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>2.6. 폐쇄망 원클릭 단일 인스톨러 패키징 (Single-File Offline Installer)</h3>
+      <ul>
+        <li><strong>리눅스(Linux) 환경 패키징 (Makeself):</strong>
+          <ul>
+            <li>Makeself 자가 추출형 아카이브 도구를 활용하여 오프라인 Docker 설치 패키지(RPM/DEB), 통합 컨테이너 DTO 이미지 백업본(<code>ocpp-lite-images.tar</code>), <code>docker-compose.yml</code> 및 기동 쉘 스크립트(<code>install.sh</code>)를 단 하나의 <code>install.run</code> 실행 파일로 패키징합니다.</li>
+            <li>실행 시 호스트의 Docker 설치 유무를 식별하여 미설치 시 내장된 패키지로 무인 설치(Silent Install)를 수행한 후, 컨테이너 이미지를 일괄 로드하여 서비스를 최종 기동합니다.</li>
+          </ul>
+        </li>
+        <li><strong>윈도우(Windows) 환경 패키징 (Inno Setup):</strong>
+          <ul>
+            <li>Inno Setup 컴파일러를 활용하여 모든 설치 파일을 하나의 <code>setup.exe</code> 파일로 압축 패키징합니다.</li>
+            <li>설치 마법사 동작 과정에서 백그라운드로 Docker Desktop 설치 프로세스를 자동 대행하고, 이미지를 로드하여 <code>docker-compose</code> 구동까지 일괄 처리하는 배치 스크립트(<code>install.bat</code>)를 구동합니다.</li>
           </ul>
         </li>
       </ul>
@@ -1184,6 +1200,12 @@ ws.on('open', function open() {
             <td><strong>6. 동적 채널 격리</strong></td>
             <td>특정 기기(CP) 트래픽에 대한 격리(Sandbox) 런타임 적용 여부</td>
             <td><code>DynamicChannelService.isolateChargePoint("CP_1001")</code> 호출 후, 어플리케이션 로그에 <code>[Traffic Sandbox] 격리 채널 유입</code> 출력 확인</td>
+            <td><span class="badge badge-success">승인 대기</span></td>
+          </tr>
+          <tr>
+            <td><strong>7. 단일 인스톨러</strong></td>
+            <td>Makeself 또는 Inno Setup 기반 패키지 구동 검증</td>
+            <td><code>install.run</code> (리눅스) 또는 <code>setup.exe</code> (윈도우) 기동 후 Docker 자동 설치 및 서비스 기동 확인</td>
             <td><span class="badge badge-success">승인 대기</span></td>
           </tr>
         </tbody>

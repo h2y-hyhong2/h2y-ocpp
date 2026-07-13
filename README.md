@@ -1,4 +1,4 @@
-# CPO 통합 운영 솔루션 (Integrated CSMS Platform)
+# CPO CSMS Lite (Integrated CSMS Platform)
 
 전기차 충전 인프라의 효율적 관리를 위한 CPO(Charge Point Operator) 전용 고성능 통합 관리 시스템(CSMS) 프로젝트 저장소입니다.
 
