@@ -397,7 +397,8 @@
           <li class="sub-nav-item"><a href="#overview-values">1.1. 핵심 가치</a></li>
           <li class="sub-nav-item"><a href="#overview-timeline">1.2. 개발 로드맵 및 일정</a></li>
           <li class="sub-nav-item"><a href="#overview-architecture">1.3. 개념 아키텍처</a></li>
-          <li class="sub-nav-item"><a href="#overview-kpis">1.4. 핵심 성능 지표</a></li>
+          <li class="sub-nav-item"><a href="#overview-software">1.4. 소프트웨어 아키텍처</a></li>
+          <li class="sub-nav-item"><a href="#overview-kpis">1.5. 핵심 성능 지표</a></li>
         </ul>
       </li>
       <li class="nav-item">
@@ -653,9 +654,67 @@
             GW1 & GW2 -.-> CP1 & CP2
       </div>
 
+      <h3 id="overview-software">1.4. 소프트웨어 아키텍처 (Software Layered Architecture)</h3>
+      <p>솔루션 내부의 소프트웨어 레이어는 결합도를 낮추고 처리 성능을 극대화하기 위해 다층 레이어드 구조(Layered Architecture) 및 메시지 기반 이벤트 주도 아키텍처(Event-Driven Architecture)로 설계되었습니다.</p>
 
+      <div class="mermaid">
+        flowchart TD
+            subgraph Client ["클라이언트 레이어 (Presentation Layer)"]
+                UI["어드민 웹 UI (Vue 3 / SPA)"]
+            end
 
-      <h3 id="overview-kpis">1.4. 핵심 성능 지표 (Key Performance Indicators)</h3>
+            subgraph GW ["게이트웨이 레이어 (Gateway Layer)"]
+                WS["WebSocket Gateway Handler (Netty / SSL)"]
+                SessionMgr["세션 관리자 (Session Manager)"]
+                WS --> SessionMgr
+            end
+
+            subgraph Broker ["메시지 브로커 레이어 (Message Broker Layer)"]
+                RawEvents["Kafka raw-events (Uplink Topic)"]
+                CtrlCmds["Kafka control-commands (Downlink Topic)"]
+            end
+
+            subgraph Core ["비즈니스 코어 레이어 (Business Core Layer - Java Virtual Threads)"]
+                OCPPAgent["OCPP 프로토콜 핸들러 (Core / Firmware)"]
+                SettEngine["TOU 정산 엔진 (TOU Settlement Engine)"]
+                FaultMgr["장애 전이 감지기 (Fault Handler)"]
+                SmartCharger["스마트 차징 스케줄러 (Smart Charging Scheduler)"]
+            end
+
+            subgraph DB ["퍼시스턴스 레이어 (Persistence Layer)"]
+                Postgres["PostgreSQL (OLTP) - 자산/정산원장/회원"]
+                ClickHouse["ClickHouse (OLAP) - MeterValues/원본로그"]
+                Redis["Redis (Cache/PubSub) - 분산세션/명령라우팅"]
+            end
+
+            %% 데이터 흐름
+            UI <-->|HTTP REST / WebSocket| WS
+            WS -->|Uplink raw JSON| RawEvents
+            RawEvents -->|Consume| OCPPAgent
+            OCPPAgent --> FaultMgr & SettEngine & SmartCharger
+            
+            FaultMgr & SettEngine & SmartCharger -->|SQL CRUD| Postgres
+            OCPPAgent -->|Bulk Insert 시계열| ClickHouse
+            OCPPAgent -->|세션 상태 조회/저장| Redis
+            
+            %% 다운링크 제어 흐름
+            UI -.->|API Call| Core
+            Core -.->|Produce Command| CtrlCmds
+            CtrlCmds -.->|Consume Cmd| WS
+      </div>
+
+      <div class="callout">
+        <div class="callout-title">📌 핵심 구조 및 설계 원칙</div>
+        <div class="callout-content">
+          <ul>
+            <li><strong>비차단 이벤트 루프 게이트웨이:</strong> 충전기와의 웹소켓 접점(Gateway)과 무거운 비즈니스 연산 코어가 Kafka를 매개로 비동기 분리되어, 통신 연결 보장과 비즈니스 처리의 부하가 상호 영향을 미치지 않도록 설계되었습니다.</li>
+            <li><strong>가상 스레드(Virtual Threads) 기반 작업 분배:</strong> Spring Boot의 기본 동기식 처리 흐름을 가상 스레드 풀로 위임하여, 스레드 블로킹 오버헤드 없이 수천 건의 동시 DB 트랜잭션 및 파일 배포 IO를 대기 시간 없이 안정적으로 수행합니다.</li>
+            <li><strong>CQRS 데이터 이원화 저장:</strong> 정적 데이터 변경 및 금융/정산 정합성을 보장하는 정보는 PostgreSQL(OLTP)이 처리하고, 수천 대의 충전기로부터 쏟아지는 변경 불가능한 실시간 패킷 및 미터값 로그는 ClickHouse(OLAP) 시계열 테이블에 고속으로 벌크 인서트 처리합니다.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 id="overview-kpis">1.5. 핵심 성능 지표 (Key Performance Indicators)</h3>
       <ul>
         <li><strong>동시 연결 대수 (Concurrent Connections):</strong>
           <ul>
