@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CPO CSMS Lite PRD (Integrated CSMS Platform)</title>
+  <title>CPO<a href="#fn-cpo" id="fnref-cpo" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CPO]</a> CSMS<a href="#fn-csms" id="fnref-csms" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CSMS]</a> Lite PRD (Integrated CSMS Platform)</title>
   <!-- Google Fonts & Pretendard -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -421,7 +421,7 @@
         <a href="#features">3. 핵심 기능 목록</a>
         <ul class="sub-nav-list">
           <li class="sub-nav-item"><a href="#features-assets">3.1. 자산 관리</a></li>
-          <li class="sub-nav-item"><a href="#features-ocpp">3.2. OCPP 명세</a></li>
+          <li class="sub-nav-item"><a href="#features-ocpp">3.2. OCPP<a href="#fn-ocpp" id="fnref-ocpp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OCPP]</a> 명세</a></li>
           <li class="sub-nav-item"><a href="#features-alarms">3.3. 알림 등급</a></li>
         </ul>
       </li>
@@ -429,12 +429,12 @@
         <a href="#specs">4. 상세 기술 명세</a>
         <ul class="sub-nav-list">
           <li class="sub-nav-item"><a href="#specs-stack">4.1. 기술 스택</a></li>
-          <li class="sub-nav-item"><a href="#specs-db">4.2. 하이브리드 DB</a></li>
+          <li class="sub-nav-item"><a href="#specs-db">4.2. 하이브리드 DB<a href="#fn-db" id="fnref-db" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[DB]</a></a></li>
           <li class="sub-nav-item"><a href="#specs-schema">4.3. DB 스키마</a></li>
         </ul>
       </li>
       <li class="nav-item">
-        <a href="#design">5. 디자인 & UI/UX</a>
+        <a href="#design">5. 디자인 & UI<a href="#fn-ui" id="fnref-ui" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[UI]</a>/UX<a href="#fn-ux" id="fnref-ux" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[UX]</a></a>
         <ul class="sub-nav-list">
           <li class="sub-nav-item"><a href="#design-style">5.1. 디자인 스타일</a></li>
           <li class="sub-nav-item"><a href="#design-3d">5.2. 3D 디지털 트윈 (별도)</a></li>
@@ -479,7 +479,7 @@
       </div>
 
       <h3 id="overview-timeline">1.2. 개발 로드맵 및 마일스톤 (Timeline & Milestones)</h3>
-      <p>본 프로젝트는 Phase 1 (Standalone 필수 구축) 6개월, Phase 2 (HA 분산 클러스터 및 고도화) 6개월을 배정하여 총 12개월(1년)의 일정으로 진행됩니다.</p>
+      <p>본 프로젝트는 Phase 1 (Standalone 필수 구축) 6개월, Phase 2 (HA<a href="#fn-ha" id="fnref-ha" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[HA]</a> 분산 클러스터 및 고도화) 6개월을 배정하여 총 12개월(1년)의 일정으로 진행됩니다.</p>
       
       <div class="mermaid">
         gantt
@@ -489,7 +489,7 @@
             
             section Phase 1 (★ Standalone 필수 개발 및 안착 - 6개월)
             인프라 구성 및 설계        :crit, active, p1_infra, 2026-07-13, 28d
-            OCPP 1.6J GW & Uplink 개발   :crit, p1_gw, after p1_infra, 28d
+            OCPP 1.6J GW<a href="#fn-gw" id="fnref-gw" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[GW]</a> & Uplink 개발   :crit, p1_gw, after p1_infra, 28d
             비즈니스 로직 & 백엔드 코어 개발 :crit, p1_biz, after p1_gw, 28d
             프론트엔드 UI & 오프라인 맵 개발 :crit, p1_fe, after p1_biz, 28d
             정산 엔진 및 장애 관리 구축    :crit, p1_twin, after p1_fe, 28d
@@ -499,7 +499,7 @@
             분산 웹소켓 & 세션공유 구축      : p2_infra, after p1_test, 28d
             DB & Kafka 분산 클러스터 다중화 : p2_db, after p2_infra, 28d
             버스 차고지 관제 & 물류 특화 개발  : p2_bus, after p2_db, 28d
-            스마트차징 & FOTA 관리 고도화   : p2_smart, after p2_bus, 28d
+            스마트차징 & FOTA<a href="#fn-fota" id="fnref-fota" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[FOTA]</a> 관리 고도화   : p2_smart, after p2_bus, 28d
             roaming 연동 & 결제 취소 관리   : p2_roam, after p2_smart, 28d
             지급대행, 리포트 & 최종 M3 검증   : p2_final, after p2_roam, 28d
       </div>
@@ -507,7 +507,7 @@
       <h3 id="overview-architecture">1.3. 시스템 아키텍처 후보안 비교 (System Architecture Options)</h3>
       <p>솔루션 구축 및 미래 서비스 확장을 고려하여 두 가지 아키텍처 후보군을 비교 검토했습니다. 본 프로젝트는 <strong>수평 확장(Scale-out) 대응 및 코드 안정성이 우수한 [제 1안: Spring Integration 버전]을 권장안으로 채택</strong>하여 진행합니다.</p>
 
-      <h4 id="arch-option1">[제 1안: Spring Integration 버전 - 권장] EIP 기반 분산 진화형 아키텍처</h4>
+      <h4 id="arch-option1">[제 1안: Spring Integration 버전 - 권장] EIP<a href="#fn-eip" id="fnref-eip" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[EIP]</a> 기반 분산 진화형 아키텍처</h4>
       <p>웹소켓 통신 게이트웨이와 비즈니스 코어 엔진을 물리적/논리적으로 분리하고, Spring Integration(EIP) 및 Kafka 메시지 버스를 도입하여 비동기 처리 파이프라인을 구축합니다.</p>
       
       <div class="callout" style="background-color: rgba(79, 70, 229, 0.04); border-left: 4px solid var(--primary-color);">
@@ -515,7 +515,7 @@
         <div class="callout-content">
           <ul>
             <li><strong>무혈 분산 스위칭:</strong> 개발 코드의 변경 없이 설정 전환만으로 Phase 1(단일 브로커 KafkaChannel)에서 Phase 2(HA 클러스터 분산 KafkaChannel)로 즉시 수평 확장 가능.</li>
-            <li><strong>장애 격리:</strong> DB 병목 및 API 지연이 실시간 충전기 웹소켓 세션 유지에 영향을 주지 않음.</li>
+            <li><strong>장애 격리:</strong> DB 병목 및 API<a href="#fn-api" id="fnref-api" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[API]</a> 지연이 실시간 충전기 웹소켓 세션 유지에 영향을 주지 않음.</li>
             <li><strong>보일러플레이트 제거:</strong> 라우터, 트랜스포머 등 EIP 패키지 활용으로 코드 표준화.</li>
             <li><strong>단점:</strong> 구조적 추상화 수준이 높아 초반 진입 장벽 및 설정 공수가 다소 필요함.</li>
           </ul>
@@ -523,7 +523,7 @@
       </div>
 
       <h5>[제 1안] Phase 1: 1대 운영 모드 (초기 및 Standalone 배포)</h5>
-      <p>단일 가상 머신(VM) 또는 하드웨어 내에서 Kafka 단일 브로커(KRaft 모드)와 PostgreSQL 단독 인스턴스만을 결합하여 구동합니다. 웹소켓 게이트웨이와 비즈니스 코어 간의 주요 채널(ocppRawChannel, controlCommandChannel)에 Kafka 단일 브로커를 메시지 버스로 연동하여 실시간 완충 및 장애 격리를 활성화하며, 별도의 분산 세션 공유 미들웨어(Redis) 없이 JVM 로컬 메모리로 세션을 관리합니다.</p>
+      <p>단일 가상 머신(VM) 또는 하드웨어 내에서 Kafka 단일 브로커(KRaft 모드)와 PostgreSQL 단독 인스턴스만을 결합하여 구동합니다. 웹소켓 게이트웨이와 비즈니스 코어 간의 주요 채널(ocppRawChannel, controlCommandChannel)에 Kafka 단일 브로커를 메시지 버스로 연동하여 실시간 완충 및 장애 격리를 활성화하며, 별도의 분산 세션 공유 미들웨어(Redis) 없이 JVM<a href="#fn-jvm" id="fnref-jvm" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[JVM]</a> 로컬 메모리로 세션을 관리합니다.</p>
 
       <div class="mermaid">
         flowchart TB
@@ -535,13 +535,13 @@
             subgraph Host ["단일 호스트 (Single Host VM / Server)"]
 
                 subgraph GW_Layer ["게이트웨이 레이어 (Gateway Layer)"]
-                    WSAdapter["WebSocket Inbound Adapter (Netty / SSL)"]
+                    WSAdapter["WebSocket Inbound Adapter (Netty / SSL<a href="#fn-ssl" id="fnref-ssl" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[SSL]</a>)"]
                     SessionMgr["세션 관리자 (LocalSessionStore - ConcurrentHashMap)"]
                 end
 
                 subgraph SI_Bus ["Spring Integration EIP 파이프라인 (KafkaChannel & DirectChannel)"]
                     RawCh["ocppRawChannel (KafkaChannel)"]
-                    Transformer["OCPP JSON-to-DTO Transformer"]
+                    Transformer["OCPP JSON-to-DTO<a href="#fn-dto" id="fnref-dto" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[DTO]</a> Transformer"]
                     DtoCh["ocppDtoChannel (DirectChannel)"]
                     Router{"Payload-Type Router"}
                     CtrlCh["controlCommandChannel (KafkaChannel)"]
@@ -549,7 +549,7 @@
 
                 subgraph Core ["비즈니스 코어 레이어 (Virtual Threads)"]
                     OCPPHandler["OCPP 프로토콜 핸들러"]
-                    Settlement["TOU 정산 엔진"]
+                    Settlement["TOU<a href="#fn-tou" id="fnref-tou" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[TOU]</a> 정산 엔진"]
                     FaultMgr["장애 전이 감지기"]
                 end
 
@@ -558,8 +558,8 @@
                 end
 
                 subgraph DB ["퍼시스턴스 레이어"]
-                    Postgres["PostgreSQL (OLTP)"]
-                    ClickHouse["ClickHouse (OLAP)"]
+                    Postgres["PostgreSQL (OLTP<a href="#fn-oltp" id="fnref-oltp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLTP]</a>)"]
+                    ClickHouse["ClickHouse (OLAP<a href="#fn-olap" id="fnref-olap" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLAP]</a>)"]
                 end
 
                 subgraph Admin ["클라이언트 레이어"]
@@ -580,7 +580,7 @@
             Router -->|MeterValues| ClickHouse
             Router -->|StatusNotification| FaultMgr
             OCPPHandler --> Settlement
-            OCPPHandler -->|SQL CRUD| Postgres
+            OCPPHandler -->|SQL CRUD<a href="#fn-crud" id="fnref-crud" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CRUD]</a>| Postgres
             Settlement -->|정산 원장 저장| Postgres
             FaultMgr -->|장애 이력 저장| Postgres
             FaultMgr -->|실시간 알림 Push| VueApp
@@ -969,8 +969,8 @@
           <ol>
             <li><strong>제로 코드 변경 분산 전환:</strong> Phase 1과 Phase 2 모두 동일한 KafkaChannel 기반의 코드를 사용하므로 개발 코드의 변경이 전혀 필요 없으며, 단독 구동(단일 브로커)에서 대형 서비스 확장(분산 클러스터) 시 설정 조절만으로 분산 전환됩니다. 제 2안(Spring Boot 버전)은 Phase 2 전환 시 인프라 연동 및 라우팅 코드를 대거 새로 코딩해야 하여 리팩토링 비용이 수반됩니다.</li>
             <li><strong>도메인과 인프라의 결합도 제거:</strong> 제 1안은 EIP 프레임워크가 Kafka 메시지 통신을 완벽히 추상화하여 비즈니스 서비스 클래스가 외부 메시지 큐 인터페이스에 오염되지 않습니다. 반면 제 2안은 `@KafkaListener`와 `KafkaTemplate`이 비즈니스 도메인 서비스 클래스에 침투하여 향후 유지보수 복잡도를 증대시킵니다.</li>
-            <li><strong>장애 격리에 의한 SLA 보장:</strong> 충전기 웹소켓 세션(Gateway)과 비즈니스 연산(Core)이 Kafka를 매개로 물리적 비동기 분리되어, DB 또는 정산 배치 처리의 병목이 실시간 충전기 연결 유지에 영향을 미치지 않습니다. 이는 군부대·정부기관 등 고가용성이 요구되는 폐쇄망 환경의 SLA 조건을 충족하는 데 핵심적입니다.</li>
-            <li><strong>초기 오버헤드 수용 가능:</strong> 제 1안(Spring Integration 버전)의 단점인 Kafka 추가 리소스(512MB 힙) 및 설정 복잡도 증가는 Section 6.3의 경량화 튜닝 설정으로 충분히 상쇄 가능하며, Phase 1 하드웨어 권장 스펙(32GB RAM 이상) 기준으로 전체 시스템 메모리의 1.6%에 불과합니다.</li>
+            <li><strong>장애 격리에 의한 SLA<a href="#fn-sla" id="fnref-sla" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[SLA]</a> 보장:</strong> 충전기 웹소켓 세션(Gateway)과 비즈니스 연산(Core)이 Kafka를 매개로 물리적 비동기 분리되어, DB 또는 정산 배치 처리의 병목이 실시간 충전기 연결 유지에 영향을 미치지 않습니다. 이는 군부대·정부기관 등 고가용성이 요구되는 폐쇄망 환경의 SLA 조건을 충족하는 데 핵심적입니다.</li>
+            <li><strong>초기 오버헤드 수용 가능:</strong> 제 1안(Spring Integration 버전)의 단점인 Kafka 추가 리소스(512MB 힙) 및 설정 복잡도 증가는 Section 6.3의 경량화 튜닝 설정으로 충분히 상쇄 가능하며, Phase 1 하드웨어 권장 스펙(32GB RAM<a href="#fn-ram" id="fnref-ram" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[RAM]</a> 이상) 기준으로 전체 시스템 메모리의 1.6%에 불과합니다.</li>
           </ol>
           <p><strong>제 2안(Spring Boot 버전) 유보 사유:</strong></p>
           <ul>
@@ -1095,7 +1095,7 @@
           <ul>
             <li><strong>비차단 이벤트 루프 게이트웨이:</strong> 충전기와의 웹소켓 접점(Gateway)과 무거운 비즈니스 연산 코어가 Kafka를 매개로 비동기 분리되어, 통신 연결 보장과 비즈니스 처리의 부하가 상호 영향을 미치지 않도록 설계되었습니다.</li>
             <li><strong>가상 스레드(Virtual Threads) 기반 작업 분배:</strong> Spring Boot의 기본 동기식 처리 흐름을 가상 스레드 풀로 위임하여, 스레드 블로킹 오버헤드 없이 수천 건의 동시 DB 트랜잭션 및 파일 배포 IO를 대기 시간 없이 안정적으로 수행합니다.</li>
-            <li><strong>CQRS 데이터 이원화 저장:</strong> 정적 데이터 변경 및 금융/정산 정합성을 보장하는 정보는 PostgreSQL(OLTP)이 처리하고, 수천 대의 충전기로부터 쏟아지는 변경 불가능한 실시간 패킷 및 미터값 로그는 ClickHouse(OLAP) 시계열 테이블에 고속으로 벌크 인서트 처리합니다.</li>
+            <li><strong>CQRS<a href="#fn-cqrs" id="fnref-cqrs" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CQRS]</a> 데이터 이원화 저장:</strong> 정적 데이터 변경 및 금융/정산 정합성을 보장하는 정보는 PostgreSQL(OLTP)이 처리하고, 수천 대의 충전기로부터 쏟아지는 변경 불가능한 실시간 패킷 및 미터값 로그는 ClickHouse(OLAP) 시계열 테이블에 고속으로 벌크 인서트 처리합니다.</li>
           </ul>
         </div>
       </div>
@@ -1109,7 +1109,7 @@
             <li><strong>Phase 2:</strong> HA Cluster 구성 시 최대 10,000대 이상.</li>
           </ul>
         </li>
-        <li><strong>메시지 처리 성능 (Throughput):</strong> Peak 시 최소 2,000 TPS(Transactions Per Second) 이상의 OCPP 메시지 처리.</li>
+        <li><strong>메시지 처리 성능 (Throughput):</strong> Peak 시 최소 2,000 TPS<a href="#fn-tps" id="fnref-tps" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[TPS]</a>(Transactions Per Second) 이상의 OCPP 메시지 처리.</li>
         <li><strong>응답 지연 시간 (Latency):</strong> 게이트웨이 유입부터 비즈니스 처리 완료까지 평균 100ms 이하.</li>
         <li><strong>원격 제어 지연 시간 (Command Latency):</strong> 관리자 명령 하달 후 충전기 도달까지 500ms 이내.</li>
       </ul>
@@ -1220,11 +1220,11 @@
             participant GW as 게이트웨이 (Spring Boot WS)
             participant Kafka as Apache Kafka
             participant Core as 비즈니스 코어 (Spring)
-            participant PG as PostgreSQL (OLTP DB)
+            participant PG<a href="#fn-pg" id="fnref-pg" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[PG]</a> as PostgreSQL (OLTP DB)
             participant CH as ClickHouse (OLAP DB)
 
             %% 1. 인증 및 충전 시작
-            User->>CP: RFID 태깅 또는 앱 충전 시작 버튼 클릭
+            User->>CP: RFID<a href="#fn-rfid" id="fnref-rfid" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[RFID]</a> 태깅 또는 앱 충전 시작 버튼 클릭
             CP->>GW: Authorize.req(idTag)
             GW->>Kafka: raw-events 토픽 발행 (인증 요청)
             Kafka->>Core: raw-events 컨슘 및 회원 검증 진행
@@ -1503,7 +1503,7 @@ SETTINGS index_granularity = 8192;</code></pre>
         </thead>
         <tbody>
           <tr>
-            <td><strong>CPU</strong></td>
+            <td><strong>CPU<a href="#fn-cpu" id="fnref-cpu" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CPU]</a></strong></td>
             <td>8 Cores (x86_64 or ARM64)</td>
             <td>16 Cores 이상</td>
             <td>Java Virtual Threads 및 ClickHouse 분석 병렬 처리용.</td>
@@ -1516,7 +1516,7 @@ SETTINGS index_granularity = 8192;</code></pre>
           </tr>
           <tr>
             <td><strong>Storage</strong></td>
-            <td>OS(256GB SSD x1) + Data(1TB SSD x1) <br><strong>[총 2개]</strong></td>
+            <td>OS(256GB SSD<a href="#fn-ssd" id="fnref-ssd" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[SSD]</a> x1) + Data(1TB SSD x1) <br><strong>[총 2개]</strong></td>
             <td>OS(256GB SSD x1) + PG(1TB SSD x1) + Kafka(500GB SSD x1) + CH(2TB NVMe SSD x1) <br><strong>[총 4개]</strong></td>
             <td>OS 구동, Kafka 순차 쓰기, PG 트랜잭션, ClickHouse 벌크 적재 간 I/O 경합(Contention) 방지를 위해 물리 디스크를 완전히 분리하여 마운트 필수.</td>
           </tr>
@@ -1561,7 +1561,7 @@ SETTINGS index_granularity = 8192;</code></pre>
             <td><strong>PostgreSQL Database Node (x1대)</strong></td>
             <td>4 Cores CPU / 8 GB RAM / 300 GB SSD / 1 Gbps NIC</td>
             <td>8 Cores CPU / 16 GB RAM / 1 TB 이상 SSD / 10 Gbps NIC</td>
-            <td>PostgreSQL 15/16 (OLTP 튜닝 및 WAL 로그 버퍼 조정, 복제 지연 최소화, 트랜잭션/CDR 이력용)</td>
+            <td>PostgreSQL 15/16 (OLTP 튜닝 및 WAL<a href="#fn-wal" id="fnref-wal" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[WAL]</a> 로그 버퍼 조정, 복제 지연 최소화, 트랜잭션/CDR 이력용)</td>
           </tr>
           <tr>
             <td><strong>ClickHouse Database Node (x1대)</strong></td>
@@ -1588,7 +1588,122 @@ SETTINGS index_granularity = 8192;</code></pre>
         <li><strong>ClickHouse 메모리 제한 설정:</strong> <code>users.xml</code> 설정 내에서 단일 쿼리당 최대 메모리 사용 임계치를 제한(<code>max_memory_usage = 4000000000</code> - 4GB)하여 OOM을 원천 차단합니다.</li>
       </ul>
     </section>
-  </main>
+        <!-- Footnotes Section -->
+      <hr style="margin-top: 40px; border: 0; border-top: 1px solid var(--border-color);">
+      <section class="footnotes" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 20px;">
+        <h4 style="margin-bottom: 10px; color: var(--text-primary);">약어 정의 (Footnotes)</h4>
+        <ul style="list-style-type: none; padding-left: 0;">
+          <li id="fn-api" style="margin-bottom: 6px;">
+            <a href="#fnref-api" style="text-decoration: none; color: var(--primary-color);"><sup>[API]</sup></a>
+            <strong>API (Application Programming Interface):</strong> 응용 프로그램 프로그래밍 인터페이스
+          </li>
+          <li id="fn-cpo" style="margin-bottom: 6px;">
+            <a href="#fnref-cpo" style="text-decoration: none; color: var(--primary-color);"><sup>[CPO]</sup></a>
+            <strong>CPO (Charge Point Operator):</strong> 전기차 충전소 운영 사업자
+          </li>
+          <li id="fn-cpu" style="margin-bottom: 6px;">
+            <a href="#fnref-cpu" style="text-decoration: none; color: var(--primary-color);"><sup>[CPU]</sup></a>
+            <strong>CPU (Central Processing Unit):</strong> 중앙 처리 장치
+          </li>
+          <li id="fn-cqrs" style="margin-bottom: 6px;">
+            <a href="#fnref-cqrs" style="text-decoration: none; color: var(--primary-color);"><sup>[CQRS]</sup></a>
+            <strong>CQRS (Command Query Responsibility Segregation):</strong> 명령 및 조회 책임 분리 패턴
+          </li>
+          <li id="fn-crud" style="margin-bottom: 6px;">
+            <a href="#fnref-crud" style="text-decoration: none; color: var(--primary-color);"><sup>[CRUD]</sup></a>
+            <strong>CRUD (Create, Read, Update, Delete):</strong> 생성, 조회, 수정, 삭제의 기본 데이터 가동 기능
+          </li>
+          <li id="fn-csms" style="margin-bottom: 6px;">
+            <a href="#fnref-csms" style="text-decoration: none; color: var(--primary-color);"><sup>[CSMS]</sup></a>
+            <strong>CSMS (Charging Station Management System):</strong> 충전기 통합 관리 시스템
+          </li>
+          <li id="fn-db" style="margin-bottom: 6px;">
+            <a href="#fnref-db" style="text-decoration: none; color: var(--primary-color);"><sup>[DB]</sup></a>
+            <strong>DB (Database):</strong> 데이터베이스
+          </li>
+          <li id="fn-dto" style="margin-bottom: 6px;">
+            <a href="#fnref-dto" style="text-decoration: none; color: var(--primary-color);"><sup>[DTO]</sup></a>
+            <strong>DTO (Data Transfer Object):</strong> 데이터 전송 객체
+          </li>
+          <li id="fn-eip" style="margin-bottom: 6px;">
+            <a href="#fnref-eip" style="text-decoration: none; color: var(--primary-color);"><sup>[EIP]</sup></a>
+            <strong>EIP (Enterprise Integration Patterns):</strong> 기업 통합 패턴 (소프트웨어 아키텍처 디자인 패턴)
+          </li>
+          <li id="fn-fota" style="margin-bottom: 6px;">
+            <a href="#fnref-fota" style="text-decoration: none; color: var(--primary-color);"><sup>[FOTA]</sup></a>
+            <strong>FOTA (Firmware Over-The-Air):</strong> 무선 펌웨어 업데이트
+          </li>
+          <li id="fn-gw" style="margin-bottom: 6px;">
+            <a href="#fnref-gw" style="text-decoration: none; color: var(--primary-color);"><sup>[GW]</sup></a>
+            <strong>GW (Gateway):</strong> 게이트웨이 (서버/기기 간의 통신 접점)
+          </li>
+          <li id="fn-ha" style="margin-bottom: 6px;">
+            <a href="#fnref-ha" style="text-decoration: none; color: var(--primary-color);"><sup>[HA]</sup></a>
+            <strong>HA (High Availability):</strong> 고가용성 (서버 다중화 등을 통한 서비스 중단 최소화 설계)
+          </li>
+          <li id="fn-jvm" style="margin-bottom: 6px;">
+            <a href="#fnref-jvm" style="text-decoration: none; color: var(--primary-color);"><sup>[JVM]</sup></a>
+            <strong>JVM (Java Virtual Machine):</strong> 자바 가상 머신
+          </li>
+          <li id="fn-ocpp" style="margin-bottom: 6px;">
+            <a href="#fnref-ocpp" style="text-decoration: none; color: var(--primary-color);"><sup>[OCPP]</sup></a>
+            <strong>OCPP (Open Charge Point Protocol):</strong> 개방형 충전 통신 규격
+          </li>
+          <li id="fn-olap" style="margin-bottom: 6px;">
+            <a href="#fnref-olap" style="text-decoration: none; color: var(--primary-color);"><sup>[OLAP]</sup></a>
+            <strong>OLAP (Online Analytical Processing):</strong> 실시간 데이터 분석 처리
+          </li>
+          <li id="fn-oltp" style="margin-bottom: 6px;">
+            <a href="#fnref-oltp" style="text-decoration: none; color: var(--primary-color);"><sup>[OLTP]</sup></a>
+            <strong>OLTP (Online Transaction Processing):</strong> 실시간 트랜잭션 처리
+          </li>
+          <li id="fn-pg" style="margin-bottom: 6px;">
+            <a href="#fnref-pg" style="text-decoration: none; color: var(--primary-color);"><sup>[PG]</sup></a>
+            <strong>PG (Payment Gateway):</strong> 전자 결제 대행사
+          </li>
+          <li id="fn-ram" style="margin-bottom: 6px;">
+            <a href="#fnref-ram" style="text-decoration: none; color: var(--primary-color);"><sup>[RAM]</sup></a>
+            <strong>RAM (Random Access Memory):</strong> 주기억장치 (메모리)
+          </li>
+          <li id="fn-rfid" style="margin-bottom: 6px;">
+            <a href="#fnref-rfid" style="text-decoration: none; color: var(--primary-color);"><sup>[RFID]</sup></a>
+            <strong>RFID (Radio Frequency Identification):</strong> 무선 주파수 식별 (충전 회원 카드 등)
+          </li>
+          <li id="fn-sla" style="margin-bottom: 6px;">
+            <a href="#fnref-sla" style="text-decoration: none; color: var(--primary-color);"><sup>[SLA]</sup></a>
+            <strong>SLA (Service Level Agreement):</strong> 서비스 수준 합의 (시스템 가동률 등 보장 표준)
+          </li>
+          <li id="fn-ssd" style="margin-bottom: 6px;">
+            <a href="#fnref-ssd" style="text-decoration: none; color: var(--primary-color);"><sup>[SSD]</sup></a>
+            <strong>SSD (Solid State Drive):</strong> 반도체 기반 대용량 저장 장치
+          </li>
+          <li id="fn-ssl" style="margin-bottom: 6px;">
+            <a href="#fnref-ssl" style="text-decoration: none; color: var(--primary-color);"><sup>[SSL]</sup></a>
+            <strong>SSL (Secure Sockets Layer):</strong> 보안 소켓 레이어 (보안 통신 표준)
+          </li>
+          <li id="fn-tou" style="margin-bottom: 6px;">
+            <a href="#fnref-tou" style="text-decoration: none; color: var(--primary-color);"><sup>[TOU]</sup></a>
+            <strong>TOU (Time of Use):</strong> 계절별/시간대별 차등 요금제
+          </li>
+          <li id="fn-tps" style="margin-bottom: 6px;">
+            <a href="#fnref-tps" style="text-decoration: none; color: var(--primary-color);"><sup>[TPS]</sup></a>
+            <strong>TPS (Transactions Per Second):</strong> 초당 트랜잭션 처리 수
+          </li>
+          <li id="fn-ui" style="margin-bottom: 6px;">
+            <a href="#fnref-ui" style="text-decoration: none; color: var(--primary-color);"><sup>[UI]</sup></a>
+            <strong>UI (User Interface):</strong> 사용자 인터페이스
+          </li>
+          <li id="fn-ux" style="margin-bottom: 6px;">
+            <a href="#fnref-ux" style="text-decoration: none; color: var(--primary-color);"><sup>[UX]</sup></a>
+            <strong>UX (User Experience):</strong> 사용자 경험
+          </li>
+          <li id="fn-wal" style="margin-bottom: 6px;">
+            <a href="#fnref-wal" style="text-decoration: none; color: var(--primary-color);"><sup>[WAL]</sup></a>
+            <strong>WAL (Write-Ahead Logging):</strong> 로그 선행 기입 (데이터베이스의 트랜잭션 안정성 확보 로그)
+          </li>
+        </ul>
+      </section>
+</main>
 
   <!-- Sticky Active Menu Script -->
   <script>

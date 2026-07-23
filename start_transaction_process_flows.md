@@ -1,4 +1,4 @@
-# OCPP 충전 거래 라이프사이클 시퀀스 다이어그램
+# OCPP[^OCPP] 충전 거래 라이프사이클 시퀀스 다이어그램
 
 이 문서는 사용자의 충전 및 결제 방식(충전 유형)에 따른 네 가지 핵심 시나리오별로 충전기의 시스템 기동(`BootNotification`)부터 시작하여 인증(`Authorize`), 충전 시작(`StartTransaction`), 충전 종료(`StopTransaction`)까지의 전체 연동 흐름을 정의합니다.
 
@@ -6,7 +6,7 @@
 
 ## 1. 회원 카드 태깅 충전 라이프사이클 (`Card Charging Lifecycle`)
 
-사용자가 충전기에 실물 회원 카드(RFID)를 태깅하여 인증하고 충전을 진행하는 표준 시나리오입니다.
+사용자가 충전기에 실물 회원 카드(RFID[^RFID])를 태깅하여 인증하고 충전을 진행하는 표준 시나리오입니다.
 
 ```mermaid
 sequenceDiagram
@@ -271,3 +271,7 @@ sequenceDiagram
     OCPP -->> 충전기: StopTransaction.conf (status = Accepted)
     충전기 ->> 사용자: 충전 종료
 ```
+
+---
+[^OCPP]: **OCPP (Open Charge Point Protocol):** 개방형 충전 통신 규격
+[^RFID]: **RFID (Radio Frequency Identification):** 무선 주파수 식별 (충전 회원 카드 등)

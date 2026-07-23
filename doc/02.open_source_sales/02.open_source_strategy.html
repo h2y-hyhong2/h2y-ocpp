@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>CPO CSMS Lite 오픈소스 및 에디션 분할 전략서</title>
+  <title>CPO<a href="#fn-cpo" id="fnref-cpo" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CPO]</a> CSMS<a href="#fn-csms" id="fnref-csms" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CSMS]</a> Lite 오픈소스 및 에디션 분할 전략서</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -264,7 +264,7 @@
   <!-- Left Navigation Bar -->
   <aside>
     <div class="brand-title">
-      <span>⚡</span> OCPP CE Strategy
+      <span>⚡</span> OCPP<a href="#fn-ocpp" id="fnref-ocpp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OCPP]</a> CE<a href="#fn-ce" id="fnref-ce" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CE]</a> Strategy
     </div>
     <ul class="nav-list">
       <li class="nav-item">
@@ -276,8 +276,8 @@
       <li class="nav-item">
         <a href="#architecture">3. 기술적 설계 및 완화</a>
         <ul class="sub-nav-list">
-          <li class="sub-nav-item"><a href="#arch-eip">3.1. EIP 채널 스위칭</a></li>
-          <li class="sub-nav-item"><a href="#arch-db">3.2. Single-DB 통합</a></li>
+          <li class="sub-nav-item"><a href="#arch-eip">3.1. EIP<a href="#fn-eip" id="fnref-eip" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[EIP]</a> 채널 스위칭</a></li>
+          <li class="sub-nav-item"><a href="#arch-db">3.2. Single-DB<a href="#fn-db" id="fnref-db" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[DB]</a> 통합</a></li>
           <li class="sub-nav-item"><a href="#arch-creds">3.3. 크리덴셜 암호화</a></li>
           <li class="sub-nav-item"><a href="#arch-docker">3.4. Docker-Compose</a></li>
         </ul>
@@ -293,7 +293,7 @@
         <ul class="sub-nav-list">
           <li class="sub-nav-item"><a href="#sales-plg">6.1. PLG 모델 확립</a></li>
           <li class="sub-nav-item"><a href="#sales-lockin">6.2. 높은 고객 락인</a></li>
-          <li class="sub-nav-item"><a href="#sales-ip">6.3. IP 보호 (BSL)</a></li>
+          <li class="sub-nav-item"><a href="#sales-ip">6.3. IP<a href="#fn-ip" id="fnref-ip" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[IP]</a> 보호 (BSL)</a></li>
           <li class="sub-nav-item"><a href="#sales-channel">6.4. 채널 세일즈</a></li>
           <li class="sub-nav-item"><a href="#sales-om">6.5. O&M 전가 전략</a></li>
           <li class="sub-nav-item"><a href="#sales-lossleader">6.6. Loss Leader 활용</a></li>
@@ -316,7 +316,7 @@
       <p>본 프로젝트는 핵심 프로콜 처리 게이트웨이 및 기본 충전 제어 기능을 오픈소스로 개방하는 <strong>오픈코어(Open-Core) 전략</strong>을 채택하여 다음 목적을 달성하고자 합니다.</p>
       <ul>
         <li><strong>글로벌 개발자 및 제조사 생태계 포섭:</strong> 충전기 제조업체 및 중소 CPO가 개발과 자가 테스트 환경에 무상 활용할 수 있도록 개방하여 플랫폼 장악력을 높입니다.</li>
-        <li><strong>비즈니스 전환 파이프라인(SaaS/EE) 확보:</strong> Community Edition을 로컬 환경에서 기동해본 소형 사업자가, 충전기 운영 수량 증가 및 고도화된 정산/AI 스마트 차징 기능이 필요해지는 시점에 상용 Enterprise Edition(EE)으로 전환되도록 유도합니다.</li>
+        <li><strong>비즈니스 전환 파이프라인(SaaS/EE<a href="#fn-ee" id="fnref-ee" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[EE]</a>) 확보:</strong> Community Edition을 로컬 환경에서 기동해본 소형 사업자가, 충전기 운영 수량 증가 및 고도화된 정산/AI 스마트 차징 기능이 필요해지는 시점에 상용 Enterprise Edition(EE)으로 전환되도록 유도합니다.</li>
       </ul>
     </section>
 
@@ -346,18 +346,18 @@
           </tr>
           <tr>
             <td><strong>데이터베이스</strong></td>
-            <td>PostgreSQL 단일 인스턴스 (OLTP & OLAP 데이터 통합 적재)</td>
+            <td>PostgreSQL 단일 인스턴스 (OLTP<a href="#fn-oltp" id="fnref-oltp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLTP]</a> & OLAP<a href="#fn-olap" id="fnref-olap" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLAP]</a> 데이터 통합 적재)</td>
             <td>PostgreSQL(OLTP) & ClickHouse(OLAP) 이원화 저장 구조</td>
           </tr>
           <tr>
             <td><strong>세션 관리</strong></td>
-            <td>JVM 로컬 메모리 (<code>ConcurrentHashMap</code>)</td>
+            <td>JVM<a href="#fn-jvm" id="fnref-jvm" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[JVM]</a> 로컬 메모리 (<code>ConcurrentHashMap</code>)</td>
             <td>Redis Active Session Map 및 Pub/Sub 기반 분산 세션 관리</td>
           </tr>
           <tr>
             <td><strong>요금제 및 정산</strong></td>
             <td>수동 정산 및 충전 상세 기록(CDR) 원장 조회</td>
-            <td>실시간 계절/시간대별(TOU) 단가 요금 계산 엔진, PG사 연동 자동 결제 및 정산</td>
+            <td>실시간 계절/시간대별(TOU<a href="#fn-tou" id="fnref-tou" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[TOU]</a>) 단가 요금 계산 엔진, PG사 연동 자동 결제 및 정산</td>
           </tr>
           <tr>
             <td><strong>스마트 차징</strong></td>
@@ -415,7 +415,7 @@
       <h3 id="arch-docker">3.4. Docker-Compose 1-Click 실행 환경 구성</h3>
       <p>오픈소스 사용자 경험 극대화를 위해, <code>docker-compose.yml</code> 템플릿 파일 하나로 전체 시스템을 가동할 수 있는 설정을 제공합니다.</p>
       <ul>
-        <li><strong>CE Compose 구성 요소:</strong> <code>h2y-ocpp-community-app</code> (Spring Boot API + Vue 3 Admin 통합 이미지), <code>postgresql-db</code> (단일 DB)</li>
+        <li><strong>CE Compose 구성 요소:</strong> <code>h2y-ocpp-community-app</code> (Spring Boot API<a href="#fn-api" id="fnref-api" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[API]</a> + Vue 3 Admin 통합 이미지), <code>postgresql-db</code> (단일 DB)</li>
         <li>이 단 2개의 컨테이너 구성만으로, 개발자는 <code>docker compose up -d</code> 명령어 1회 수행으로 즉시 CSMS 및 어드민 대시보드 검증 환경을 기동할 수 있습니다.</li>
       </ul>
     </section>
@@ -460,7 +460,7 @@
       <h3 id="sales-plg">6.1. 제품 주도 성장 (Product-Led Growth, PLG) 모델 확립</h3>
       <ul>
         <li><strong>영업 비용 절감:</strong> 기존의 대면 영업이나 복잡한 데모 시연 및 장기 PoC(Proof of Concept) 절차 없이, 잠재 고객사가 Docker 스크립트만으로 로컬 환경에서 직접 기능을 체험할 수 있습니다.</li>
-        <li><strong>자가 세일즈 퍼널:</strong> 솔루션을 무료로 사용하여 운영하던 CPO(Charge Point Operator)들은 충전기 대수가 점진적으로 확대되는 시점(50대 임계치 초과)에 추가적인 인프라 리팩토링이나 플랫폼 교체 비용을 치르기보다, 마이그레이션 없이 사용하던 데이터와 UI 그대로 엔터프라이즈 모듈 라이선스를 구매하는 자연스러운 세일즈 퍼널을 형성하게 됩니다.</li>
+        <li><strong>자가 세일즈 퍼널:</strong> 솔루션을 무료로 사용하여 운영하던 CPO(Charge Point Operator)들은 충전기 대수가 점진적으로 확대되는 시점(50대 임계치 초과)에 추가적인 인프라 리팩토링이나 플랫폼 교체 비용을 치르기보다, 마이그레이션 없이 사용하던 데이터와 UI<a href="#fn-ui" id="fnref-ui" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[UI]</a> 그대로 엔터프라이즈 모듈 라이선스를 구매하는 자연스러운 세일즈 퍼널을 형성하게 됩니다.</li>
       </ul>
 
       <h3 id="sales-lockin">6.2. 높은 고객 전환 비용 기반의 락인(Lock-in)</h3>
@@ -485,7 +485,7 @@
       <ul>
         <li><strong>유지보수 책임 전가 및 자체 관리 유도 (Self-O&M Enablement):</strong> 소스코드가 공개되어 있으므로 기술 내재화 역량을 갖춘 대형 고객사 및 파트너사가 스스로 시스템을 보수하도록 유도합니다. 이를 위해 <strong>"기기 자가 진단 대시보드(OCPP 통신 상태 판별)", "오류 케이스별 조치 가이드라인(Runbook)", "커스텀 로직 추가 개발자 가이드(Tutorial)"</strong>를 표준으로 제공하여, 고객사 엔지니어가 공급사 기술 지원 없이도 장애나 요건 변경에 자체 대처할 수 있도록 자생적 운영 환경을 적극 유도하고 조성합니다.</li>
         <li><strong>개방형 커뮤니티 창구 단일화:</strong> 1:1 방식의 무상 밀착 기술지원을 제공하는 대신, 공식 GitHub Issues 및 Q&A 커뮤니티로 소통 창구가 일원화합니다. 다른 사용자나 기기 제조사들이 답변에 참여하는 집단지성 구조를 유도하여 개발사 엔지니어의 일상적 Q&A 대응 부담을 해소합니다.</li>
-        <li><strong>SLA 차등을 통한 수익화:</strong> 무료 배포판(CE)에는 "무보증(No Warranty) 및 자체 운영"을 기본 조항으로 적용하고, 당사 전문가의 상시 O&M 지원 및 긴급 장애 패치가 필요한 경우에만 고가의 "엔터프라이즈 O&M 서브스크립션" 유료 기술지원 계약을 맺도록 하여 유지보수 서비스 자체를 고부가가치 비즈니스로 변환시킵니다.</li>
+        <li><strong>SLA<a href="#fn-sla" id="fnref-sla" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[SLA]</a> 차등을 통한 수익화:</strong> 무료 배포판(CE)에는 "무보증(No Warranty) 및 자체 운영"을 기본 조항으로 적용하고, 당사 전문가의 상시 O&M 지원 및 긴급 장애 패치가 필요한 경우에만 고가의 "엔터프라이즈 O&M 서브스크립션" 유료 기술지원 계약을 맺도록 하여 유지보수 서비스 자체를 고부가가치 비즈니스로 변환시킵니다.</li>
       </ul>
 
       <h3 id="sales-lossleader">6.6. 충전사업(CPO) 수주 영업을 위한 전략적 도구(Loss Leader) 활용</h3>
@@ -496,7 +496,74 @@
         <li><strong>영업 마진 극대화를 위한 초경량 인프라 필수화:</strong> 충전 수주 영업 대상인 소규모 사업지(예: 30대 이하 충전기 구역)마다 수백만 원 대의 클라우드 인프라(Kafka, ClickHouse)를 강제 셋업하는 것은 사업성이 나오지 않습니다. 플랫폼을 PostgreSQL 싱글 DB 기반으로 극도로 경량 구동할 수 있도록 설계하는 것은 단순히 개발자의 편의를 위함이 아니라, "소규모 영업지 배포 시 인프라 비용을 제로에 가깝게 낮춰 영업 마진율을 극대화하기 위한 본질적인 비즈니스 요구사항"으로 직결됩니다.</li>
       </ul>
     </section>
-  </main>
+        <!-- Footnotes Section -->
+      <hr style="margin-top: 40px; border: 0; border-top: 1px solid var(--border-color);">
+      <section class="footnotes" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 20px;">
+        <h4 style="margin-bottom: 10px; color: var(--text-primary);">약어 정의 (Footnotes)</h4>
+        <ul style="list-style-type: none; padding-left: 0;">
+          <li id="fn-api" style="margin-bottom: 6px;">
+            <a href="#fnref-api" style="text-decoration: none; color: var(--primary-color);"><sup>[API]</sup></a>
+            <strong>API (Application Programming Interface):</strong> 응용 프로그램 프로그래밍 인터페이스
+          </li>
+          <li id="fn-ce" style="margin-bottom: 6px;">
+            <a href="#fnref-ce" style="text-decoration: none; color: var(--primary-color);"><sup>[CE]</sup></a>
+            <strong>CE (Community Edition):</strong> 커뮤니티 에디션 (오픈소스 버전)
+          </li>
+          <li id="fn-cpo" style="margin-bottom: 6px;">
+            <a href="#fnref-cpo" style="text-decoration: none; color: var(--primary-color);"><sup>[CPO]</sup></a>
+            <strong>CPO (Charge Point Operator):</strong> 전기차 충전소 운영 사업자
+          </li>
+          <li id="fn-csms" style="margin-bottom: 6px;">
+            <a href="#fnref-csms" style="text-decoration: none; color: var(--primary-color);"><sup>[CSMS]</sup></a>
+            <strong>CSMS (Charging Station Management System):</strong> 충전기 통합 관리 시스템
+          </li>
+          <li id="fn-db" style="margin-bottom: 6px;">
+            <a href="#fnref-db" style="text-decoration: none; color: var(--primary-color);"><sup>[DB]</sup></a>
+            <strong>DB (Database):</strong> 데이터베이스
+          </li>
+          <li id="fn-ee" style="margin-bottom: 6px;">
+            <a href="#fnref-ee" style="text-decoration: none; color: var(--primary-color);"><sup>[EE]</sup></a>
+            <strong>EE (Enterprise Edition):</strong> 엔터프라이즈 에디션 (상용 버전)
+          </li>
+          <li id="fn-eip" style="margin-bottom: 6px;">
+            <a href="#fnref-eip" style="text-decoration: none; color: var(--primary-color);"><sup>[EIP]</sup></a>
+            <strong>EIP (Enterprise Integration Patterns):</strong> 기업 통합 패턴 (소프트웨어 아키텍처 디자인 패턴)
+          </li>
+          <li id="fn-ip" style="margin-bottom: 6px;">
+            <a href="#fnref-ip" style="text-decoration: none; color: var(--primary-color);"><sup>[IP]</sup></a>
+            <strong>IP (Internet Protocol):</strong> 인터넷 프로토콜 (네트워크 주소 규격)
+          </li>
+          <li id="fn-jvm" style="margin-bottom: 6px;">
+            <a href="#fnref-jvm" style="text-decoration: none; color: var(--primary-color);"><sup>[JVM]</sup></a>
+            <strong>JVM (Java Virtual Machine):</strong> 자바 가상 머신
+          </li>
+          <li id="fn-ocpp" style="margin-bottom: 6px;">
+            <a href="#fnref-ocpp" style="text-decoration: none; color: var(--primary-color);"><sup>[OCPP]</sup></a>
+            <strong>OCPP (Open Charge Point Protocol):</strong> 개방형 충전 통신 규격
+          </li>
+          <li id="fn-olap" style="margin-bottom: 6px;">
+            <a href="#fnref-olap" style="text-decoration: none; color: var(--primary-color);"><sup>[OLAP]</sup></a>
+            <strong>OLAP (Online Analytical Processing):</strong> 실시간 데이터 분석 처리
+          </li>
+          <li id="fn-oltp" style="margin-bottom: 6px;">
+            <a href="#fnref-oltp" style="text-decoration: none; color: var(--primary-color);"><sup>[OLTP]</sup></a>
+            <strong>OLTP (Online Transaction Processing):</strong> 실시간 트랜잭션 처리
+          </li>
+          <li id="fn-sla" style="margin-bottom: 6px;">
+            <a href="#fnref-sla" style="text-decoration: none; color: var(--primary-color);"><sup>[SLA]</sup></a>
+            <strong>SLA (Service Level Agreement):</strong> 서비스 수준 합의 (시스템 가동률 등 보장 표준)
+          </li>
+          <li id="fn-tou" style="margin-bottom: 6px;">
+            <a href="#fnref-tou" style="text-decoration: none; color: var(--primary-color);"><sup>[TOU]</sup></a>
+            <strong>TOU (Time of Use):</strong> 계절별/시간대별 차등 요금제
+          </li>
+          <li id="fn-ui" style="margin-bottom: 6px;">
+            <a href="#fnref-ui" style="text-decoration: none; color: var(--primary-color);"><sup>[UI]</sup></a>
+            <strong>UI (User Interface):</strong> 사용자 인터페이스
+          </li>
+        </ul>
+      </section>
+</main>
 
   <!-- Sticky Active Menu Script -->
   <script>

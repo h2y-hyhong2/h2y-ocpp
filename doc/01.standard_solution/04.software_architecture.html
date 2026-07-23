@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CPO CSMS Lite 소프트웨어 아키텍처 정의서</title>
+  <title>CPO<a href="#fn-cpo" id="fnref-cpo" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CPO]</a> CSMS<a href="#fn-csms" id="fnref-csms" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CSMS]</a> Lite 소프트웨어 아키텍처 정의서</title>
   <!-- Google Fonts & Pretendard -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -330,7 +330,7 @@
         <a href="#layered">2. 다층 레이어드 구조</a>
         <ul class="sub-nav-list">
           <li class="sub-nav-item"><a href="#layered-role">2.1. 레이어별 역할</a></li>
-          <li class="sub-nav-item"><a href="#layered-eip">2.2. EIP 파이프라인</a></li>
+          <li class="sub-nav-item"><a href="#layered-eip">2.2. EIP<a href="#fn-eip" id="fnref-eip" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[EIP]</a> 파이프라인</a></li>
         </ul>
       </li>
       <li class="nav-item">
@@ -344,7 +344,7 @@
         <a href="#routing">4. 분산 원격 제어 라우팅</a>
       </li>
       <li class="nav-item">
-        <a href="#eai">5. EAI 관점 통합 매핑</a>
+        <a href="#eai">5. EAI<a href="#fn-eai" id="fnref-eai" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[EAI]</a> 관점 통합 매핑</a>
       </li>
     </ul>
   </aside>
@@ -360,21 +360,21 @@
       <div class="callout">
         <div class="callout-title">📡 비차단 비동기 파이프라인 (Loose Coupling)</div>
         <div class="callout-content">
-          충전기 웹소켓 커넥션을 받아 패킷을 수집하는 WebSocket Gateway와 정산 연산 및 DB 적재를 담당하는 Business Core 사이에 <strong>Apache Kafka</strong>를 완충지대로 배치합니다. 백엔드의 DB 병목이나 PG사 결제 연동 지연 등이 실시간 소켓 연결 유지에 지장을 주지 않습니다.
+          충전기 웹소켓 커넥션을 받아 패킷을 수집하는 WebSocket Gateway와 정산 연산 및 DB<a href="#fn-db" id="fnref-db" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[DB]</a> 적재를 담당하는 Business Core 사이에 <strong>Apache Kafka</strong>를 완충지대로 배치합니다. 백엔드의 DB 병목이나 PG사 결제 연동 지연 등이 실시간 소켓 연결 유지에 지장을 주지 않습니다.
         </div>
       </div>
 
       <div class="callout" style="background-color: rgba(2, 132, 199, 0.04); border-left: 4px solid var(--accent-color);">
         <div class="callout-title">💾 하이브리드 세션 관리 (Stateful Agent + Stateless Service)</div>
         <div class="callout-content">
-          충전기 세션별로 상태 정보만을 지니는 경량화된 <strong><code>OcppSessionAgent</code> (Stateful)</strong> 객체를 JVM 메모리에 보존하여 상태 검증을 초고속으로 수행하고, 무거운 정산 계산이나 CRUD 트랜잭션 처리는 Spring의 <strong>Stateless Service</strong> 싱글톤 빈들이 가상 스레드 상에서 처리하도록 이원화합니다.
+          충전기 세션별로 상태 정보만을 지니는 경량화된 <strong><code>OcppSessionAgent</code> (Stateful)</strong> 객체를 JVM<a href="#fn-jvm" id="fnref-jvm" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[JVM]</a> 메모리에 보존하여 상태 검증을 초고속으로 수행하고, 무거운 정산 계산이나 CRUD<a href="#fn-crud" id="fnref-crud" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CRUD]</a> 트랜잭션 처리는 Spring의 <strong>Stateless Service</strong> 싱글톤 빈들이 가상 스레드 상에서 처리하도록 이원화합니다.
         </div>
       </div>
 
       <div class="callout" style="background-color: rgba(16, 185, 129, 0.04); border-left: 4px solid #10b981;">
-        <div class="callout-title">🗄️ 데이터 저장소 CQRS (Command Query Responsibility Segregation)</div>
+        <div class="callout-title">🗄️ 데이터 저장소 CQRS<a href="#fn-cqrs" id="fnref-cqrs" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CQRS]</a> (Command Query Responsibility Segregation)</div>
         <div class="callout-content">
-          회원 원장, 충전기 정보, 그리고 무결성이 요구되는 최종 매출 정산서(CDR)는 <strong>PostgreSQL(OLTP)</strong>에 엄격히 보관하고, 15초 주기로 밀려드는 무수한 계측 데이터(MeterValues)와 원본 JSON 송수신 패킷은 대량 압축 쓰기에 강한 <strong>ClickHouse(OLAP)</strong>에 시계열 분리 적재하여 디스크 병목을 해결합니다.
+          회원 원장, 충전기 정보, 그리고 무결성이 요구되는 최종 매출 정산서(CDR)는 <strong>PostgreSQL(OLTP<a href="#fn-oltp" id="fnref-oltp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLTP]</a>)</strong>에 엄격히 보관하고, 15초 주기로 밀려드는 무수한 계측 데이터(MeterValues)와 원본 JSON 송수신 패킷은 대량 압축 쓰기에 강한 <strong>ClickHouse(OLAP<a href="#fn-olap" id="fnref-olap" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLAP]</a>)</strong>에 시계열 분리 적재하여 디스크 병목을 해결합니다.
         </div>
       </div>
     </section>
@@ -390,18 +390,18 @@
       <div class="mermaid">
         flowchart TD
             subgraph Client ["클라이언트 레이어 (Presentation Layer)"]
-                UI["어드민 웹 UI (Vue 3 / SPA)"]
+                UI<a href="#fn-ui" id="fnref-ui" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[UI]</a>["어드민 웹 UI (Vue 3 / SPA)"]
             end
 
-            subgraph GW ["게이트웨이 레이어 (Gateway Layer)"]
-                WS["WebSocket Inbound Adapter (Netty / SSL)"]
+            subgraph GW<a href="#fn-gw" id="fnref-gw" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[GW]</a> ["게이트웨이 레이어 (Gateway Layer)"]
+                WS["WebSocket Inbound Adapter (Netty / SSL<a href="#fn-ssl" id="fnref-ssl" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[SSL]</a>)"]
                 SessionStore["로컬 세션 저장소 (LocalSessionStore - ConcurrentHashMap)"]
                 WS <-->|JVM Session 참조| SessionStore
             end
 
             subgraph SI_Layer ["Spring Integration EIP 파이프라인 (Message Pipeline Layer)"]
                 RawCh["ocppRawChannel (KafkaChannel)"]
-                Transformer["OCPP JSON-to-DTO Transformer"]
+                Transformer["OCPP<a href="#fn-ocpp" id="fnref-ocpp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OCPP]</a> JSON-to-DTO<a href="#fn-dto" id="fnref-dto" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[DTO]</a> Transformer"]
                 DtoCh["ocppDtoChannel"]
                 Router{"Payload-Type Router"}
                 CtrlCh["controlCommandChannel"]
@@ -409,7 +409,7 @@
 
             subgraph Core ["비즈니스 코어 레이어 (Business Core Layer - Java Virtual Threads)"]
                 OCPPAgent["OCPP 프로토콜 핸들러 (Service Activator)"]
-                SettEngine["TOU 정산 엔진 (Service Activator)"]
+                SettEngine["TOU<a href="#fn-tou" id="fnref-tou" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[TOU]</a> 정산 엔진 (Service Activator)"]
                 FaultMgr["장애 전이 감지기 (Service Activator)"]
                 SmartCharger["스마트 차징 스케줄러 (Service Activator)"]
             end
@@ -436,7 +436,7 @@
             OCPPAgent -->|세션 상태 조회/저장| Redis
             
             %% 다운링크 제어 흐름 (관리자 → 충전기)
-            UI -.->|API Call| Core
+            UI -.->|API<a href="#fn-api" id="fnref-api" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[API]</a> Call| Core
             Core -.->|Produce Command| CtrlCh
             CtrlCh -.->|Outbound Adapter| WS
       </div>
@@ -513,7 +513,7 @@
           </tr>
           <tr>
             <td><strong>메시지 파이프라인</strong></td>
-            <td><strong>Spring Integration Core Bus (추상화 채널)</strong><br>- <code>ocppRawChannel</code> 등 EIP Channel 객체로 제어.<br>- Phase 1: Kafka 단일 브로커 기반 채널<br>- Phase 2: HA 분산 Kafka 클러스터 채널로 확장.</td>
+            <td><strong>Spring Integration Core Bus (추상화 채널)</strong><br>- <code>ocppRawChannel</code> 등 EIP Channel 객체로 제어.<br>- Phase 1: Kafka 단일 브로커 기반 채널<br>- Phase 2: HA<a href="#fn-ha" id="fnref-ha" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[HA]</a> 분산 Kafka 클러스터 채널로 확장.</td>
             <td><strong>Apache Kafka 단일/분산 브로커</strong><br>- 인프라 메시지 백로그를 직접 사용.<br>- 단독 구동 시에도 처음부터 Kafka 브로커 필요 또는 Phase 2 전환 시 소스코드 직접 수정.</td>
           </tr>
           <tr>
@@ -744,7 +744,7 @@
 
             %% Target Adapters & Systems
             subgraph Targets ["대상 시스템 연동 어댑터 (Target Systems / Adapters)"]
-                PG_Adapt["PG 결제 연동 어댑터"]
+                PG_Adapt["PG<a href="#fn-pg" id="fnref-pg" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[PG]</a> 결제 연동 어댑터"]
                 Roam_Adapt["한전/로밍 중계 연동 어댑터"]
                 
                 DB_OLTP["PostgreSQL 어댑터 (OLTP 저장소)"]
@@ -772,7 +772,7 @@
           <ul>
             <li><strong>Source Adapters (송신 어댑터):</strong> 
               <ul>
-                <li><code>WebSocket Gateway</code>: OCPP 프로토콜을 전송 매체(TCP/IP 소켓)로부터 발췌하는 입력 어댑터.</li>
+                <li><code>WebSocket Gateway</code>: OCPP 프로토콜을 전송 매체(TCP/IP<a href="#fn-ip" id="fnref-ip" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[IP]</a> 소켓)로부터 발췌하는 입력 어댑터.</li>
                 <li><code>REST API Adapter</code>: 내부 어드민 및 외부 파트너 시스템의 HTTP 트랜잭션 수신 어댑터.</li>
               </ul>
             </li>
@@ -789,7 +789,94 @@
         </div>
       </div>
     </section>
-  </main>
+        <!-- Footnotes Section -->
+      <hr style="margin-top: 40px; border: 0; border-top: 1px solid var(--border-color);">
+      <section class="footnotes" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 20px;">
+        <h4 style="margin-bottom: 10px; color: var(--text-primary);">약어 정의 (Footnotes)</h4>
+        <ul style="list-style-type: none; padding-left: 0;">
+          <li id="fn-api" style="margin-bottom: 6px;">
+            <a href="#fnref-api" style="text-decoration: none; color: var(--primary-color);"><sup>[API]</sup></a>
+            <strong>API (Application Programming Interface):</strong> 응용 프로그램 프로그래밍 인터페이스
+          </li>
+          <li id="fn-cpo" style="margin-bottom: 6px;">
+            <a href="#fnref-cpo" style="text-decoration: none; color: var(--primary-color);"><sup>[CPO]</sup></a>
+            <strong>CPO (Charge Point Operator):</strong> 전기차 충전소 운영 사업자
+          </li>
+          <li id="fn-cqrs" style="margin-bottom: 6px;">
+            <a href="#fnref-cqrs" style="text-decoration: none; color: var(--primary-color);"><sup>[CQRS]</sup></a>
+            <strong>CQRS (Command Query Responsibility Segregation):</strong> 명령 및 조회 책임 분리 패턴
+          </li>
+          <li id="fn-crud" style="margin-bottom: 6px;">
+            <a href="#fnref-crud" style="text-decoration: none; color: var(--primary-color);"><sup>[CRUD]</sup></a>
+            <strong>CRUD (Create, Read, Update, Delete):</strong> 생성, 조회, 수정, 삭제의 기본 데이터 가동 기능
+          </li>
+          <li id="fn-csms" style="margin-bottom: 6px;">
+            <a href="#fnref-csms" style="text-decoration: none; color: var(--primary-color);"><sup>[CSMS]</sup></a>
+            <strong>CSMS (Charging Station Management System):</strong> 충전기 통합 관리 시스템
+          </li>
+          <li id="fn-db" style="margin-bottom: 6px;">
+            <a href="#fnref-db" style="text-decoration: none; color: var(--primary-color);"><sup>[DB]</sup></a>
+            <strong>DB (Database):</strong> 데이터베이스
+          </li>
+          <li id="fn-dto" style="margin-bottom: 6px;">
+            <a href="#fnref-dto" style="text-decoration: none; color: var(--primary-color);"><sup>[DTO]</sup></a>
+            <strong>DTO (Data Transfer Object):</strong> 데이터 전송 객체
+          </li>
+          <li id="fn-eai" style="margin-bottom: 6px;">
+            <a href="#fnref-eai" style="text-decoration: none; color: var(--primary-color);"><sup>[EAI]</sup></a>
+            <strong>EAI (Enterprise Application Integration):</strong> 기업 애플리케이션 통합
+          </li>
+          <li id="fn-eip" style="margin-bottom: 6px;">
+            <a href="#fnref-eip" style="text-decoration: none; color: var(--primary-color);"><sup>[EIP]</sup></a>
+            <strong>EIP (Enterprise Integration Patterns):</strong> 기업 통합 패턴 (소프트웨어 아키텍처 디자인 패턴)
+          </li>
+          <li id="fn-gw" style="margin-bottom: 6px;">
+            <a href="#fnref-gw" style="text-decoration: none; color: var(--primary-color);"><sup>[GW]</sup></a>
+            <strong>GW (Gateway):</strong> 게이트웨이 (서버/기기 간의 통신 접점)
+          </li>
+          <li id="fn-ha" style="margin-bottom: 6px;">
+            <a href="#fnref-ha" style="text-decoration: none; color: var(--primary-color);"><sup>[HA]</sup></a>
+            <strong>HA (High Availability):</strong> 고가용성 (서버 다중화 등을 통한 서비스 중단 최소화 설계)
+          </li>
+          <li id="fn-ip" style="margin-bottom: 6px;">
+            <a href="#fnref-ip" style="text-decoration: none; color: var(--primary-color);"><sup>[IP]</sup></a>
+            <strong>IP (Internet Protocol):</strong> 인터넷 프로토콜 (네트워크 주소 규격)
+          </li>
+          <li id="fn-jvm" style="margin-bottom: 6px;">
+            <a href="#fnref-jvm" style="text-decoration: none; color: var(--primary-color);"><sup>[JVM]</sup></a>
+            <strong>JVM (Java Virtual Machine):</strong> 자바 가상 머신
+          </li>
+          <li id="fn-ocpp" style="margin-bottom: 6px;">
+            <a href="#fnref-ocpp" style="text-decoration: none; color: var(--primary-color);"><sup>[OCPP]</sup></a>
+            <strong>OCPP (Open Charge Point Protocol):</strong> 개방형 충전 통신 규격
+          </li>
+          <li id="fn-olap" style="margin-bottom: 6px;">
+            <a href="#fnref-olap" style="text-decoration: none; color: var(--primary-color);"><sup>[OLAP]</sup></a>
+            <strong>OLAP (Online Analytical Processing):</strong> 실시간 데이터 분석 처리
+          </li>
+          <li id="fn-oltp" style="margin-bottom: 6px;">
+            <a href="#fnref-oltp" style="text-decoration: none; color: var(--primary-color);"><sup>[OLTP]</sup></a>
+            <strong>OLTP (Online Transaction Processing):</strong> 실시간 트랜잭션 처리
+          </li>
+          <li id="fn-pg" style="margin-bottom: 6px;">
+            <a href="#fnref-pg" style="text-decoration: none; color: var(--primary-color);"><sup>[PG]</sup></a>
+            <strong>PG (Payment Gateway):</strong> 전자 결제 대행사
+          </li>
+          <li id="fn-ssl" style="margin-bottom: 6px;">
+            <a href="#fnref-ssl" style="text-decoration: none; color: var(--primary-color);"><sup>[SSL]</sup></a>
+            <strong>SSL (Secure Sockets Layer):</strong> 보안 소켓 레이어 (보안 통신 표준)
+          </li>
+          <li id="fn-tou" style="margin-bottom: 6px;">
+            <a href="#fnref-tou" style="text-decoration: none; color: var(--primary-color);"><sup>[TOU]</sup></a>
+            <strong>TOU (Time of Use):</strong> 계절별/시간대별 차등 요금제
+          </li>
+          <li id="fn-ui" style="margin-bottom: 6px;">
+            <a href="#fnref-ui" style="text-decoration: none; color: var(--primary-color);"><sup>[UI]</sup></a>
+            <strong>UI (User Interface):</strong> 사용자 인터페이스
+          </li>
+        </ul>
+      </section>
+</main>
 
   <!-- Sticky Active Menu Script -->
   <script>
