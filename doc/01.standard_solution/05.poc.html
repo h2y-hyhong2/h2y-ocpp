@@ -300,7 +300,8 @@
       border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 32px;
-      margin: 24px 0 12px 0;
+      margin: 24px auto 12px auto;
+      max-width: 1920px; /* FHD 해상도 가로 길이에 맞춤 */
       display: block;
       overflow-x: auto;
       text-align: center;
@@ -311,7 +312,6 @@
       width: 100% !important;
       max-width: 100% !important;
       height: auto !important;
-      min-height: 280px;
     }
 
     .mermaid-caption {
@@ -579,9 +579,52 @@
     <!-- Section 2: Functional Specifications -->
     <section id="functions">
       <h2>2. POC 검증 핵심 기능 명세 (POC Functional Requirements)</h2>
-      <p>Phase 1 POC에서 구현 및 검증하는 필수 기능 범위 및 상세 명세입니다.</p>
+      <p>Phase 1 POC에서 구현 및 검증하는 필수 기능 범위 및 상세 명세입니다. 핵심 검증 대상인 <strong>메시지 큐(Kafka) 버퍼링</strong>과 <strong>폐쇄망 오프라인 인스톨러</strong>의 명세를 최우선으로 배치하고 강조합니다.</p>
 
-      <h3>2.1. 웹소켓 게이트웨이 및 세션 제어 기능</h3>
+      <h3>2.1. 메시지 큐(Apache Kafka) 기반 고신뢰성 메시지 버퍼링 기능</h3>
+      <ul>
+        <li><strong>트래픽 급증 시의 완충 및 비동기 디커플링 (Spike Buffering):</strong>
+          <ul>
+            <li>수천 대의 충전기로부터 대량의 OCPP 통신(MeterValues 등)이 게이트웨이로 유입되더라도 백엔드 시스템(PostgreSQL, ClickHouse 등)의 부하를 최소화하기 위해, 인입된 모든 메시지를 단일 Kafka 브로커의 토픽(<code>ocpp-raw-events</code>)에 우선 큐잉(Queueing)하여 디커플링 검증.</li>
+          </ul>
+        </li>
+        <li><strong>메시지 순서 보장 (Message Ordering):</strong>
+          <ul>
+            <li>충전기 ID(또는 세션 ID)를 파티션 키(Partition Key)로 매핑하여 Kafka 토픽으로 전송함으로써, 동일 충전기에서 발생한 OCPP 라이프사이클 이벤트(<code>BootNotification</code> -> <code>StartTransaction</code> -> <code>MeterValues</code> -> <code>StopTransaction</code>)의 발생 순서가 컨슈머 단에서도 엄격하게 유지되도록 검증.</li>
+          </ul>
+        </li>
+        <li><strong>고장 감지 및 백프레셔 제어 (Backpressure Control):</strong>
+          <ul>
+            <li>ClickHouse 또는 PostgreSQL 장애로 인한 처리 지연(Lag) 발생 시, 웹소켓 세션을 차단하지 않고 Kafka 내에 메시지를 안전하게 적재(최대 24시간 보존)하여 백엔드 복구 후 유실 없는 순차적 재처리를 보증.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>2.2. 폐쇄망 원클릭 단일 인스톨러 패키징 기능 (Single-File Offline Installer)</h3>
+      <p>외부 인터넷 연결이 완전히 차단된 폐쇄망(Air-Gapped) 인프라 환경에서도 OS 수준의 패키지 설치부터 자바 런타임, 미들웨어(Kafka, PostgreSQL, ClickHouse), 그리고 애플리케이션 서비스 기동까지 원클릭으로 무인 설치가 가능하도록 오프라인 패키징을 제공하고 이를 검증합니다.</p>
+      <ul>
+        <li><strong>리눅스(Linux) 환경 패키징 (Makeself 기반):</strong>
+          <ul>
+            <li>Makeself 자가 추출형 아카이브(Self-extracting Archive) 도구를 활용하여 필요한 모든 종속성 패키지를 단일 <code>install.run</code> 파일에 내장.</li>
+            <li><strong>오프라인 의존성 내장:</strong> Docker Engine 설치용 바이너리(RPM/DEB), Docker Compose CLI, 빌드된 스프링 부트 애플리케이션 JAR, PostgreSQL/ClickHouse/Kafka의 컨테이너 이미지 아카이브(<code>tar</code>), 그리고 초기 데이터베이스 마이그레이션 스크립트 포함.</li>
+            <li><strong>설치 스크립트(<code>install.sh</code>) 기능:</strong> OS 환경 점검(커널 버전, CPU<a href="#fn-cpu" id="fnref-cpu" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CPU]</a>/메모리 사양, 방화벽 포트 8080/9092/3306/8123 자동 개방), 로컬 Docker 미설치 시 내장 바이너리를 통한 자동 오프라인 설치, <code>docker load</code>를 통한 컨테이너 이미지 일괄 로드 및 <code>docker compose up -d</code>를 통한 원클릭 무인 기동.</li>
+          </ul>
+        </li>
+        <li><strong>윈도우(Windows) 환경 패키징 (Inno Setup 기반):</strong>
+          <ul>
+            <li>Inno Setup 컴파일러를 활용하여 그래픽 UI 기반의 단일 <code>setup.exe</code> 패키지 생성.</li>
+            <li><strong>오프라인 윈도우 인프라 구성:</strong> Windows용 WSL2 커널 패키지(MSI) 및 Docker Desktop 설치 파일을 내장하여 백그라운드로 자동 설치를 유도.</li>
+            <li>Windows 서비스(Service) 등록 스크립트 및 환경 변수 자동 설정을 지원하여, 설치 완료 후 재부팅 또는 기동 시 관리자 개입 없이 CSMS 포털이 자동 실행되도록 구현.</li>
+          </ul>
+        </li>
+        <li><strong>폐쇄망 설치 무결성 검증:</strong>
+          <ul>
+            <li>가상 머신(VM)에서 네트워크 어댑터를 완전히 차단(Host-only 또는 Internal Network)한 상태에서 설치 파일 복사 후 1-Click 설치를 실행하여, 외부 Repository(Docker Hub, Maven Central, OS Repo) 통신 없이 정상 기동 및 대시보드 진입 여부를 검증.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>2.3. 웹소켓 게이트웨이 및 세션 제어 기능</h3>
       <ul>
         <li><strong>충전기 커넥션 핸들셰이크 & 인증:</strong>
           <ul>
@@ -597,7 +640,7 @@
         </li>
       </ul>
 
-      <h3>2.2. OCPP 1.6J 표준 메시지 수신 처리 기능</h3>
+      <h3>2.4. OCPP 1.6J 표준 메시지 수신 처리 기능</h3>
       <ul>
         <li><strong>기기 부팅 및 인증 (<code>BootNotification</code>, <code>Authorize</code>):</strong>
           <ul>
@@ -618,7 +661,7 @@
         </li>
       </ul>
 
-      <h3>2.3. 비동기 적재 및 관제 알림 기능</h3>
+      <h3>2.5. 비동기 적재 및 관제 알림 기능</h3>
       <ul>
         <li><strong>ClickHouse 시계열 로그 적재:</strong>
           <ul>
@@ -632,7 +675,7 @@
         </li>
       </ul>
 
-      <h3>2.4. Phase 1 필수 관리자 화면 연계 검증</h3>
+      <h3>2.6. Phase 1 필수 관리자 화면 연계 검증</h3>
       <p>본 POC의 백엔드 처리기는 <a href="file:///d:/project/lselink/ocpp-lite/git/h2y-ocpp/doc/02.feature_specification.html">통합 기능 분류 정의서 (02.feature_specification)</a>에서 정의한 Phase 1 필수 어드민 화면의 데이터 원천을 완벽하게 제공하도록 검증 설계를 포함합니다.</p>
       <ul>
         <li><strong>대시보드 및 관제 현황 모니터링:</strong>
@@ -661,7 +704,7 @@
         </li>
       </ul>
 
-      <h3>2.5. 동적 채널 및 라우팅 제어 기능 (Dynamic Channel & Routing Management)</h3>
+      <h3>2.7. 동적 채널 및 라우팅 제어 기능 (Dynamic Channel & Routing Management)</h3>
       <ul>
         <li><strong>특정 충전기 트래픽 격리 (Traffic Sandbox):</strong>
           <ul>
@@ -676,22 +719,6 @@
           </ul>
         </li>
       </ul>
-
-      <h3>2.6. 폐쇄망 원클릭 단일 인스톨러 패키징 (Single-File Offline Installer)</h3>
-      <ul>
-        <li><strong>리눅스(Linux) 환경 패키징 (Makeself):</strong>
-          <ul>
-            <li>Makeself 자가 추출형 아카이브 도구를 활용하여 오프라인 Docker 설치 패키지(RPM/DEB), 통합 컨테이너 DTO<a href="#fn-dto" id="fnref-dto" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[DTO]</a> 이미지 백업본(<code>ocpp-lite-images.tar</code>), <code>docker-compose.yml</code> 및 기동 쉘 스크립트(<code>install.sh</code>)를 단 하나의 <code>install.run</code> 실행 파일로 패키징합니다.</li>
-            <li>실행 시 호스트의 Docker 설치 유무를 식별하여 미설치 시 내장된 패키지로 무인 설치(Silent Install)를 수행한 후, 컨테이너 이미지를 일괄 로드하여 서비스를 최종 기동합니다.</li>
-          </ul>
-        </li>
-        <li><strong>윈도우(Windows) 환경 패키징 (Inno Setup):</strong>
-          <ul>
-            <li>Inno Setup 컴파일러를 활용하여 모든 설치 파일을 하나의 <code>setup.exe</code> 파일로 압축 패키징합니다.</li>
-            <li>설치 마법사 동작 과정에서 백그라운드로 Docker Desktop 설치 프로세스를 자동 대행하고, 이미지를 로드하여 <code>docker-compose</code> 구동까지 일괄 처리하는 배치 스크립트(<code>install.bat</code>)를 구동합니다.</li>
-          </ul>
-        </li>
-      </ul>
     </section>
 
     <!-- Section 3: Architecture & Scope -->
@@ -703,34 +730,53 @@
         <div class="callout-title">💡 주요 검증 대상</div>
         <div class="callout-content">
           <ul>
-            <li><strong>WebSocket & Kafka 연동:</strong> 실시간 소켓으로 인입되는 대용량 충전기 메시지를 ocppRawChannel(KafkaChannel)을 통해 Kafka 브로커로 지연 없이 비동기 버퍼 전송하는가?</li>
-            <li><strong>Spring Integration EIP<a href="#fn-eip" id="fnref-eip" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[EIP]</a> 설계:</strong> Inbound 어댑터에서 DTO 트랜스포머 및 페이로드 라우터를 거쳐 최종 비즈니스 액티베이터로 매끄럽게 전달되는가?</li>
+            <li><strong>폐쇄망 오프라인 인스톨러 설치 무결성:</strong> 완전 격리망 환경(VM)에서 외부 인터넷 연결 없이 단일 인스톨러(<code>install.run</code> / <code>setup.exe</code>)만으로 미들웨어 구성 및 서비스가 원클릭 설치 및 정상 기동되는가?</li>
+            <li><strong>WebSocket & Kafka 메시지 큐 연동 및 버퍼링:</strong> 실시간 소켓으로 인입되는 대용량 충전기 메시지를 ocppRawChannel(KafkaChannel)을 통해 Kafka 브로커로 지연 없이 비동기 버퍼 전송하며, 트래픽 폭증 및 다운스트림 장애 상황에서 버퍼링이 정상 작동하는가?</li>
+            <li><strong>Spring Integration EIP<a href="#fn-eip" id="fnref-eip" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[EIP]</a> 설계:</strong> Inbound 어댑터에서 DTO<a href="#fn-dto" id="fnref-dto" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[DTO]</a> 트랜스포머 및 페이로드 라우터를 거쳐 최종 비즈니스 액티베이터로 매끄럽게 전달되는가?</li>
             <li><strong>가상 스레드 기반 이원 적재:</strong> 가상 스레드 풀 환경 하에서 PostgreSQL의 정산 원장 트랜잭션 기록과 ClickHouse의 계측 데이터 벌크 인서트가 동시 다발적으로 안전하게 동작하는가?</li>
           </ul>
         </div>
       </div>
 
       <div class="mermaid">
-        flowchart LR
-            CP["가상 충전기 (Simulator)"] -->|OCPP JSON| WS["WebSocket Inbound Adapter"]
-            
+        flowchart TD
+            CP["가상 충전기 (Simulator)"] -->|OCPP JSON| WS
+
             subgraph SpringBoot ["Spring Boot POC App"]
-                WS -->|raw-payload| KafkaChannel["ocppRawChannel (KafkaChannel)"]
-                
-                subgraph Kafka_Broker ["내장/로컬 메시지 큐 (Single Kafka)"]
-                    KafkaChannel <-->|Topic: ocpp-raw-events| Broker["Kafka Broker"]
+                subgraph Producer_Zone ["Producer 영역 (Uplink & Ingress)"]
+                    WS["WebSocket Inbound Adapter"] -->|raw-payload| KafkaChannel["ocppRawChannel (KafkaChannel)"]
                 end
-                
-                Broker -->|Consume| Trans["Transformer (DTO 변환)"]
-                Trans --> DtoCh["ocppDtoChannel (DirectChannel)"]
-                DtoCh --> Router{"Payload-Type Router"}
-                
-                Router -->|Boot/Authorize/Transaction| PG_Act["PostgreSQL Service Activator"]
-                Router -->|MeterValues| CH_Act["ClickHouse Service Activator"]
+
+                subgraph Queue_Zone ["내장/로컬 메시지 큐 (Single Kafka)"]
+                    Broker["Kafka Broker Engine"]
+                    Topic[("ocpp-raw-events <br> (Topic: Disk Queue/Storage)")]
+                    Broker -->|"Write (저장)"| Topic
+                    Topic -->|"Read (인출)"| Broker
+                end
+
+                subgraph Consumer_Zone ["Consumer 영역 (EIP Pipeline & Process)"]
+                    Trans["Transformer (DTO 변환)"] --> DtoCh["ocppDtoChannel (DirectChannel)"]
+                    DtoCh --> Router{"Payload-Type Router"}
+                    Router -->|Boot/Authorize/Transaction| PG_Act["PostgreSQL Service Activator"]
+                    Router -->|MeterValues| CH_Act["ClickHouse Service Activator"]
+                end
             end
-            
+
             PG_Act -->|JDBC Write| PG<a href="#fn-pg" id="fnref-pg" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[PG]</a>[(PostgreSQL)]
             CH_Act -->|Bulk Insert| CH[(ClickHouse)]
+
+            %% 연결 관계 (Producer -> Queue -> Consumer)
+            KafkaChannel -->|"Produce (인입)"| Broker
+            Broker -->|"Consume (출구/수신)"| Trans
+
+            %% 영역별 강조 스타일링
+            style Broker fill:#ff9900,stroke:#ff5500,stroke-width:3px,color:#fff
+            style Topic fill:#fff3e0,stroke:#ff9900,stroke-width:2px
+            style Queue_Zone fill:#fff3e0,stroke:#ff9900,stroke-width:2px,stroke-dasharray: 5 5
+            
+            style SpringBoot fill:#fafafa,stroke:#37474f,stroke-width:2px
+            style Producer_Zone fill:#e0f7fa,stroke:#00acc1,stroke-width:2px
+            style Consumer_Zone fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
       </div>
       <p class="mermaid-caption"><strong>그림 2:</strong> Phase 1 Spring Integration EIP 및 CQRS<a href="#fn-cqrs" id="fnref-cqrs" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CQRS]</a> 데이터 파이프라인 흐름도</p>
     </section>
@@ -1124,7 +1170,34 @@ public class DynamicChannelService {
     <!-- Section 6: Verification -->
     <section id="verification">
       <h2>6. 검증 시나리오 및 방법 (Verification Scenario)</h2>
-      <p>로컬 기동망이 셋업되면 Node.js 시뮬레이터 클라이언트를 작성하여 실시간 패킷 전송 검증을 진행합니다.</p>
+      <p>작성된 코드를 빌드하고 시뮬레이터를 이용하여 전체 흐름을 테스트하며, 특히 <strong>폐쇄망 오프라인 인스톨러</strong>와 <strong>메시지 큐(Kafka) 버퍼링</strong>의 안정성을 우선 검증합니다.</p>
+
+      <h3>6.1. Step 1: 폐쇄망 단일 인스톨러 배포 및 1-Click 설치 검증</h3>
+      <ul>
+        <li>외부 네트워크(인터넷)가 완전히 단절된 테스트용 가상 머신(Clean OS - Linux 또는 Windows)을 구성합니다.</li>
+        <li>패키징 스크립트를 통해 생성된 단일 설치 파일(<code>install.run</code> 또는 <code>setup.exe</code>)을 대상 VM으로 복사합니다.</li>
+        <li>설치 파일을 실행하여 외부 패키지 저장소 연결 시도 없이 내장된 바이너리 및 Docker 이미지만으로 1-Click 설치가 정상 완료되는지 확인합니다.</li>
+        <li>설치 마법사 또는 스크립트 종료 후, 내장된 컨테이너 서비스(PostgreSQL, Kafka, ClickHouse) 및 Spring Boot 애플리케이션이 자동으로 정상 구동 상태에 진입하는지 확인합니다.</li>
+      </ul>
+
+      <h3>6.2. Step 2: 인프라 기동 및 데이터베이스 초기화 (수동/개발자 환경 검증용)</h3>
+      <ul>
+        <li>로컬 환경에서 도커 데몬을 기동한 후 <code>docker-compose -f docker-compose-poc.yml up -d</code> 명령어를 통해 환경을 기동합니다.</li>
+        <li>PostgreSQL 및 ClickHouse 콘솔에 접속하여 데이터베이스 스키마 스크립트를 실행하여 테스트용 테이블을 초기화합니다.</li>
+      </ul>
+
+      <h3>6.3. Step 3: Spring Boot POC 어플리케이션 빌드 및 기동</h3>
+      <ul>
+        <li>Java 25 SDK 환경에서 프로젝트 루트 경로로 진입하여 Maven 또는 Gradle 빌드를 완료합니다.</li>
+        <li><code>OcppPocApplication</code>을 실행하여 웹소켓 게이트웨이 포트(예: 8080)와 Kafka 브로커 커넥션이 오차 없이 맺어지는지 확인합니다.</li>
+      </ul>
+
+      <h3>6.4. Step 4: 가상 시뮬레이터를 통한 메시지 큐(Kafka) 버퍼링 및 연동 확인</h3>
+      <p>아래의 Mocking용 Node.js 클라이언트 스크립트를 사용하여 가상 메시지 패킷을 웹소켓 게이트웨이로 발송하며, 대량 트래픽 인입 시 Kafka 메시지 큐가 병목 없이 완충 작용을 수행하는지 검증합니다.</p>
+      <ul>
+        <li><strong>대용량/고속 송신을 통한 Kafka 버퍼링 검증:</strong> 시뮬레이터 전송 주기를 극도로 단축(예: 0.1초)하여 대용량 <code>MeterValues</code> 패킷을 일시에 큐잉하고, 컨슈머에서 백프레셔를 유지하며 안정적으로 순차 처리하는지 확인합니다.</li>
+        <li><strong>다운스트림 장애 완충 검증:</strong> ClickHouse 적재 모듈을 일시 정지(장애 모킹)시킨 상태에서 시뮬레이터 송신을 계속 진행하고, Kafka 토픽에 메시지가 안전하게 누적(Lag 발생)된 후, ClickHouse 모듈 재기동 시 유실 없이 일괄 벌크 적재(Flush)되는지 확인합니다.</li>
+      </ul>
 
       <h5>가상 시뮬레이터 송신 스크립트 (simulator.js)</h5>
       <pre><code>const WebSocket = require('ws');
@@ -1167,45 +1240,45 @@ ws.on('open', function open() {
         </thead>
         <tbody>
           <tr>
-            <td><strong>1. 웹소켓 접속</strong></td>
+            <td><strong>1. 단일 인스톨러</strong></td>
+            <td>Makeself 또는 Inno Setup 기반 패키지의 완전 오프라인(폐쇄망) 무인 설치 및 자동 기동 여부</td>
+            <td>완전 오프라인 가상 머신(VM) 환경에서 <code>install.run</code> (리눅스) 또는 <code>setup.exe</code> (윈도우) 기동 후 인프라 및 서비스 정상 동작 여부 확인</td>
+            <td><span class="badge badge-success">승인 대기</span></td>
+          </tr>
+          <tr>
+            <td><strong>2. Kafka 인입 & 버퍼링</strong></td>
+            <td><code>ocpp-raw-events</code> 토픽에 Raw JSON 패킷 적재 및 다운스트림 지연 시 완충(Lag 누적) 동작 여부</td>
+            <td>1) <code>kafka-console-consumer.sh</code> 실행 시 실시간 패킷 출력 확인 <br>2) DB 중단 시 Kafka Lag 누적 후 DB 복구 시 유실 없이 자동 재처리 확인</td>
+            <td><span class="badge badge-success">승인 대기</span></td>
+          </tr>
+          <tr>
+            <td><strong>3. 웹소켓 접속</strong></td>
             <td>가상 시뮬레이터의 게이트웨이 웹소켓 정상 핸드셰이크 여부</td>
             <td>Spring Boot 런타임 로그 내 <code>Session Open / Handshake Accepted</code> 확인</td>
             <td><span class="badge badge-success">승인 대기</span></td>
           </tr>
           <tr>
-            <td><strong>2. Kafka 인입</strong></td>
-            <td>ocppRawChannel을 거쳐 Kafka 토픽으로 메시지 인입 확인</td>
-            <td><code>kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic ocpp-raw-events</code> 커맨드로 수신 확인</td>
-            <td><span class="badge badge-success">승인 대기</span></td>
-          </tr>
-          <tr>
-            <td><strong>3. EIP 분기</strong></td>
+            <td><strong>4. EIP 분기</strong></td>
             <td>Payload Action에 맞춰 DTO 파싱 및 Router 분기 처리 확인</td>
             <td>어플리케이션 로그에 <code>[PostgreSQL 적재]</code>, <code>[ClickHouse Bulk Insert]</code> 출력 확인</td>
             <td><span class="badge badge-success">승인 대기</span></td>
           </tr>
           <tr>
-            <td><strong>4. OLTP 쓰기</strong></td>
+            <td><strong>5. OLTP 쓰기</strong></td>
             <td>PostgreSQL charge_point 테이블 상태 변경 여부</td>
             <td><code>SELECT status FROM charge_point WHERE cp_id = 'CP_1001';</code> 쿼리 시 <code>Online</code> 변경 확인</td>
             <td><span class="badge badge-success">승인 대기</span></td>
           </tr>
           <tr>
-            <td><strong>5. OLAP 쓰기</strong></td>
+            <td><strong>6. OLAP 쓰기</strong></td>
             <td>가상 스레드 스케줄러를 통한 ClickHouse 1초 단위 벌크 적재 수행 여부</td>
             <td><code>SELECT count() FROM meter_value_history;</code> 쿼리 시 1초마다 레코드 수가 증가하는지 대조</td>
             <td><span class="badge badge-success">승인 대기</span></td>
           </tr>
           <tr>
-            <td><strong>6. 동적 채널 격리</strong></td>
+            <td><strong>7. 동적 채널 격리</strong></td>
             <td>특정 기기(CP) 트래픽에 대한 격리(Sandbox) 런타임 적용 여부</td>
             <td><code>DynamicChannelService.isolateChargePoint("CP_1001")</code> 호출 후, 어플리케이션 로그에 <code>[Traffic Sandbox] 격리 채널 유입</code> 출력 확인</td>
-            <td><span class="badge badge-success">승인 대기</span></td>
-          </tr>
-          <tr>
-            <td><strong>7. 단일 인스톨러</strong></td>
-            <td>Makeself 또는 Inno Setup 기반 패키지 구동 검증</td>
-            <td><code>install.run</code> (리눅스) 또는 <code>setup.exe</code> (윈도우) 기동 후 Docker 자동 설치 및 서비스 기동 확인</td>
             <td><span class="badge badge-success">승인 대기</span></td>
           </tr>
         </tbody>

@@ -99,6 +99,10 @@ def add_footnotes_to_markdown(filepath):
         segments.append((content[last_idx:], False))
 
     seen_abbrevs = set()
+    # 이미 주석 참조가 존재하는 약어는 seen_abbrevs에 사전 등록하여 중복 방지
+    for a in ABBREVIATIONS.keys():
+        if f"{a}[^{a}]" in content:
+            seen_abbrevs.add(a)
     new_segments = []
 
     # 일반 텍스트 영역 내 약어 최초 등장 매칭 수행
@@ -152,6 +156,11 @@ def add_footnotes_to_html(filepath):
     in_ignored_block = False
     ignored_tag = None
     seen_abbrevs = set()
+    # 이미 HTML에 주석 링크가 생성된 약어들은 seen_abbrevs에 사전 등록하여 중복 생성 방지
+    for abbrev in ABBREVIATIONS.keys():
+        abbrev_lower = abbrev.lower()
+        if f'href="#fn-{abbrev_lower}"' in html_content:
+            seen_abbrevs.add(abbrev)
     new_tokens = []
 
     for token in tokens:
@@ -160,9 +169,9 @@ def add_footnotes_to_html(filepath):
         if token.startswith('<') or token.startswith('<!--'):
             # HTML 태그 또는 주석 처리
             lower_token = token.lower()
-            if lower_token.startswith('<script') or lower_token.startswith('<style') or lower_token.startswith('<pre') or lower_token.startswith('<code'):
+            if lower_token.startswith('<script') or lower_token.startswith('<style') or lower_token.startswith('<pre') or lower_token.startswith('<code') or (lower_token.startswith('<div') and 'mermaid' in lower_token) or (lower_token.startswith('<section') and 'footnotes' in lower_token):
                 in_ignored_block = True
-                ignored_tag = lower_token.replace('<', '').replace('>', '').split()[0]
+                ignored_tag = lower_token.replace('<', '').replace('>', '').replace('/', '').split()[0]
             elif in_ignored_block and lower_token.startswith(f'</{ignored_tag}'):
                 in_ignored_block = False
                 ignored_tag = None
