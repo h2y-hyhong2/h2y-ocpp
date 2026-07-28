@@ -855,6 +855,45 @@
             style DLT fill:#ffebee,stroke:#e53935,stroke-width:1.5px
       </div>
       <p class="mermaid-caption"><strong>그림 2:</strong> Phase 1 Spring Boot & Spring Kafka 직접 구현 및 CQRS<a href="#fn-cqrs" id="fnref-cqrs" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[CQRS]</a> 데이터 파이프라인 흐름도</p>
+
+      <h3>3.1. 4대 핵심 소프트웨어 독립 모듈 구성 (4-Module Subsystem Architecture)</h3>
+      <p>인프라(Kafka, DB) 및 엣지 단말(Simulator)을 제외한 실제 소프트웨어 개발 및 배포 대상은 다음과 같이 <strong>4개 독립 모듈</strong>로 구성됩니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>모듈명 (Module Name)</th>
+            <th>주요 기술 스택</th>
+            <th>매핑 영역</th>
+            <th>핵심 역할 및 기능 범위</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. <code>ocpp-admin-ui</code></strong><br>(관제 UI 프론트엔드)</td>
+            <td>Vue 3 / SPA<br>(Nginx / Vite Reverse Proxy)</td>
+            <td><code>Zone 1</code></td>
+            <td>• 관제사 어드민 웹 UI 포털 및 실시간 대시보드 시각화<br>• Nginx/Vite 내장 프록시로 <code>/api</code> 요청을 관제 백엔드로 포워딩</td>
+          </tr>
+          <tr>
+            <td><strong>2. <code>ocpp-gateway</code></strong><br>(OCPP WS 게이트웨이)</td>
+            <td>Java 25 / Spring Boot<br>(Spring WebSocket)</td>
+            <td><code>Zone 3</code></td>
+            <td>• 충전기 단말 WebSocket 커넥션 수용 (Handshake/Auth)<br>• 수신 패킷 Kafka 인바운드 발행 및 하향 제어 커맨드 수신/전송</td>
+          </tr>
+          <tr>
+            <td><strong>3. <code>ocpp-consumer</code></strong><br>(OCPP Consumer 백엔드)</td>
+            <td>Java 25 / Spring Boot<br>(Virtual Threads, KafkaListener)</td>
+            <td><code>Zone 6</code></td>
+            <td>• Kafka 인바운드 메시지 소비 (<code>ocpp-raw-events</code>)<br>• OCPP 패킷 파싱, MySQL 9.71 상태 Update, ClickHouse 벌크 적재<br>• 장애/상태 변경 발생 시 Kafka UI 알림 토픽으로 이벤트 발행</td>
+          </tr>
+          <tr>
+            <td><strong>4. <code>ocpp-admin-backend</code></strong><br>(관제 백엔드 API 서비스)</td>
+            <td>Java 25 / Spring Boot<br>(Spring MVC, WebSocket Handler)</td>
+            <td><code>Zone 5</code></td>
+            <td>• 어드민 REST API (MySQL 9.71 & ClickHouse 이중 직접 조회)<br>• UI 웹소켓 푸시 핸들러 내장 (<code>ocpp-ui-notifications</code> 소비 ➔ UI Push)<br>• 관제사 원격 제어 명령 Kafka 발행 (<code>ocpp-outbound-commands</code>)</td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <!-- Section 4: Environment -->
