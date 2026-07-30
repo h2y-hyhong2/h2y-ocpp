@@ -420,12 +420,12 @@
 
       <div class="mermaid">
         gantt
-            title Phase 1 기술 검증(POC) 6개월 수행 일정
+            title Phase 1 기술 검증(POC) 6개월 수행 일정 (일요일 시작 기준)
             dateFormat  YYYY-MM-DD
             axisFormat  %Y-%m-%d
             
             section [1] 환경 구성 및 설계
-            개발 환경 & 인프라 및 상세 설계 :active, poc_infra, 2026-07-13, 28d
+            개발 환경 & 인프라 및 상세 설계 :active, poc_infra, 2026-07-01, 28d
             
             section [2] 백엔드 & 프로토콜 개발
             WebSocket Gateway & Uplink 구현 :poc_gw, after poc_infra, 28d
@@ -440,158 +440,176 @@
       </div>
       <p class="mermaid-caption"><strong>그림 1:</strong> POC 6개월 마일스톤 및 수행 로드맵 간트 차트</p>
 
-      <h3>1.1. 주차별 세부 마일스톤 및 수행 작업</h3>
-      
-      <h5>1개월차: 개발 환경 & 인프라 및 상세 설계 (Week 1 - 4)</h5>
+      <h3>1.1. 주차별 세부 마일스톤 및 수행 작업 (Weekly Detailed Milestones & Sunday-Start Date Ranges)</h3>
+
+      <h4>1개월차: 요건 분석 및 기능 정의 (Month 1: 2026.07.05 ~ 2026.08.01)</h4>
       <ul>
-        <li><strong>1주차 (Week 1):</strong>
+        <li><strong>1주차 (Week 1 / 2026.07.05일 ~ 2026.07.11토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> JDK 25 가상 스레드 기반 Spring Boot 프로젝트 생성 및 빌드/실행 환경 전역 설정 (<code>spring.threads.virtual.enabled=true</code>).</li>
+            <li><strong>[요건 분석]</strong> AS-IS CSMS 시스템 토폴로지, 레거시 시스템 간 데이터 연동 방식 및 실하중 트래픽 패턴 분석.</li>
+            <li><strong>[데이터 분석]** AS-IS 충전 원장, 결제 데이터, 충전기 마스터 DB 스키마(약 100여 개 테이블) 분석 및 정규화/반정규화 상태 검토.</li>
           </ul>
         </li>
-        <li><strong>2주차 (Week 2):</strong>
+        <li><strong>2주차 (Week 2 / 2026.07.12일 ~ 2026.07.18토):</strong>
           <ul>
-            <li><strong>[인프라/DB]</strong> Single Kafka Broker (KRaft Mode), MySQL 9.71, ClickHouse 직접 설치형 인프라 구축 및 실행 검증.</li>
+            <li><strong>[요건 분석]</strong> 150개 AS-IS 관리자 UI 화면에 대한 기능 카탈로그 분류 및 Standalone 운영에 필요한 화면 60개 선별 작업 수행.</li>
+            <li><strong>[요구사항 도출]</strong> 운영 기능(충전소, 회원, 결제, 정산)과 통신/장애 모니터링 기능의 요구사항 상세 정의서(SRS) 작성.</li>
           </ul>
         </li>
-        <li><strong>3주차 (Week 3):</strong>
+        <li><strong>3주차 (Week 3 / 2026.07.19일 ~ 2026.07.25토):</strong>
           <ul>
-            <li><strong>[인프라/DB]</strong> OLTP<a href="#fn-oltp" id="fnref-oltp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLTP]</a> 및 OLAP<a href="#fn-olap" id="fnref-olap" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLAP]</a> 핵심 테이블 DDL 작성 및 MySQL 9.71/ClickHouse 초기 데이터베이스 스키마 검증.</li>
+            <li><strong>[프로토콜 분석]</strong> OCPP<a href="#fn-ocpp" id="fnref-ocpp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OCPP]</a> 1.6J JSON 명세서(Core, Firmware, Local Auth, Smart Charging 등) 분석 및 Java Object 매핑 모델 정의.</li>
+            <li><strong>[요구사항 매핑]</strong> AS-IS 충전기 제어 시나리오(원격 부팅, 승인, 미터링)와 OCPP 메시지(BootNotification, StatusNotification 등) 간 1:1 매핑 정의서 작성.</li>
           </ul>
         </li>
-        <li><strong>4주차 (Week 4):</strong>
+        <li><strong>4주차 (Week 4 / 2026.07.26일 ~ 2026.08.01토):</strong>
           <ul>
-            <li><strong>[공통/설계]</strong> 150개 AS-IS 화면 기능 분석을 기반으로 Phase 1 Standalone POC 아키텍처 상세 설계서 작성 및 메시지 인터페이스 규격 확정.</li>
+            <li><strong>[범위 구체화]</strong> Phase 1 Standalone 검증을 위한 필수 기능 범위(Scope Matrix) 도출 및 유관 부서 조정.</li>
+            <li><strong>[기능 정의]</strong> 필수 30개 기능에 대한 'Phase 1 핵심 기능정의서(FDS)' 최종 작성 및 아키텍처 설계를 위한 검토 승인 완료.</li>
           </ul>
         </li>
       </ul>
 
-      <h5>2개월차: OCPP<a href="#fn-ocpp" id="fnref-ocpp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OCPP]</a> 1.6J WebSocket Gateway & Uplink 구현 (Week 5 - 8)</h5>
+      <h4>2개월차: 시스템 아키텍처 및 상세 설계 (Month 2: 2026.08.02 ~ 2026.08.29)</h4>
       <ul>
-        <li><strong>5주차 (Week 5):</strong>
+        <li><strong>5주차 (Week 5 / 2026.08.02일 ~ 2026.08.08토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> Spring WebSocket 기반 Gateway 핸들러 구현 및 <code>LocalSessionStore</code> 메모리 맵(ConcurrentHashMap) 설계.</li>
+            <li><strong>[아키텍처]</strong> Java 25 가상 스레드 동시성 모델 적용 방안 설계, Single Kafka 브로커 토폴로지 및 파티셔닝 전략 수립.</li>
+            <li><strong>[CQRS 패턴]</strong> MySQL 9.71(쓰기/트랜잭션)과 ClickHouse(읽기/시계열 로그) 간 CQRS 데이터 분할 및 동기화 아키텍처 수립.</li>
           </ul>
         </li>
-        <li><strong>6주차 (Week 6):</strong>
+        <li><strong>6주차 (Week 6 / 2026.08.09일 ~ 2026.08.15토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> Spring WebSocket 핸들러에서 <code>KafkaTemplate</code>을 사용해 웹소켓 유입 Raw JSON을 <code>ocpp-raw-events</code> 토픽에 발행 및 비동기 메시지 파이프라인 설계.</li>
+            <li><strong>[소켓 GW<a href="#fn-gw" id="fnref-gw" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[GW]</a> 설계]</strong> Spring WebSocket 기반 WebSocket 연결 유지 관리, Connection Heartbeat 감지 및 세션 강제 축출(Eviction) 알고리즘 설계.</li>
+            <li><strong>[파이프라인 설계]</strong> Spring Kafka 비동기 메시지 파이프라인(KafkaTemplate 및 Consumer Listener 분기) 토폴로지 설계.</li>
           </ul>
         </li>
-        <li><strong>7주차 (Week 7):</strong>
+        <li><strong>7주차 (Week 7 / 2026.08.16일 ~ 2026.08.22토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> OCPP 1.6J 핵심 프로파일 메시지 4종 (<code>BootNotification</code>, <code>Heartbeat</code>, <code>StatusNotification</code>, <code>Authorize</code>) 연동 개발.</li>
+            <li><strong>[데이터 설계]</strong> MySQL 9.71 OLTP<a href="#fn-oltp" id="fnref-oltp" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLTP]</a> 스키마(충전소 마스터, 트랜잭션 CDR, RFID 정보 등) 및 ClickHouse OLAP<a href="#fn-olap" id="fnref-olap" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[OLAP]</a> 테이블(MeterValues 수집용 시계열 로그 테이블) DDL 설계.</li>
+            <li><strong>[인덱스 모델링]</strong> ClickHouse 파티션 키 및 소팅 키(Sorting Key) 설계, MySQL 9.71 쿼리 최적화를 위한 인덱스 전략 수립.</li>
           </ul>
         </li>
-        <li><strong>8주차 (Week 8):</strong>
+        <li><strong>8주차 (Week 8 / 2026.08.23일 ~ 2026.08.29토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> OCPP 1.6J 트랜잭션 메시지 2종 (<code>StartTransaction</code>, <code>StopTransaction</code>) 연동 개발.</li>
-            <li><strong>[인프라/DB]</strong> 15초 주기 미터값 (<code>MeterValues</code>) ClickHouse 벌크 적재 버퍼 엔진 구현.</li>
+            <li><strong>[인터페이스 설계]</strong> 백엔드 API<a href="#fn-api" id="fnref-api" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[API]</a> 명세(Spring MVC Controller REST API) 및 프론트엔드 연동용 실시간 이벤트 WebSocket 푸시 프로토콜 설계.</li>
+            <li><strong>[설계서 확정]</strong> 'Phase 1 Standalone 아키텍처 상세설계서(ADD)' 및 '인터페이스 정의서(IDD)' 최종 승인 및 개발 준비 완료.</li>
           </ul>
         </li>
       </ul>
 
-      <h5>3개월차: 비즈니스 로직 & 백엔드 코어 개발 (Week 9 - 12)</h5>
+      <h4>3개월차: 개발 환경 구축 및 WebSocket Gateway 개발 (Month 3: 2026.08.30 ~ 2026.09.26)</h4>
       <ul>
-        <li><strong>9주차 (Week 9):</strong>
+        <li><strong>9주차 (Week 9 / 2026.08.30일 ~ 2026.09.05토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> 법인관리, 사업장목록, 충전소목록, 한전계약단가 관리 API<a href="#fn-api" id="fnref-api" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[API]</a> 개발.</li>
+            <li><strong>[개발 환경]</strong> JDK 25(OpenJDK) 설치 및 IntelliJ IDE 프로젝트 세팅, Maven 빌드 구성 및 패키지 구조 수립.</li>
+            <li><strong>[인프라 구성]</strong> 호스트 OS에 MySQL 9.71, Kafka(KRaft 모드), ClickHouse 단일 노드를 직접 설치 및 구동하여 로컬 환경 구축.</li>
           </ul>
         </li>
-        <li><strong>10주차 (Week 10):</strong>
+        <li><strong>10주차 (Week 10 / 2026.09.06일 ~ 2026.09.12토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> 충전기관리(등록/상세), 충전기목록 및 충전기모델관리, 충전기 개소 관리 백엔드 로직 완성.</li>
+            <li><strong>[DB 초기화]</strong> MySQL 9.71 마스터 스키마 DDL 실행, 초기 더미 데이터 적재 및 스프링 데이터 JPA 연동 설정.</li>
+            <li><strong>[스키마 검증]</strong> ClickHouse 시계열 로그 저장용 MergeTree 엔진 테이블 생성 및 로컬 커넥션(HikariCP/JDBC) 연동 검증.</li>
           </ul>
         </li>
-        <li><strong>11주차 (Week 11):</strong>
+        <li><strong>11주차 (Week 11 / 2026.09.13일 ~ 2026.09.19토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> RFID<a href="#fn-rfid" id="fnref-rfid" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[RFID]</a> 정보 마스터 등록 및 RFID 요청 승인 프로세스 개발.</li>
+            <li><strong>[웹소켓 구현]</strong> Spring WebSocket Endpoint 핸들러 구현 및 <code>ConcurrentHashMap</code> 기반의 메모리 세션 관리 클래스 <code>LocalSessionStore</code> 개발.</li>
+            <li><strong>[메시지 채널]</strong> Spring WebSocket 핸들러에서 <code>KafkaTemplate</code>을 사용해 웹소켓 유입 Raw JSON 패킷을 Kafka <code>ocpp-raw-events</code> 토픽으로 유실 없이 퍼블리싱하는 비동기 연동 검증.</li>
           </ul>
         </li>
-        <li><strong>12주차 (Week 12):</strong>
+        <li><strong>12주차 (Week 12 / 2026.09.20일 ~ 2026.09.26토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> 요일별/휴일별 요금 정책 적용 기본 데이터 모델 설계 및 한전 계약 요금 테이블 연동 비즈니스 로직 개발.</li>
+            <li><strong>[OCPP 연동]</strong> OCPP 1.6J Core 프로파일의 필수 메시지 4종(<code>BootNotification</code>, <code>Heartbeat</code>, <code>StatusNotification</code>, <code>Authorize</code>) 수신 핸들러 및 응답 메시지 빌더 구현.</li>
+            <li><strong>[세션 처리]</strong> 하트비트 타임아웃(Heartbeat Timeout) 감지 시 물리 소켓을 강제 차단하고 DB 상 충전기 상태를 <code>Offline</code>으로 변경하는 세션 감시 백그라운드 스레드 구현.</li>
           </ul>
         </li>
       </ul>
 
-      <h5>4개월차: 프론트엔드 Vue 3 UI 포털 및 관제 화면 개발 (Week 13 - 16)</h5>
+      <h4>4개월차: 백엔드 비즈니스 로직 및 프론트 기본 개발 (Month 4: 2026.09.27 ~ 2026.10.24)</h4>
       <ul>
-        <li><strong>13주차 (Week 13):</strong>
+        <li><strong>13주차 (Week 13 / 2026.09.27일 ~ 2026.10.03토):</strong>
           <ul>
-            <li><strong>[프론트엔드]</strong> Vue 3 (Composition API) + Pinia 상태 관리를 적용한 기본 어드민 포털 레이아웃 및 대시보드 컴포넌트 개발.</li>
+            <li><strong>[트랜잭션 개발]</strong> <code>StartTransaction</code> / <code>StopTransaction</code> 메시지 파싱 및 MySQL 9.71 <code>charging_transaction</code> 테이블 상태 변경 연동.</li>
+            <li><strong>[미터값 적재]</strong> 15초 주기 <code>MeterValues</code> ClickHouse 벌크 인서트 버퍼링(Queue) 엔진 및 백그라운드 Flush 스케줄러 구현.</li>
           </ul>
         </li>
-        <li><strong>14주차 (Week 14):</strong>
+        <li><strong>14주차 (Week 14 / 2026.10.04일 ~ 2026.10.10토):</strong>
           <ul>
-            <li><strong>[프론트엔드]</strong> 실시간 충전기 커넥터 상태 모니터링 화면 및 상태 동적 필터링 그리드 구축.</li>
+            <li><strong>[비즈니스 API]</strong> 법인/사업장 마스터, 충전소 목록, 충전기 자산 조회, 한전 요금 테이블 연동 API 개발.</li>
+            <li><strong>[인증/인프라]</strong> 충전기 웹소켓 접속 시 Basic Auth HTTP 헤더 인증 처리 필터 및 스프링 시큐리티 기본 적용.</li>
           </ul>
         </li>
-        <li><strong>15주차 (Week 15):</strong>
+        <li><strong>15주차 (Week 15 / 2026.10.11일 ~ 2026.10.17토):</strong>
           <ul>
-            <li><strong>[프론트엔드]</strong> 충전소 및 충전기 상세 자산 목록 화면, 그리고 요금 정책 관리 컴포넌트 개발.</li>
+            <li><strong>[FE 기본 레이아웃]</strong> Vue 3 (Vite, TypeScript) 개발 환경 세팅, Pinia 상태 관리 아키텍처 수립 및 어드민 기본 포털 레이아웃(Sidebar, Header, Main) 구성.</li>
+            <li><strong>[FE 대시보드]</strong> 메인 관제 대시보드 컴포넌트(실시간 기동률, 충전소 상태 카드 그리드) 구현.</li>
           </ul>
         </li>
-        <li><strong>16주차 (Week 16):</strong>
+        <li><strong>16주차 (Week 16 / 2026.10.18일 ~ 2026.10.24토):</strong>
           <ul>
-            <li><strong>[프론트엔드]</strong> 웹소켓 연동 실시간 OCPP Raw 메시지 로그 뷰어 화면, 특정 기기 동적 격리(Sandbox) 및 디버깅(WireTap) 제어용 관리자 콘솔 UI 개발.</li>
-            <li><strong>[백엔드]</strong> UI-백엔드 WebSocket 통합 연동 및 실시간 이벤트 채널 매핑.</li>
+            <li><strong>[FE 관제 화면]</strong> 충전기 커넥터 상태 모니터링 그리드 화면 개발, Axios 통신 모듈 연동 및 실시간 상태 동적 변경용 웹소켓 이벤트 바인딩.</li>
           </ul>
         </li>
       </ul>
 
-      <h5>5개월차: 정산 엔진 및 장애 관리 구축 (Week 17 - 20)</h5>
+      <h4>5개월차: 정산 엔진 및 장애 관리, UI 통합 개발 (Month 5: 2026.10.25 ~ 2026.11.21)</h4>
       <ul>
-        <li><strong>17주차 (Week 17):</strong>
+        <li><strong>17주차 (Week 17 / 2026.10.25일 ~ 2026.10.31토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> 계절별/시간대별 TOU<a href="#fn-tou" id="fnref-tou" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[TOU]</a> 요금 계산 로직 적용 및 트랜잭션 종료 시 최종 이용금액을 연산하는 정산 엔진 개발.</li>
+            <li><strong>[정산 엔진]</strong> 계절별/시간대별 TOU<a href="#fn-tou" id="fnref-tou" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[TOU]</a> 요금 체계 및 한전 기본 요금 가중치 연산 엔진 구현.</li>
+            <li><strong>[CDR 영속화]</strong> 충전 종료 시 누적 사용 Wh 전력량과 단가를 연산해 최종 CDR(Charge Detail Record)을 발급하고 MySQL 9.71 원장에 영속화하는 로직 개발.</li>
           </ul>
         </li>
-        <li><strong>18주차 (Week 18):</strong>
+        <li><strong>18주차 (Week 18 / 2026.11.01일 ~ 2026.11.07토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> MySQL 9.71 CDR(Charge Detail Record) 저장 로직 및 바로정산 API 구현.</li>
+            <li><strong>[FE 자산 관리]</strong> 충전소 및 충전기 자산 등록/상세 조회 화면 및 요금 정책 설정 매핑 컴포넌트 개발.</li>
+            <li><strong>[조회 API]</strong> MySQL 9.71 트랜잭션 테이블 조회를 통한 충전 이력 및 과금 원장 조회 API/화면 연동.</li>
           </ul>
         </li>
-        <li><strong>19주차 (Week 19):</strong>
+        <li><strong>19주차 (Week 19 / 2026.11.08일 ~ 2026.11.14토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> 제조사별 장애코드관리 및 StatusNotification 고장 수동 접수 처리 관리 시스템 구축.</li>
+            <li><strong>[장애 감지]</strong> OCPP <code>StatusNotification</code> Faulted 수신 시 MySQL 9.71 장애 이력 테이블 생성 및 <code>alertPushChannel</code>을 통한 브로드캐스팅 알림 발송 백엔드 구현.</li>
+            <li><strong>[원격 제어]</strong> 어드민 API 원격 제어 명령(<code>Reset</code>, <code>UnlockConnector</code>) 수신 시 active WebSocket 세션으로 OCPP Call 패킷 즉시 라우팅 처리.</li>
           </ul>
         </li>
-        <li><strong>20주차 (Week 20):</strong>
+        <li><strong>20주차 (Week 20 / 2026.11.15일 ~ 2026.11.21토):</strong>
           <ul>
-            <li><strong>[백엔드]</strong> 실시간 장애 알림(StatusNotification) 웹소켓 브로드캐스팅 알림 연동.</li>
-            <li><strong>[프론트엔드]</strong> 실시간 장애 알림(StatusNotification) 팝업 및 장애 목록 화면 연계.</li>
+            <li><strong>[FE UI 통합]</strong> 실시간 장애 팝업 알림창 및 장애 이력 그리드 연계, 실시간 OCPP 통신 로그 뷰어 화면 개발.</li>
+            <li><strong>[FE 동적 제어]</strong> 특정 기기 트래픽 격리(Sandbox) 및 실시간 패킷 디버깅(WireTap) 스위칭 관리자 콘솔 UI 개발 및 백엔드 연동 통합 검증.</li>
+            <li><strong>[백엔드/FE]</strong> UI-백엔드 WebSocket 통합 연동 및 실시간 이벤트 채널 매핑 완료.</li>
           </ul>
         </li>
       </ul>
 
-      <h5>6개월차: 경량화 튜닝 및 최종 통합 검증 완료 (Week 21 - 24)</h5>
+      <h4>6개월차: 리소스 최적화, 통합 검증 및 배포 패키징 (Month 6: 2026.11.22 ~ 2026.12.19)</h4>
       <ul>
-        <li><strong>21주차 (Week 21):</strong>
+        <li><strong>21주차 (Week 21 / 2026.11.22일 ~ 2026.11.28토):</strong>
           <ul>
-            <li><strong>[인프라/DB]</strong> 단일 VM 리소스 최적화를 위한 Kafka Heap Size 강제 제한(512MB) 및 ClickHouse 쿼리당 최대 메모리 사용 임계치 제한(4GB) 적용.</li>
+            <li><strong>[리소스 최적화]</strong> 단일 VM의 리소스 가용성 극대화를 위해 가상 스레드 덤프 분석, Kafka JVM Heap(512MB) 튜닝, ClickHouse 쿼리 메모리 한도 설정.</li>
+            <li><strong>[DB 튜닝]</strong> MySQL 9.71 DB Connection Pool(HikariCP 50개) 최적화 및 슬로우 쿼리 인덱스 튜닝.</li>
           </ul>
         </li>
-        <li><strong>22주차 (Week 22):</strong>
+        <li><strong>22주차 (Week 22 / 2026.11.29일 ~ 2026.12.05토):</strong>
           <ul>
-            <li><strong>[테스트/검증]</strong> 가상 충전기 시뮬레이터(Node.js)를 활용한 동시 2,000대 연결 및 데이터 송수신 안정성 테스트.</li>
+            <li><strong>[부하 테스트]</strong> Node.js 기반 가상 충전기 시뮬레이터 2,000대 연결 구동 및 대량의 <code>MeterValues</code> 송신 하에서 메모리 누수 및 CPU 점유율 모니터링.</li>
+            <li><strong>[스트레스 테스트]</strong> 네트워크 지연(Latency) 및 단선 시 재연결(Reconnect)에 따른 세션 복구 안정성 검증.</li>
           </ul>
         </li>
-        <li><strong>23주차 (Week 23):</strong>
+        <li><strong>23주차 (Week 23 / 2026.12.06일 ~ 2026.12.12토):</strong>
           <ul>
-            <li><strong>[테스트/검증]</strong> Phase 1 통합 시나리오 테스트 및 병목 구간 식별/가상 스레드 성능 튜닝.</li>
+            <li><strong>[시나리오 검증]</strong> 부팅 -&gt; 승인 -&gt; 충전 시작 -&gt; 미터값 수집 -&gt; 장애 발생 -&gt; 원격 리셋 -&gt; 충전 종료 -&gt; 정산 및 CDR 영속화 -&gt; UI 반영에 이르는 Phase 1 통합 시나리오 테스트.</li>
+            <li><strong>[병목 개선]</strong> 통합 테스트 시 발견된 병목 구간(ClickHouse JDBC 드라이버 병목 등) 튜닝 및 패키징 준비.</li>
+            <li><strong>[인프라/배포]</strong> Makeself를 이용한 리눅스용 단일 무인 설치 파일(<code>install.run</code>) 및 Inno Setup을 이용한 윈도우용 <code>setup.exe</code> 컴파일 스크립트 개발.</li>
           </ul>
         </li>
-        <li><strong>24주차 (Week 24):</strong>
+        <li><strong>24주차 (Week 24 / 2026.12.13일 ~ 2026.12.19토):</strong>
           <ul>
-            <li><strong>[인프라/배포]</strong> Makeself(Linux .run) 및 Inno Setup(Windows .exe) 기반 단일 실행 파일(Single Installer) 오프라인 패키징 빌드 스크립트 작성, 완전 폐쇄망(Air-Gapped) 내 독립 실행 배포본 패키징 및 최종 통합 검증 완료 (M1 달성).</li>
+            <li><strong>[인프라/배포]</strong> 완전 폐쇄망 환경의 가상 머신에 인스톨러 배포 후 1-Click 설치 기동 완료 및 M1 마일스톤(Phase 1 POC 통과) 최종 확인 및 종료.</li>
           </ul>
         </li>
       </ul>
-    </section>
 
-    <!-- Section 2: Functional Specifications -->
-    <section id="functions">
       <h2>2. POC 검증 핵심 기능 명세 (POC Functional Requirements)</h2>
       <p>Phase 1 POC에서 구현 및 검증하는 필수 기능 범위 및 상세 명세입니다. 핵심 검증 대상인 <strong>메시지 큐(Kafka) 버퍼링</strong>과 <strong>폐쇄망 오프라인 인스톨러</strong>의 명세를 최우선으로 배치하고 강조합니다.</p>
 
@@ -664,7 +682,7 @@
         <li><strong>기기 부팅 및 인증 (<code>BootNotification</code>, <code>Authorize</code>):</strong>
           <ul>
             <li>부팅 메시지 수신 시 MySQL 9.71의 <code>charge_point</code> 테이블을 조회하여 해당 기기가 Registered 상태이면 accepted 응답을 전송하고 Online 상태로 변경.</li>
-            <li>RFID 태그 접촉에 따른 <code>Authorize</code> 요청 시, 데이터베이스 내 회원 상태 및 정기권 유효 여부를 체크하여 accepted/invalid 여부 반환.</li>
+            <li>RFID<a href="#fn-rfid" id="fnref-rfid" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[RFID]</a> 태그 접촉에 따른 <code>Authorize</code> 요청 시, 데이터베이스 내 회원 상태 및 정기권 유효 여부를 체크하여 accepted/invalid 여부 반환.</li>
           </ul>
         </li>
         <li><strong>충전 개시 및 종료 (<code>StartTransaction</code>, <code>StopTransaction</code>):</strong>
@@ -898,10 +916,272 @@
 
     <!-- Section 4: Environment -->
     <section id="env">
-      <h2>4. 인프라 환경 구성 (Poc Environment)</h2>
-      <p>단일 호스트 VM 또는 로컬 PC 상에서 각 미들웨어를 직접 설치형(Native Binary)으로 구동하고 설정합니다.</p>
+      <h2>4. 단일 서버 일체형 환경 구성 및 사양 명세 (Single Server All-in-One Host Environment)</h2>
+      <p>본 POC 및 Phase 1 인스톨러 배포본은 단일 PC 또는 단일 VM 호스트(<strong>Windows 11 64-bit</strong> 또는 Enterprise Linux) 환경에 <strong>4대 앱 모듈</strong>과 <strong>3대 인프라 미들웨어(Kafka, MySQL, ClickHouse)</strong>를 모두 함께 탑재(All-in-One Deployment)하여 운영할 수 있도록 검증 사양을 제시합니다.</p>
 
-      <h3>4.1. 미들웨어별 구동 및 설정 가이드</h3>
+      <h3>4.1. 단일 서버 하드웨어 사양 명세 (Single Server Hardware Specifications)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>표준 권장 사양 (Standard Spec)</th>
+            <th>여유 고성능 사양 (High-End Spec)</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>OS</strong></td>
+            <td><strong>Windows 11 Pro / Enterprise 64-bit</strong></td>
+            <td><strong>Windows 11 Pro / Enterprise 64-bit</strong> (또는 RHEL/Ubuntu)</td>
+            <td>Windows 11 데스크톱/서버 환경 기준</td>
+          </tr>
+          <tr>
+            <td><strong>CPU</strong></td>
+            <td><strong>16 vCPUs</strong> (3.0GHz 이상)</td>
+            <td><strong>32 vCPUs</strong> (3.2GHz 이상 High Clock)</td>
+            <td>가상 스레드 대용량 병렬 연산 및 Kafka 처리</td>
+          </tr>
+          <tr>
+            <td><strong>Memory (RAM<a href="#fn-ram" id="fnref-ram" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[RAM]</a>)</strong></td>
+            <td><strong>32 GB RAM</strong></td>
+            <td><strong>64 GB RAM</strong></td>
+            <td>ClickHouse 대용량 OLAP 메모리 쿼리 & OS Cache</td>
+          </tr>
+          <tr>
+            <td><strong>Disk Storage</strong></td>
+            <td><strong>1 TB NVMe SSD<a href="#fn-ssd" id="fnref-ssd" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[SSD]</a></strong></td>
+            <td><strong>2 TB Enterprise NVMe SSD</strong> (RAID 1/10)</td>
+            <td>Windows 시스템, MySQL, ClickHouse 및 Kafka 적재</td>
+          </tr>
+          <tr>
+            <td><strong>Network</strong></td>
+            <td>1 Gbps / 10 Gbps NIC</td>
+            <td><strong>10 Gbps ~ 25 Gbps Dual NIC</strong></td>
+            <td>대규모 동시 웹소켓 세션 및 1초 미터값 수신</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>4.2. Windows 11 환경 내부 7개 프로세스별 자원 할당 명세 (Windows 11 Itemized Resource Budgeting)</h3>
+      <p>Windows 11 OS 자체 오버헤드(DWM, Defender, System Service, Pagefile 등 약 6GB ~ 12GB RAM 및 100GB ~ 150GB Disk)를 사전에 차감 고려하여, 7개 개별 프로세스에 정밀 배분한 자원 할당 예산표입니다.</p>
+
+      <h4>4.2.1. Windows 11 표준 권장 사양 자원 할당 명세 (Standard Spec: 16 vCPU / 32GB RAM / 1TB SSD)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>개별 프로세스 명칭 (Process Name)</th>
+            <th>CPU 코어 배분</th>
+            <th>RAM 메모리 할당</th>
+            <th>디스크 용량 할당</th>
+            <th>자원 제어 및 Windows 설정 가이드</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>앱 1</strong></td>
+            <td><strong><code>ocpp-admin-ui</code></strong> (Nginx Windows)</td>
+            <td><strong>1 vCPU</strong></td>
+            <td><strong>0.5 GB</strong></td>
+            <td><strong>10 GB</strong></td>
+            <td>• Windows Nginx 포트 정적 서빙 및 <code>/api</code> 프록시</td>
+          </tr>
+          <tr>
+            <td><strong>앱 2</strong></td>
+            <td><strong><code>ocpp-gateway</code></strong> (OCPP WS Gateway)</td>
+            <td><strong>4 vCPUs</strong></td>
+            <td><strong>1.5 GB</strong></td>
+            <td><strong>20 GB</strong></td>
+            <td>• JVM<a href="#fn-jvm" id="fnref-jvm" style="text-decoration: none; color: var(--primary-color); vertical-align: super; font-size: 0.75rem; margin-left: 2px;">[JVM]</a> <code>-Xms1g -Xmx1.5g</code> 세팅, 게이트웨이 앱 로그</td>
+          </tr>
+          <tr>
+            <td><strong>앱 3</strong></td>
+            <td><strong><code>ocpp-consumer</code></strong> (OCPP Consumer Engine)</td>
+            <td><strong>6 vCPUs</strong></td>
+            <td><strong>2.5 GB</strong></td>
+            <td><strong>30 GB</strong></td>
+            <td>• JVM <code>-Xms1.5g -Xmx2.5g</code>, Virtual Threads 파싱/적재</td>
+          </tr>
+          <tr>
+            <td><strong>앱 4</strong></td>
+            <td><strong><code>ocpp-admin-backend</code></strong> (관제 백엔드 API)</td>
+            <td><strong>3 vCPUs</strong></td>
+            <td><strong>1.5 GB</strong></td>
+            <td><strong>20 GB</strong></td>
+            <td>• JVM <code>-Xms1g -Xmx1.5g</code>, REST API & UI WS Push</td>
+          </tr>
+          <tr>
+            <td><strong>미들웨어 1</strong></td>
+            <td><strong><code>Apache Kafka</code></strong> (KRaft Single Broker)</td>
+            <td><strong>4 vCPUs</strong></td>
+            <td><strong>3.0 GB</strong></td>
+            <td><strong>100 GB</strong></td>
+            <td>• Kafka JVM <code>-Xms2g -Xmx3g</code>, Log Retention 7일</td>
+          </tr>
+          <tr>
+            <td><strong>미들웨어 2</strong></td>
+            <td><strong><code>MySQL 9.71</code></strong> (Windows Service)</td>
+            <td><strong>4 vCPUs</strong></td>
+            <td><strong>5.5 GB</strong></td>
+            <td><strong>220 GB</strong></td>
+            <td>• <code>innodb_buffer_pool_size = 4G</code>, 자산/원장/Binlog</td>
+          </tr>
+          <tr>
+            <td><strong>미들웨어 3</strong></td>
+            <td><strong><code>ClickHouse</code></strong> (Windows Native/WSL2)</td>
+            <td><strong>6 vCPUs</strong></td>
+            <td><strong>8.5 GB</strong></td>
+            <td><strong>500 GB</strong></td>
+            <td>• <code>max_server_memory_usage = 8G</code>, 시계열 1초 미터값 적재</td>
+          </tr>
+          <tr>
+            <td><strong>시스템 OS</strong></td>
+            <td><strong><code>Windows 11 OS & System Cache</code></strong></td>
+            <td>-</td>
+            <td><strong>6.0 GB</strong></td>
+            <td><strong>100 GB</strong></td>
+            <td>• <strong>Windows 11 System OS Baseline (~4.5GB)</strong><br>• DWM, Defender, Pagefile & Windows File Cache</td>
+          </tr>
+          <tr>
+            <td><strong>합계</strong></td>
+            <td><strong>Windows 11 호스트 표준 사양 통합</strong></td>
+            <td><strong>16 vCPUs</strong></td>
+            <td><strong>32.0 GB RAM</strong></td>
+            <td><strong>1,000 GB NVMe (1TB)</strong></td>
+            <td><strong>OS 오버헤드 차감 후 메모리/디스크 경합 제로 보장</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>4.2.2. Windows 11 여유 고성능 사양 자원 할당 명세 (High-Performance Spec: 32 vCPU / 64GB RAM / 2TB SSD)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>개별 프로세스 명칭 (Process Name)</th>
+            <th>CPU 코어 배분</th>
+            <th>RAM 메모리 할당</th>
+            <th>디스크 용량 할당</th>
+            <th>자원 제어 및 Windows 설정 가이드</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>앱 1</strong></td>
+            <td><strong><code>ocpp-admin-ui</code></strong> (Nginx Windows)</td>
+            <td><strong>2 vCPUs</strong></td>
+            <td><strong>1.0 GB</strong></td>
+            <td><strong>10 GB</strong></td>
+            <td>• Windows Nginx 고성능 튜닝</td>
+          </tr>
+          <tr>
+            <td><strong>앱 2</strong></td>
+            <td><strong><code>ocpp-gateway</code></strong> (OCPP WS Gateway)</td>
+            <td><strong>6 vCPUs</strong></td>
+            <td><strong>3.0 GB</strong></td>
+            <td><strong>20 GB</strong></td>
+            <td>• JVM <code>-Xms2g -Xmx3g</code> 세팅, 넉넉한 세션 메모리</td>
+          </tr>
+          <tr>
+            <td><strong>앱 3</strong></td>
+            <td><strong><code>ocpp-consumer</code></strong> (OCPP Consumer Engine)</td>
+            <td><strong>10 vCPUs</strong></td>
+            <td><strong>5.0 GB</strong></td>
+            <td><strong>30 GB</strong></td>
+            <td>• JVM <code>-Xms2g -Xmx5g</code>, 대용량 가상 스레드 파싱</td>
+          </tr>
+          <tr>
+            <td><strong>앱 4</strong></td>
+            <td><strong><code>ocpp-admin-backend</code></strong> (관제 백엔드 API)</td>
+            <td><strong>4 vCPUs</strong></td>
+            <td><strong>3.0 GB</strong></td>
+            <td><strong>20 GB</strong></td>
+            <td>• JVM <code>-Xms2g -Xmx3g</code>, 초고속 REST & UI WS Push</td>
+          </tr>
+          <tr>
+            <td><strong>미들웨어 1</strong></td>
+            <td><strong><code>Apache Kafka</code></strong> (KRaft Single Broker)</td>
+            <td><strong>6 vCPUs</strong></td>
+            <td><strong>6.0 GB</strong></td>
+            <td><strong>200 GB</strong></td>
+            <td>• Kafka JVM <code>KAFKA_HEAP_OPTS="-Xms4g -Xmx6g"</code></td>
+          </tr>
+          <tr>
+            <td><strong>미들웨어 2</strong></td>
+            <td><strong><code>MySQL 9.71</code></strong> (Windows Service)</td>
+            <td><strong>6 vCPUs</strong></td>
+            <td><strong>12.0 GB</strong></td>
+            <td><strong>400 GB</strong></td>
+            <td>• <code>innodb_buffer_pool_size = 10G</code>, 대용량 SQL 인덱싱</td>
+          </tr>
+          <tr>
+            <td><strong>미들웨어 3</strong></td>
+            <td><strong><code>ClickHouse</code></strong> (Windows Native/WSL2)</td>
+            <td><strong>10 vCPUs</strong></td>
+            <td><strong>19.0 GB</strong></td>
+            <td><strong>1,170 GB</strong></td>
+            <td>• <code>max_server_memory_usage = 18G</code>, 대용량 시계열 OLAP</td>
+          </tr>
+          <tr>
+            <td><strong>시스템 OS</strong></td>
+            <td><strong><code>Windows 11 OS & System Cache</code></strong></td>
+            <td>-</td>
+            <td><strong>12.0 GB</strong></td>
+            <td><strong>150 GB</strong></td>
+            <td>• <strong>Windows 11 System Baseline (~5GB)</strong><br>• DWM, System Restore, Pagefile & Virtualization</td>
+          </tr>
+          <tr>
+            <td><strong>합계</strong></td>
+            <td><strong>Windows 11 호스트 고성능 사양 통합</strong></td>
+            <td><strong>32 vCPUs</strong></td>
+            <td><strong>64.0 GB RAM</strong></td>
+            <td><strong>2,000 GB NVMe (2TB)</strong></td>
+            <td><strong>대용량 부하 처리 및 초고속 보장</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>4.3. 단일 서버 디스크 물리/논리 분리 구성 전략 (Disk Storage Separation Strategy)</h3>
+      <p>단일 호스트 서버 상에서 7개 프로세스가 동시 실행될 때, <strong>ClickHouse의 대용량 시계열 벌크 인서트 IOPS</strong>와 <strong>MySQL OLTP 트랜잭션 동기화</strong>, <strong>Windows OS 시스템 디스크 IOPS</strong> 간의 병목 현상(Disk I/O Contention)을 방지하기 위해 <strong>2-Disk 물리 분리 구성</strong>을 강력히 권장합니다.</p>
+
+      <h4>4.3.1. [강력 권장] 2-Disk 물리 분리 구성안 (Dual-Disk Topology)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>드라이브 구분</th>
+            <th>디스크 용량 (1TB 표준 기준)</th>
+            <th>디스크 용량 (2TB 고성능 기준)</th>
+            <th>탑재 대상 프로세스 및 저장 폴더</th>
+            <th>디스크 I/O 성격 및 분리 효과</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Disk 1 (<code>C:\</code>)</strong><br>(System & OLTP)</td>
+            <td><strong>400 GB NVMe SSD</strong></td>
+            <td><strong>650 GB NVMe SSD</strong></td>
+            <td>• <strong>Windows 11 OS</strong> (<code>C:\Windows</code>, Pagefile)<br>• <strong>4대 앱 모듈</strong> (<code>C:\ocpp\apps</code>, 앱 로그)<br>• <strong>MySQL 9.71 OLTP DB</strong> (<code>C:\ProgramData\MySQL</code>)</td>
+            <td>• <strong>랜덤 I/O 위주 업무 처리</strong><br>• OS 부팅, 웹 앱 서비스, MySQL 회원/원장 SQL 트랜잭션 수용</td>
+          </tr>
+          <tr>
+            <td><strong>Disk 2 (<code>D:\</code>)</strong><br>(BigData OLAP & MQ)</td>
+            <td><strong>600 GB NVMe SSD</strong></td>
+            <td><strong>1,350 GB NVMe SSD</strong></td>
+            <td>• <strong>Apache Kafka 메시지 큐</strong> (<code>D:\kafka-logs</code>)<br>• <strong>ClickHouse OLAP 데이터</strong> (<code>D:\clickhouse\data</code>)</td>
+            <td>• <strong>대용량 순차/벌크 I/O 전용</strong><br>• ClickHouse 시계열 미터값 벌크 적재 IOPS와 Kafka 큐잉 병목 완전 격리</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>4.3.2. 단일 디스크(Single 1TB/2TB SSD) 구동 시 파티션 분리 가이드</h4>
+      <p>단일 물리 NVMe SSD 1개만 탑재된 서버의 경우에도 디스크 꽉 찼을 때 OS 다운 방지를 위해 다음과 같이 논리 파티션을 분리합니다.</p>
+      <ul>
+        <li><strong><code>C:\</code> 파티션 (150 GB ~ 250 GB):</strong> Windows OS, 앱 실행 파일, Nginx 정적 파일</li>
+        <li><strong><code>D:\</code> 파티션 (850 GB ~ 1,750 GB):</strong> Kafka 로그, MySQL 데이터, ClickHouse 컬럼 데이터 파일</li>
+      </ul>
+
+      <h3>4.4. 미들웨어별 구동 및 설정 가이드</h3>
 
       <h4>4.1.1. MySQL 9.71 (OLTP DB)</h4>
       <ul>
