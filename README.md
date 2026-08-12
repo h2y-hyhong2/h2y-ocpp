@@ -20,7 +20,7 @@
 ## 🛠️ 핵심 기술 스택 (Core Tech Stack)
 
 * **Backend Core:** Java 25 (Virtual Threads), Spring Boot 3.x/4.x
-* **Enterprise Integration:** Spring Integration 6.x (제 1안 권장안 적용 기준)
+* **Enterprise Integration:** Spring-Kafka (제 2안 채택 적용 기준)
 * **Message Broker:** Apache Kafka (KRaft Mode)
 * **Databases:** MySQL 9.71 (OLTP[^OLTP], 정산/자산 마스터) & ClickHouse (OLAP[^OLAP], 미터값/원본로그 시계열)
 * **In-Memory Cache:** Redis (분산 세션 및 명령 라우팅 Pub/Sub)

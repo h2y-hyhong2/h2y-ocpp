@@ -382,9 +382,9 @@
     <!-- Section 2: Layered Architecture -->
     <section id="layered">
       <h2>2. 소프트웨어 다층 레이어드 구조 (Software Layered Architecture)</h2>
-      <p>솔루션 내부의 모듈 구조는 하부 인프라 및 통신 프로토콜의 변화에 유연하게 대응할 수 있도록 역할별로 명확히 레이어링되어 있습니다. 아키텍처 결정 사항에 맞춰 <strong>[제 1안: Spring Integration 버전]</strong>과 <strong>[제 2안: Spring Boot 버전]</strong>에 따른 세부 소프트웨어 구성의 차이를 기술합니다.</p>
+      <p>솔루션 내부의 모듈 구조는 하부 인프라 및 통신 프로토콜의 변화에 유연하게 대응할 수 있도록 역할별로 명확히 레이어링되어 있습니다. 아키텍처 결정 사항(제 2안 채택)에 맞춰 <strong>[제 2안: Spring Boot 버전 - 채택]</strong>과 <strong>[제 1안: Spring Integration 버전 - 유보]</strong>에 따른 세부 소프트웨어 구성의 차이를 기술합니다.</p>
 
-      <h3 id="layered-option1">2.1. [제 1안: Spring Integration 버전] EIP 및 메시지 채널 기반 레이어드 아키텍처</h3>
+      <h3 id="layered-option1">2.1. [제 1안: Spring Integration 버전 - 유보] EIP 및 메시지 채널 기반 레이어드 아키텍처</h3>
       <p>Spring Integration의 엔터프라이즈 통합 패턴(EIP)을 적용하여, 통신 수신부(Gateway)와 처리 엔진(Core) 간의 물리적 및 논리적 격리를 완성하고, 데이터 흐름을 Channel 객체로 완벽히 추상화한 구조입니다.</p>
 
       <div class="mermaid">
@@ -441,7 +441,7 @@
             CtrlCh -.->|Outbound Adapter| WS
       </div>
 
-      <h3 id="layered-option2">2.2. [제 2안] Spring Boot 버전] Spring Kafka 직접 구현 기반 레이어드 아키텍처</h3>
+      <h3 id="layered-option2">2.2. [제 2안: Spring Boot 버전 - 채택] Spring Kafka 직접 구현 기반 레이어드 아키텍처</h3>
       <p>EIP 프레임워크를 도입하지 않고, Spring Boot 내에 Spring-Kafka 모듈만 의존하여 개발자가 서비스(Service) 레이어 내부에서 직접 <code>KafkaTemplate</code>으로 발행하고 <code>@KafkaListener</code>로 구독하여 이벤트를 처리하는 아키텍처입니다.</p>
 
       <div class="mermaid">
@@ -496,8 +496,8 @@
         <thead>
           <tr>
             <th>레이어 명칭</th>
-            <th>제 1안 (Spring Integration 버전)</th>
-            <th>제 2안 (Spring Boot 버전)</th>
+            <th>제 1안 (Spring Integration 버전 - 유보)</th>
+            <th>제 2안 (Spring Boot 버전 - 채택)</th>
           </tr>
         </thead>
         <tbody>
@@ -529,7 +529,7 @@
         </tbody>
       </table>
 
-      <h3 id="layered-eip">2.4. [제 1안] Spring Integration 기반 EIP 파이프라인 설계 (EIP Pipeline Detail)</h3>
+      <h3 id="layered-eip">2.4. [제 1안 - 유보] Spring Integration 기반 EIP 파이프라인 설계 (EIP Pipeline Detail)</h3>
       <p>솔루션 내부의 데이터 흐름은 Spring Integration 프레임워크를 기반으로 구성되어, 비즈니스 코드와 하부 인프라(메시지 큐, 프로토콜) 간의 완벽한 관심사 분리(Separation of Concerns)를 구현합니다.</p>
 
       <div class="mermaid">
@@ -585,7 +585,7 @@
         </div>
       </div>
 
-      <h3 id="layered-kafka">2.5. [제 2안] Spring Kafka 직접 구현 기반 파이프라인 설계</h3>
+      <h3 id="layered-kafka">2.5. [제 2안 - 채택] Spring Kafka 직접 구현 기반 파이프라인 설계</h3>
       <p>개발자가 인프라 컴포넌트와 비즈니스 핸들러 코드를 직접 하드코딩하여 연동하는 비동기 메시지 통신 구조입니다.</p>
 
       <div class="mermaid">
