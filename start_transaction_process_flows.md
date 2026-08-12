@@ -2,11 +2,22 @@
 
 이 문서는 사용자의 충전 및 결제 방식(충전 유형)에 따른 네 가지 핵심 시나리오별로 충전기의 시스템 기동(`BootNotification`)부터 시작하여 인증(`Authorize`), 충전 시작(`StartTransaction`), 충전 종료(`StopTransaction`)까지의 전체 연동 흐름을 정의합니다.
 
+### 사용자 유형 정의 (User Types)
+
+시스템에서 정의하는 사용자 유형(UserType)은 다음과 같습니다:
+
+| 코드  | 유형명     | 설명                                         | 관련 시나리오                                                                                                                            |
+| :---: | :--------- | :------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| **C** | 법인회원   | 충전 카드(RFID)를 소지한 협약 법인 소속 회원 | [1. 법인 회원 카드 태깅 충전 라이프사이클](#1-법인-회원-카드-태깅-충전-라이프사이클-card-charging-lifecycle---usertypec)                 |
+| **M** | 일반회원   | 모바일 앱을 이용하는 일반 회원               | [2. 일반 회원 모바일 앱 원격 충전 라이프사이클](#2-일반-회원-모바일-앱-원격-충전-라이프사이클-remote-app-charging-lifecycle---usertypem) |
+| **N** | 비회원     | 현장에서 신용카드로 결제하는 비회원          | [3. 비회원 현장 결제 충전 라이프사이클](#3-비회원-현장-결제-충전-라이프사이클-key-in-charging-lifecycle---usertypen)                     |
+| **K** | 환경부회원 | 환경부 카드 또는 로밍 카드를 사용하는 회원   | [4. 환경부 및 로밍 회원 카드 충전 라이프사이클](#4-환경부-및-로밍-회원-카드-충전-라이프사이클-roaming-charging-lifecycle---usertypek)    |
+
 ---
 
-## 1. 회원 카드 태깅 충전 라이프사이클 (`Card Charging Lifecycle`)
+## 1. 법인 회원 카드 태깅 충전 라이프사이클 (Card Charging Lifecycle - UserType.C)
 
-사용자가 충전기에 실물 회원 카드(RFID[^RFID])를 태깅하여 인증하고 충전을 진행하는 표준 시나리오입니다.
+사용자가 충전기에 실물 법인 회원 카드(RFID[^RFID])를 태깅하여 인증하고 충전을 진행하는 시나리오입니다.
 
 ```mermaid
 sequenceDiagram
@@ -31,10 +42,10 @@ sequenceDiagram
     end
 
     %% 2. 인증 단계 (Authorize)
-    사용자 ->> 충전기: 회원 카드 태그 (UserType.C)
+    사용자 ->> 충전기: 법인 회원 카드 태그 (UserType.C)
     충전기 ->> OCPP: Authorize.req (idTag)
     OCPP ->> Redis: 인증 마스터 조회 (csmsCertDao.findByIdtag)
-    
+
     alt CsmsCert 존재 및 유효함
         Redis -->> OCPP: csmsCert 정보 반환
         Note over OCPP: 법인 유효성 및 빌링키 만료 여부 확인
@@ -69,9 +80,9 @@ sequenceDiagram
 
 ---
 
-## 2. 모바일 앱 원격 충전 라이프사이클 (`Remote App Charging Lifecycle`)
+## 2. 일반 회원 모바일 앱 원격 충전 라이프사이클 (Remote App Charging Lifecycle - UserType.M)
 
-모바일 앱에서 선결제 후 원격 충전 명령을 내려 기동하고, 종료 후 모바일 백엔드로 푸시를 전송하는 시나리오입니다.
+일반 회원이 모바일 앱에서 선결제 후 원격 충전 명령을 내려 기동하고, 종료 후 모바일 백엔드로 푸시를 전송하는 시나리오입니다.
 
 ```mermaid
 sequenceDiagram
@@ -102,22 +113,22 @@ sequenceDiagram
     앱 ->> OCPP: 원격기동 API 호출 (RemoteStartTransaction)
     OCPP ->> 충전기: RemoteStartTransaction.req (idTag, connectorId)
     충전기 -->> OCPP: RemoteStartTransaction.conf (status = Accepted)
-    
+
     %% 3. 시작 단계 (StartTransaction)
     충전기 ->> OCPP: StartTransaction.req (idTag, connectorId, meterStart)
     OCPP ->> Redis: 원격시작이력 조회 (operRmtStartHistDao.findByRechgstIdAndRechgrIdAndCnnctrIdAndIdtag)
     Redis -->> OCPP: 원격시작이력 (rmtStar) 반환
     OCPP ->> DB: 최근 5분 내 결제 이력 조회 (selectRecentStlmHist)
     DB -->> OCPP: 결제 이력 (stlmHist) 반환
-    
+
     rect rgb(240, 248, 255)
         Note over OCPP: [기존 결제/원격시작 거래 ID 매핑]
         Note over OCPP: 5분 내의 원격시작 trnId 또는 선결제 trnId 중<br/>DB(TB_STARTTR_TR)에 등록되지 않은 trnId를 재사용
     end
-    
+
     OCPP ->> DB: 충전 시작 정보 저장 (tbStartTrMapper.saveTbStartTr)
     OCPP ->> DB: 모바일 결제 정보 유효성 검증 (stlmRechgMngMapper.selectStlmRechgMng)
-    
+
     alt 결제 취소 또는 타임아웃 경과 시
         OCPP -->> 충전기: StartTransaction.conf (status = Blocked, trnId = 0)
         충전기 ->> 사용자: 충전 거부 및 커넥터 잠금 해제
@@ -132,18 +143,18 @@ sequenceDiagram
     OCPP ->> DB: 충전 시작 정보 조회 (tbStartTrMapper.selectTbStartTr)
     DB -->> OCPP: startTr (userNo 등) 반환
     OCPP ->> DB: 충전 이력 저장 (operRechgHistMapper.saveOperRechgHist)
-    
+
     Note over OCPP: UserType == UserType.M 확인 후<br/>모바일 백엔드로 충전완료 푸시 연동 요청 호출
-    
+
     OCPP -->> 충전기: StopTransaction.conf (status = Accepted)
     충전기 ->> 사용자: 충전 종료
 ```
 
 ---
 
-## 3. 비회원 현장 결제 충전 라이프사이클 (`Key-In Charging Lifecycle`)
+## 3. 비회원 현장 결제 충전 라이프사이클 (Key-In Charging Lifecycle - UserType.N)
 
-충전기 터미널 화면에서 비회원이 신용카드를 삽입하거나 번호를 입력(Key-In)하여 결제 후 충전하는 시나리오입니다.
+충전기 터미널 화면에서 비회원(UserType.N)이 신용카드를 삽입하거나 번호를 입력(Key-In)하여 결제 후 충전하는 시나리오입니다.
 
 ```mermaid
 sequenceDiagram
@@ -175,17 +186,18 @@ sequenceDiagram
     충전기 ->> OCPP: StartTransaction.req (idTag, connectorId, meterStart)
     OCPP ->> DB: 최근 5분 내 결제 이력 조회 (selectRecentStlmHist)
     DB -->> OCPP: 결제 이력 (stlmHist) 반환
-    
+
     alt 5분 이내 선결제 trnId 재사용 가능
         Note over OCPP: trnId = 결제 거래 ID 재사용
     else 재사용 불가
         OCPP ->> DB: 신규 거래 ID 채번
     end
-    
+
     OCPP ->> DB: 충전 시작 정보 저장 (tbStartTrMapper.saveTbStartTr)
+    Note over OCPP: UserType = UserType.N (비회원) 설정
     OCPP ->> DB: KeyIn 결제 상태 조회 (operKeyinHistMapper.selectOperKeyinHist)
     DB -->> OCPP: KeyIn 결제 이력 반환
-    
+
     alt 결제가 이미 취소된 상태
         OCPP -->> 충전기: StartTransaction.conf (status = Blocked, trnId = 0)
         충전기 ->> 사용자: 충전 취소 안내
@@ -200,15 +212,16 @@ sequenceDiagram
     충전기 ->> OCPP: StopTransaction.req (transactionId, meterStop, transactionData)
     OCPP ->> DB: 충전 시작 정보 조회 (tbStartTrMapper.selectTbStartTr)
     DB -->> OCPP: startTr 반환
+    Note over OCPP: UserType == UserType.N 확인 후<br/>정산 및 매출 이력 연동
     OCPP ->> DB: 충전 이력 저장 (operRechgHistMapper.saveOperRechgHist)
     OCPP -->> 충전기: StopTransaction.conf (status = Accepted)
 ```
 
 ---
 
-## 4. 환경부 및 로밍 회원 카드 충전 라이프사이클 (`Roaming Charging Lifecycle`)
+## 4. 환경부 및 로밍 회원 카드 충전 라이프사이클 (Roaming Charging Lifecycle - UserType.K)
 
-타사 환경부 또는 로밍 카드(`UserType.K`)를 태깅하여 시작하며, 로밍 연동망을 통해 결제 및 이력을 송수신하는 시나리오입니다.
+타사 환경부 또는 로밍 카드(`UserType.K` - 환경부회원)를 태깅하여 시작하며, 로밍 연동망을 통해 결제 및 이력을 송수신하는 시나리오입니다.
 
 ```mermaid
 sequenceDiagram
@@ -238,7 +251,7 @@ sequenceDiagram
     Note over OCPP: UserType == UserType.K 확인
     OCPP ->> IFS: 환경부 회원카드 조회 API 요청 (selectKmeCard)
     IFS -->> OCPP: 카드 유효성 인증 결과 반환 (isKmeSelect = true/false)
-    
+
     alt 인증 성공
         OCPP -->> 충전기: Authorize.conf (status = Accepted)
         충전기 ->> 사용자: 로밍 카드 승인 알림
@@ -263,15 +276,17 @@ sequenceDiagram
     OCPP ->> DB: 환경부 카드 기관 ID 조회 (selectKmeCardInstId)
     DB -->> OCPP: 기관 ID (bid) 반환
     OCPP ->> DB: 충전 이력 저장 (operRechgHistMapper.saveOperRechgHist)
-    
+
     Note over OCPP: UserType == UserType.K 확인 후<br/>환경부 충전 이력 적재 API 호출 (KmeRechgHist)
     OCPP ->> IFS: 환경부 충전 데이터 전송 API 호출
     IFS -->> OCPP: 전송 완료 응답
-    
+
     OCPP -->> 충전기: StopTransaction.conf (status = Accepted)
     충전기 ->> 사용자: 충전 종료
 ```
 
 ---
+
 [^OCPP]: **OCPP (Open Charge Point Protocol):** 개방형 충전 통신 규격
+
 [^RFID]: **RFID (Radio Frequency Identification):** 무선 주파수 식별 (충전 회원 카드 등)
