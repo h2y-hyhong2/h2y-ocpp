@@ -1,4 +1,10 @@
 {
-    "editor.fontFamily": "Inconsolata, Consolas, 'Courier New', monospace",
-    "editor.fontSize": 13
+    "editor.fontFamily": "Inconsolata",
+    "editor.fontSize": 12,
+    "editor.codeActionsOnSave": {
+
+    },
+
+    "markdown.preview.fontSize": 13,
+    "markdown.preview.fontFamily": "Inconsolata"
 }
