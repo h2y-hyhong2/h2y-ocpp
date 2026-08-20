@@ -1,0 +1,20 @@
+[package]
+name = "elvis-control-ui"
+version = "1.0.0"
+description = "ELVIS-CSMS Desktop Standalone Control Center"
+authors = ["LS E-Link Platform Team"]
+edition = "2021"
+
+[lib]
+name = "elvis_control_ui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["devtools"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
