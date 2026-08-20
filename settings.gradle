@@ -1,0 +1,10 @@
+rootProject.name = 'h2y-ocpp'
+
+// 외부 OCPP Core 라이브러리 (Composite Build - 로컬 직접 참조)
+includeBuild('D:/project/lselink/ocpp/git/ocpp_core') {
+    dependencySubstitution {
+        substitute module('com.lselink.ocpp:ocpp_core') using project(':')
+    }
+}
+
+include 'elvis-connect-ws'

@@ -24,3 +24,17 @@ hs_err_pid*
 replay_pid*
 
 binaries
+
+# Node / Frontend dependencies & build artifacts
+node_modules/
+/elvis-control-ui/node_modules/
+/elvis-control-ui/dist/
+
+# Rust / Tauri build artifacts
+/elvis-control-ui/src-tauri/target/
+
+# Gradle / Java build artifacts
+.gradle/
+build/
+bin/
+out/
