@@ -1,0 +1,39 @@
+# ==============================================================================
+# ELVIS-CSMS Admin REST API (elvis-control-api) Configuration
+# 위치: config/control-api/application.yml
+# 인스톨러 배포 시 외부 오버라이드 설정으로 제공됩니다.
+# ==============================================================================
+
+server:
+  port: 8081
+
+spring:
+  application:
+    name: elvis-control-api
+
+  # RDBMS (MySQL) 접속 설정
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/elvis_csms?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ClickHouse 시계열 DB 연동
+  clickhouse:
+    url: jdbc:ch://${CLICKHOUSE_HOST:localhost}:${CLICKHOUSE_PORT:8123}/elvis_analytics
+    user: ${CLICKHOUSE_USER:default}
+    password: ${CLICKHOUSE_PASSWORD:}
+
+  # Kafka 메시징 연동 (하향 제어 명령 발행)
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+elvis:
+  jwt:
+    secret: "elvis-csms-poc-jwt-super-secret-key-2026-very-long-secure-key"
+    expiration-ms: 86400000
+
+logging:
+  level:
+    root: INFO
+    com.lselink.elvis.control.api: DEBUG

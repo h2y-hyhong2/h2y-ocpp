@@ -1,0 +1,39 @@
+# ==============================================================================
+# ELVIS-CSMS Packet Parser & Sync Engine (elvis-connect-sync) Configuration
+# 위치: config/connect-sync/application.yml
+# 인스톨러 배포 시 외부 오버라이드 설정으로 제공됩니다.
+# ==============================================================================
+
+server:
+  port: 8082
+
+spring:
+  application:
+    name: elvis-connect-sync
+  threads:
+    virtual:
+      enabled: true
+
+  # RDBMS (MySQL) 접속 설정
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/elvis_csms?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+
+  # Kafka 메시징 연동
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: elvis-sync-consumer-group
+      auto-offset-reset: earliest
+      concurrency: 10
+
+logging:
+  level:
+    root: INFO
+    com.lselink.elvis.connect.sync: DEBUG
