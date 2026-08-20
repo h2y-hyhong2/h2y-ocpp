@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: elvis-connect-ws
+  threads:
+    virtual:
+      enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: 1
+      retries: 3
+      batch-size: 16384
+      buffer-memory: 33554432
+    consumer:
+      group-id: elvis-connect-ws-group
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.lselink.elvis.*"
+
+elvis:
+  gateway:
+    websocket:
+      path: "/ocpp/{chargeBoxId}"
+      subprotocols:
+        - "ocpp1.6"
+        - "ocpp1.5"
+      buffer-size-bytes: 16384
+      idle-timeout-seconds: 90
+    kafka:
+      inbound-topic: "ocpp-raw-events"
+      outbound-topic: "ocpp-outbound-commands"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.lselink.elvis.connect.ws: DEBUG
