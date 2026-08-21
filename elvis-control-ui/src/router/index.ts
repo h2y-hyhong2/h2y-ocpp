@@ -8,15 +8,21 @@ import LiveLogsView from '@/views/LiveLogsView.vue'
 const routes = [
   {
     path: '/',
-    name: 'Dashboard',
-    component: DashboardView,
-    meta: { title: '실시간 관제 대시보드' }
+    name: 'Chargers',
+    component: ChargersView,
+    meta: { title: 'ELVIS 통합 관제 센터' }
   },
   {
     path: '/chargers',
-    name: 'Chargers',
+    name: 'ChargersDirect',
     component: ChargersView,
     meta: { title: '충전기 모니터링 & 원격 제어' }
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: DashboardView,
+    meta: { title: '실시간 관제 대시보드' }
   },
   {
     path: '/metrics',
