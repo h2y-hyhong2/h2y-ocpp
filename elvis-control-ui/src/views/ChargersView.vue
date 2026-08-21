@@ -366,20 +366,20 @@ function sendRemoteCommand(action: string) {
           </div>
         </div>
 
-        <!-- MODE 1: 리스트 테이블 뷰 -->
-        <div v-if="gridViewMode === 'list'" class="flex-1 overflow-y-auto mt-2">
-          <table class="table-theme w-full text-xs">
+        <!-- MODE 1: 리스트 테이블 뷰 (창 축소 시 가로 스크롤 & 텍스트 줄바꿈 방지) -->
+        <div v-if="gridViewMode === 'list'" class="flex-1 overflow-x-auto overflow-y-auto mt-2 min-w-0">
+          <table class="table-theme w-full text-xs min-w-[680px]">
             <thead>
               <tr class="text-left text-slate-500 border-b border-[var(--border-glass)] pb-1">
-                <th class="py-1.5 px-2">충전기 ID</th>
-                <th class="py-1.5 px-2">충전소명</th>
-                <th class="py-1.5 px-2">연결 차종</th>
-                <th class="py-1.5 px-2">상태</th>
-                <th class="py-1.5 px-2">출력(kW)</th>
-                <th class="py-1.5 px-2">전압/전류</th>
-                <th class="py-1.5 px-2">배터리 SoC</th>
-                <th class="py-1.5 px-2">최종 통신</th>
-                <th class="py-1.5 px-2 text-right">원격 제어</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">충전기 ID</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">충전소명</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">연결 차종</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">상태</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">출력(kW)</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">전압/전류</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">배터리 SoC</th>
+                <th class="py-1.5 px-2 whitespace-nowrap">최종 통신</th>
+                <th class="py-1.5 px-2 text-right whitespace-nowrap">원격 제어</th>
               </tr>
             </thead>
             <tbody>
@@ -390,32 +390,32 @@ function sendRemoteCommand(action: string) {
                 class="border-b border-[var(--border-glass)] hover:bg-[var(--bg-surface-2)] cursor-pointer transition-colors"
                 :class="store.selectedCharger?.id === chg.id ? 'bg-sky-500/10 dark:bg-sky-900/30' : ''"
               >
-                <td class="py-2 px-2 font-mono font-bold text-sky-600 dark:text-sky-400">{{ chg.chargeBoxId }}</td>
-                <td class="py-2 px-2 font-medium truncate max-w-[130px]">{{ chg.stationName }}</td>
-                <td class="py-2 px-2 text-slate-600 dark:text-slate-400 truncate max-w-[110px]">{{ chg.carModel }}</td>
-                <td class="py-2 px-2">
-                  <span :class="STATUS_MAP[chg.status]?.badgeClass" class="px-2 py-0.5 rounded text-[10px] font-bold border">
+                <td class="py-2 px-2 font-bold text-sky-600 dark:text-sky-400 whitespace-nowrap">{{ chg.chargeBoxId }}</td>
+                <td class="py-2 px-2 font-medium truncate max-w-[130px] whitespace-nowrap">{{ chg.stationName }}</td>
+                <td class="py-2 px-2 text-slate-600 dark:text-slate-400 truncate max-w-[110px] whitespace-nowrap">{{ chg.carModel }}</td>
+                <td class="py-2 px-2 whitespace-nowrap">
+                  <span :class="STATUS_MAP[chg.status]?.badgeClass" class="px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap inline-flex items-center">
                     {{ chg.status }}
                   </span>
                 </td>
-                <td class="py-2 px-2 font-mono font-bold">{{ chg.powerKw > 0 ? `${chg.powerKw.toFixed(1)} kW` : '-' }}</td>
-                <td class="py-2 px-2 font-mono text-slate-500">{{ chg.powerKw > 0 ? `${chg.voltageV.toFixed(0)}V / ${chg.currentA.toFixed(0)}A` : '-' }}</td>
-                <td class="py-2 px-2">
+                <td class="py-2 px-2 font-bold whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.powerKw.toFixed(1)} kW` : '-' }}</td>
+                <td class="py-2 px-2 text-slate-500 whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.voltageV.toFixed(0)}V / ${chg.currentA.toFixed(0)}A` : '-' }}</td>
+                <td class="py-2 px-2 whitespace-nowrap">
                   <div v-if="chg.status === '충전중'" class="w-20">
-                    <div class="flex justify-between text-[10px] font-mono mb-0.5">
+                    <div class="flex justify-between text-[10px] mb-0.5">
                       <span>{{ chg.socPercent }}%</span>
                     </div>
                     <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div class="h-full bg-sky-500" :style="{ width: `${chg.socPercent}%` }"></div>
                     </div>
                   </div>
-                  <span v-else class="text-slate-400 font-mono">-</span>
+                  <span v-else class="text-slate-400">-</span>
                 </td>
-                <td class="py-2 px-2 font-mono text-[11px] text-slate-500">{{ chg.lastHeartbeat }}</td>
-                <td class="py-2 px-2 text-right">
+                <td class="py-2 px-2 text-[11px] text-slate-500 whitespace-nowrap">{{ chg.lastHeartbeat }}</td>
+                <td class="py-2 px-2 text-right whitespace-nowrap">
                   <button
                     @click.stop="onSelectCharger(chg)"
-                    class="px-2 py-1 rounded bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 text-[10px] font-bold hover:bg-sky-100"
+                    class="px-2 py-1 rounded bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 text-[10px] font-bold hover:bg-sky-100 whitespace-nowrap"
                   >
                     제어반
                   </button>
