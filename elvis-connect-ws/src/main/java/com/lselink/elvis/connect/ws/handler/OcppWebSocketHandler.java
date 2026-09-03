@@ -26,8 +26,16 @@ public class OcppWebSocketHandler extends TextWebSocketHandler {
     private final com.lselink.elvis.connect.ws.metrics.GatewayMetrics gatewayMetrics;
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
+    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String chargeBoxId = getChargeBoxId(session);
+
+        // Kafka Broker 장애 Failover 시 신규 연결 차단 및 단말 로컬 버퍼링 유도 (REQ-003, REQ-009)
+        if (!inboundProducer.isKafkaHealthy()) {
+            log.warn("[WS-Handler] ⚠️ Kafka Broker 장애 상태로 인한 연결 거절: chargeBoxId={}", chargeBoxId);
+            session.close(CloseStatus.SERVICE_RESTARTED.withReason("Kafka Broker Failover - Buffer Locally"));
+            return;
+        }
+
         log.info("[WS-Handler] 소켓 연결 수립: chargeBoxId={}, sessionId={}, remoteAddress={}",
                 chargeBoxId, session.getId(), session.getRemoteAddress());
 
