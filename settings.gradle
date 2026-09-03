@@ -8,3 +8,4 @@ includeBuild('D:/project/lselink/ocpp/git/ocpp_core') {
 }
 
 include 'elvis-connect-ws'
+include 'elvis-connect-sync'
