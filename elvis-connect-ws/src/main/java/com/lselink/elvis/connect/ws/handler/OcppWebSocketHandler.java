@@ -38,6 +38,9 @@ public class OcppWebSocketHandler extends TextWebSocketHandler {
         String chargeBoxId = getChargeBoxId(session);
         String payload = message.getPayload();
 
+        // 수신 패킷에 따른 세션 마지막 활동 시각 갱신 (60초 헬스체크 연동)
+        sessionStore.touchSession(chargeBoxId);
+
         log.debug("[WS-Handler] 패킷 수신: chargeBoxId={}, length={}", chargeBoxId, payload.length());
 
         OcppRawEventEnvelope envelope = OcppRawEventEnvelope.builder()
