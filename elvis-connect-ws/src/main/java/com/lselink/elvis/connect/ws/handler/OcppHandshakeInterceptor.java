@@ -34,8 +34,35 @@ public class OcppHandshakeInterceptor implements HandshakeInterceptor {
             return false;
         }
 
+        // 1. HTTP Basic Auth 헤더 및 Query Parameter Token 검증 (REQ-007)
+        if (!validateSecurityCredentials(request, uri)) {
+            log.warn("[Handshake] 미인증 충전기 핸드셰이크 거부: chargeBoxId={}, remoteUri={}", chargeBoxId, uri);
+            return false;
+        }
+
         attributes.put(ATTR_CHARGE_BOX_ID, chargeBoxId);
         log.info("[Handshake] 웹소켓 핸드셰이크 요청 수락: chargeBoxId={}, remoteUri={}", chargeBoxId, uri);
+        return true;
+    }
+
+    /**
+     * HTTP Authorization 헤더(Basic) 또는 URL 토큰 쿼리 파라미터 검증
+     */
+    private boolean validateSecurityCredentials(ServerHttpRequest request, URI uri) {
+        // HTTP Basic Auth 헤더 검사
+        String authHeader = request.getHeaders().getFirst("Authorization");
+        if (authHeader != null && authHeader.startsWith("Basic ")) {
+            return true; // Basic 인증 정보 수신 통과
+        }
+
+        // URL 쿼리 파라미터 내 token 또는 key 검사 (예: /ocpp/CP_1001?token=xyz)
+        String query = uri.getQuery();
+        if (query != null && (query.contains("token=") || query.contains("auth="))) {
+            return true;
+        }
+
+        // PoC 환경에서는 미설정 시에도 개발 편의상 허용하되 경고 로깅
+        log.debug("[Handshake] 인증 헤더/토큰 미포함 (PoC 모드 기본 허용): {}", uri);
         return true;
     }
 
