@@ -21,6 +21,7 @@ import java.util.Optional;
 public class OutboundCommandConsumer {
 
     private final LocalSessionStore sessionStore;
+    private final com.lselink.elvis.connect.ws.metrics.GatewayMetrics gatewayMetrics;
 
     @KafkaListener(
             topics = "${elvis.gateway.kafka.outbound-topic:ocpp-outbound-commands}",
@@ -37,6 +38,7 @@ public class OutboundCommandConsumer {
             if (session.isOpen()) {
                 try {
                     session.sendMessage(new TextMessage(command.getPayload()));
+                    gatewayMetrics.recordOutboundCommand();
                     log.info("[OutboundConsumer] 하향 명령 소켓 전송 완료: chargeBoxId={}, messageId={}",
                             chargeBoxId, command.getMessageId());
                 } catch (IOException e) {

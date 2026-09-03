@@ -23,6 +23,7 @@ public class OcppWebSocketHandler extends TextWebSocketHandler {
 
     private final LocalSessionStore sessionStore;
     private final InboundRawEventProducer inboundProducer;
+    private final com.lselink.elvis.connect.ws.metrics.GatewayMetrics gatewayMetrics;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -40,6 +41,9 @@ public class OcppWebSocketHandler extends TextWebSocketHandler {
 
         // 수신 패킷에 따른 세션 마지막 활동 시각 갱신 (60초 헬스체크 연동)
         sessionStore.touchSession(chargeBoxId);
+
+        // 실시간 인바운드 TPS 모니터링 메트릭 카운팅 (REQ-004)
+        gatewayMetrics.recordInboundPacket();
 
         log.debug("[WS-Handler] 패킷 수신: chargeBoxId={}, length={}", chargeBoxId, payload.length());
 
