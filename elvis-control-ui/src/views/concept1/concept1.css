@@ -1,0 +1,48 @@
+/* ==========================================================================
+   [컨셉 1 디자인 테마] Enterprise Modern (정돈된 모던 엔터프라이즈 라이트/소프트)
+   - 특징: 높은 시인성, 정갈한 보더, 미니멀 그림자, 블루-슬레이트 포인트
+   - 사용자가 이 파일의 색상과 변수를 자유롭게 수정하여 시안 1만의 룩앤필을 정의할 수 있습니다.
+   ========================================================================== */
+
+.concept1-theme {
+  /* 1. 배경 및 서피스 색상 */
+  --c1-bg-base: #eaf0f6;
+  --c1-bg-surface-1: #ffffff;
+  --c1-bg-surface-2: #f1f5f9;
+  --c1-border: #cbd5e1;
+  --c1-border-focus: #0284c7;
+
+  /* 2. 브랜드 및 포인트 색상 */
+  --c1-primary: #0284c7;
+  --c1-primary-hover: #0369a1;
+  --c1-accent: #4f46e5;
+
+  /* 3. 텍스트 색상 단계 */
+  --c1-text-bright: #0f172a;
+  --c1-text-body: #334155;
+  --c1-text-muted: #64748b;
+
+  /* 4. 박스 스타일 (라운드 & 그림자) */
+  --c1-radius: 12px;
+  --c1-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* 5. 상태 컬러 토큰 */
+  --c1-st-charging: #2563eb;
+  --c1-st-standby: #d97706;
+  --c1-st-finished: #059669;
+  --c1-st-fault: #dc2626;
+  --c1-st-preparing: #0d9488;
+}
+
+/* 컨셉 1 전용 컨테이너 스타일 오버라이드 */
+.concept1-theme {
+  background-color: var(--c1-bg-base);
+  color: var(--c1-text-body);
+}
+
+.concept1-theme .c1-card {
+  background-color: var(--c1-bg-surface-1);
+  border: 1px solid var(--c1-border);
+  border-radius: var(--c1-radius);
+  box-shadow: var(--c1-shadow);
+}

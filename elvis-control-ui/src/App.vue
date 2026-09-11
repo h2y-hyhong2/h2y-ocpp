@@ -92,6 +92,34 @@
           <span>제어반</span>
         </button>
 
+        <!-- 🌟 3대 디자인 컨셉 스위처 탭 버튼 -->
+        <div class="flex items-center p-0.5 rounded-lg bg-[var(--bg-surface-2)] border border-[var(--border-glass)] flex-shrink-0 gap-0.5">
+          <button
+            @click="store.setConcept('concept1')"
+            class="px-2 py-0.5 rounded text-[11px] font-bold transition-all"
+            :class="store.activeConcept === 'concept1' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-500 hover:text-[var(--text-bright)]'"
+            title="시안 1: 표준 분할 제어형 (좌측 트리 + 그리드 + 우측 제어반)"
+          >
+            🖥️ 시안 1
+          </button>
+          <button
+            @click="store.setConcept('concept2')"
+            class="px-2 py-0.5 rounded text-[11px] font-bold transition-all"
+            :class="store.activeConcept === 'concept2' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-500 hover:text-[var(--text-bright)]'"
+            title="시안 2: 대형 상황판 매트릭스형 (Wall View 히트맵)"
+          >
+            📊 시안 2
+          </button>
+          <button
+            @click="store.setConcept('concept3')"
+            class="px-2 py-0.5 rounded text-[11px] font-bold transition-all"
+            :class="store.activeConcept === 'concept3' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-500 hover:text-[var(--text-bright)]'"
+            title="시안 3: 전력 콕핏 & 분석형 (ECharts + 패킷)"
+          >
+            ⚡ 시안 3
+          </button>
+        </div>
+
         <!-- 테마 선택 드롭다운 -->
         <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[var(--bg-surface-2)] border border-[var(--border-glass)] flex-shrink-0">
           <select

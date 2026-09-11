@@ -1,0 +1,50 @@
+/* ==========================================================================
+   [컨셉 2 디자인 테마] Cyber Situation Room (24/7 종합상황실 전광판 다크)
+   - 특징: Deep Obsidian 배경, 반투명 글래스모피즘, 네온 시안 & 엠버 글로우
+   - 사용자가 이 파일의 색상과 변수를 자유롭게 수정하여 시안 2만의 룩앤필을 정의할 수 있습니다.
+   ========================================================================== */
+
+.concept2-theme {
+  /* 1. 배경 및 서피스 색상 */
+  --c2-bg-base: #060911;
+  --c2-bg-surface-1: rgba(15, 23, 42, 0.85);
+  --c2-bg-surface-2: rgba(30, 41, 59, 0.65);
+  --c2-border: rgba(56, 189, 248, 0.2);
+  --c2-border-glow: rgba(0, 242, 254, 0.45);
+
+  /* 2. 브랜드 및 네온 포인트 색상 */
+  --c2-primary: #00f2fe;
+  --c2-primary-glow: rgba(0, 242, 254, 0.3);
+  --c2-accent: #a855f7;
+
+  /* 3. 텍스트 색상 단계 */
+  --c2-text-bright: #f8fafc;
+  --c2-text-body: #cbd5e1;
+  --c2-text-muted: #64748b;
+
+  /* 4. 박스 스타일 (라운드 & 글래스모피즘) */
+  --c2-radius: 8px;
+  --c2-backdrop-blur: 12px;
+  --c2-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* 5. 고채도 네온 상태 컬러 토큰 */
+  --c2-st-charging: #38bdf8;
+  --c2-st-standby: #fb923c;
+  --c2-st-finished: #34d399;
+  --c2-st-fault: #f43f5e;
+  --c2-st-preparing: #2dd4bf;
+}
+
+/* 컨셉 2 전용 컨테이너 스타일 */
+.concept2-theme {
+  background-color: var(--c2-bg-base);
+  color: var(--c2-text-body);
+}
+
+.concept2-theme .c2-card {
+  background-color: var(--c2-bg-surface-1);
+  border: 1px solid var(--c2-border);
+  border-radius: var(--c2-radius);
+  backdrop-filter: blur(var(--c2-backdrop-blur));
+  box-shadow: var(--c2-shadow);
+}

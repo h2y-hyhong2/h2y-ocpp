@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎨ELVIS-CSMS 디자인 가이드 [시안 1: 분할 제어형 (Enterprise Modern)]</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================================================
+       [컨셉 1 디자인 테마] Enterprise Modern (정돈된 모던 엔터프라이즈 라이트)
+       ========================================================================== */
+    [data-theme="light"], :root {
+      --bg-base: #eaf0f6;
+      --bg-sidebar: #ffffff;
+      --bg-surface-1: #ffffff;
+      --bg-surface-2: #f1f5f9;
+      --bg-glass: rgba(255, 255, 255, 0.95);
+      --border-glass: #cbd5e1;
+      --border-bright: rgba(2, 132, 199, 0.35);
+      --cyan-neon: #0284c7;
+      --cyan-glow: rgba(2, 132, 199, 0.2);
+      --blue-accent: #0369a1;
+      --emerald-neon: #059669;
+      --emerald-glow: rgba(5, 150, 105, 0.15);
+      --amber-neon: #d97706;
+      --rose-neon: #dc2626;
+      --violet-neon: #7c3aed;
+      --text-main: #0f172a;
+      --text-muted: #334155;
+      --text-dim: #64748b;
+      --card-hover-border: #0284c7;
+      --logo-gradient: linear-gradient(135deg, #0284c7, #0369a1);
+      --theme-name: "☀️Clean Slate (시안 1 기본)";
+    }
+
+    [data-theme="cyber"] {
+      --bg-base: #0f172a;
+      --bg-sidebar: #1e293b;
+      --bg-surface-1: #1e293b;
+      --bg-surface-2: #334155;
+      --bg-glass: rgba(30, 41, 59, 0.9);
+      --border-glass: rgba(255, 255, 255, 0.1);
+      --border-bright: rgba(56, 189, 248, 0.35);
+      --cyan-neon: #38bdf8;
+      --cyan-glow: rgba(56, 189, 248, 0.2);
+      --blue-accent: #0284c7;
+      --emerald-neon: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.2);
+      --amber-neon: #f59e0b;
+      --rose-neon: #ef4444;
+      --violet-neon: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-dim: #94a3b8;
+      --card-hover-border: rgba(56, 189, 248, 0.4);
+      --logo-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
+      --theme-name: "🌙Slate Dark";
+    }
+
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease; }
+    body { background-color: var(--bg-base); color: var(--text-main); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+
+    .app-wrapper { display: flex; min-height: 100vh; }
+    
+    /* Design Guide Sidebar */
+    .sidebar { width: 280px; background: var(--bg-sidebar); border-right: 1px solid var(--border-glass); padding: 24px 16px; display: flex; flex-direction: column; gap: 20px; position: sticky; top: 0; height: 100vh; }
+    .logo-box { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+    .logo-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--logo-gradient); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; box-shadow: 0 4px 12px var(--cyan-glow); }
+    .logo-title { font-family: var(--font-display); font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--border-glass); color: var(--cyan-neon); border: 1px solid var(--border-bright); margin-left: auto; }
+    
+    .nav-group-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 12px; margin-bottom: 6px; font-family: var(--font-mono); }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; text-decoration: none; color: var(--text-muted); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; }
+    .nav-item:hover { background: var(--bg-surface-2); color: var(--text-main); }
+    .nav-item.active { background: var(--cyan-glow); color: var(--cyan-neon); font-weight: 700; border-color: var(--border-bright); }
+    
+    /* Main Content */
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .top-bar { height: 68px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border-glass); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); }
+    .page-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+    .page-id-badge { font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 6px; background: var(--bg-surface-2); border: 1px solid var(--border-glass); color: var(--cyan-neon); font-weight: 700; }
+    
+    /* Theme Selector */
+    .theme-selector-box { display: flex; align-items: center; gap: 8px; background: var(--bg-surface-2); padding: 6px 14px; border-radius: 10px; border: 1px solid var(--border-glass); }
+    .theme-select { background: transparent; border: none; color: var(--text-main); font-size: 13px; font-weight: 600; cursor: pointer; outline: none; }
+    
+    .content-body { padding: 32px; display: flex; flex-direction: column; gap: 36px; max-width: 1400px; }
+    
+    /* Section Cards */
+    .guide-section { background: var(--bg-surface-1); border-radius: 16px; border: 1px solid var(--border-glass); padding: 24px 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 90px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 14px; }
+    .section-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+    .section-badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--bg-surface-2); color: var(--text-dim); font-weight: 600; font-family: var(--font-mono); }
+
+    /* Palette Grid */
+    .palette-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+    .color-card { background: var(--bg-surface-2); border-radius: 12px; border: 1px solid var(--border-glass); padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
+    .color-card:hover { transform: translateY(-3px); border-color: var(--cyan-neon); }
+    .color-swatch-large { height: 48px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: flex-end; padding: 8px; }
+    .copy-hint { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.2s; }
+    .color-card:hover .copy-hint { opacity: 1; }
+    .color-name { font-weight: 700; font-size: 13px; color: var(--text-main); }
+    .color-code { font-family: var(--font-mono); font-size: 11.5px; color: var(--cyan-neon); display: flex; align-items: center; justify-content: space-between; }
+    .color-desc { font-size: 11px; color: var(--text-dim); }
+
+    /* Badge Grid */
+    .badge-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    .badge-card { background: var(--bg-surface-2); border: 1px solid var(--border-glass); border-radius: 12px; padding: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .badge-preview { padding: 5px 14px; border-radius: 14px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+
+    /* Buttons */
+    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+    .btn-primary { background: var(--cyan-neon); color: #fff; box-shadow: 0 2px 8px var(--cyan-glow); }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary { background: var(--bg-surface-1); color: var(--text-main); border-color: var(--border-glass); }
+    .btn-secondary:hover { background: var(--bg-surface-2); border-color: var(--border-bright); }
+
+    /* Toast Notification */
+    .toast-box { position: fixed; bottom: 24px; right: 24px; background: var(--bg-surface-1); border: 1px solid var(--cyan-neon); color: var(--text-main); padding: 12px 20px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); font-size: 13px; display: none; align-items: center; gap: 8px; z-index: 999; animation: slideUp 0.25s ease forwards; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo-box">
+      <div class="logo-icon">🖥️</div>
+      <div>
+        <div class="logo-title">시안 1 디자인 가이드</div>
+        <div style="font-size: 11px; color: var(--text-dim);">Enterprise Modern Spec</div>
+      </div>
+      <span class="logo-badge">CONCEPT 1</span>
+    </div>
+
+    <div>
+      <div class="nav-group-title">시안 1 디자인 시스템</div>
+      <ul class="nav-list">
+        <a href="#sec-overview" class="nav-item active">
+          <span>📌</span>
+          <span>컨셉 개요 & 레이아웃</span>
+        </a>
+        <a href="#sec-theme" class="nav-item">
+          <span>🎨</span>
+          <span>1. 컬러 팔레트 & 토큰</span>
+        </a>
+        <a href="#sec-badge" class="nav-item">
+          <span>🏷️</span>
+          <span>2. 10대 충전 상태 뱃지</span>
+        </a>
+        <a href="#sec-comp" class="nav-item">
+          <span>🧩</span>
+          <span>3. UI 컴포넌트 & 카드</span>
+        </a>
+      </ul>
+    </div>
+
+    <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-glass); font-size: 11px; color: var(--text-dim); line-height: 1.5;">
+      • 소스: <code>src/views/concept1/</code><br>
+      • 컴포넌트: <code>Concept1View.vue</code><br>
+      • 스타일: <code>concept1.css</code>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-area">
+    <header class="top-bar">
+      <div class="page-title">
+        <span>[시안 1] 표준 분할 제어형 (Enterprise Modern) 디자인 가이드</span>
+        <span class="page-id-badge">CONCEPT-01-SPEC</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="theme-selector-box">
+          <span style="font-size: 14px;">🎨테마:</span>
+          <select id="themeSelect" class="theme-select" onchange="changeTheme(this.value)">
+            <option value="light">☀️Clean Slate (기본 라이트)</option>
+            <option value="cyber">🌙Slate Dark (다크)</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
+
+      <!-- 컨셉 개요 섹션 -->
+      <section id="sec-overview" class="guide-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>📌</span>
+            <span>시안 1 레이아웃 구조 & UX 목표</span>
+          </div>
+          <span class="section-badge">Split View Standard</span>
+        </div>
+        <div style="font-size: 13.5px; line-height: 1.7; color: var(--text-muted);">
+          <strong>시안 1 (Enterprise Modern)</strong>은 CPO 일상 운영자를 위한 정통 3단 분할 제어 뷰입니다.<br>
+          • <strong>좌측 (280px)</strong>: 4대 법인 필터 및 200개 충전소 목록 트리<br>
+          • <strong>중앙</strong>: 충전소별 충전기 마스터 상태 그리드 & 검색 필터 (리스트/카드 뷰 전환)<br>
+          • <strong>우측 (슬라이드 드로어)</strong>: 선택 단말 실시간 계측치(SoC%, 전력량, 온도) 및 원격 제어반 (Start/Stop/Reset)<br>
+          • <strong>디자인 룩앤필</strong>: 높은 명도 대비의 화이트/슬레이트 블루 기반 오피스 최적화 디자인
+        </div>
+      </section>
+
+      <!-- Section 1: 컬러 팔레트 & CSS 변수 토큰 -->
+      <section id="sec-theme" class="guide-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🎨</span>
+            <span>1. 시안 1 전용 컬러 팔레트 (concept1.css)</span>
+          </div>
+          <span class="section-badge">클릭 시 CSS 변수 복사</span>
+        </div>
+
+        <div class="palette-grid">
+          <div class="color-card" onclick="copyToken('var(--c1-bg-base)', 'Base Background')">
+            <div class="color-swatch-large" style="background: var(--bg-base);">
+              <span class="copy-hint">📋복사</span>
+            </div>
+            <div class="color-name">Base Background</div>
+            <div class="color-code"><code>--c1-bg-base</code> <span>#eaf0f6</span></div>
+            <div class="color-desc">전체 바탕 배경색 (소프트 쿨그레이)</div>
+          </div>
+
+          <div class="color-card" onclick="copyToken('var(--c1-primary)', 'Primary Sky')">
+            <div class="color-swatch-large" style="background: var(--cyan-neon);">
+              <span class="copy-hint">📋복사</span>
+            </div>
+            <div class="color-name">Primary Sky</div>
+            <div class="color-code"><code>--c1-primary</code> <span>#0284c7</span></div>
+            <div class="color-desc">핵심 브랜드/액션 포인트 컬러</div>
+          </div>
+
+          <div class="color-card" onclick="copyToken('var(--c1-border)', 'Border Light')">
+            <div class="color-swatch-large" style="background: var(--border-glass);">
+              <span class="copy-hint">📋복사</span>
+            </div>
+            <div class="color-name">Border Slate</div>
+            <div class="color-code"><code>--c1-border</code> <span>#cbd5e1</span></div>
+            <div class="color-desc">정갈한 카드/그리드 테두리선</div>
+          </div>
+
+          <div class="color-card" onclick="copyToken('var(--c1-st-charging)', 'Charging Blue')">
+            <div class="color-swatch-large" style="background: #2563eb;">
+              <span class="copy-hint">📋복사</span>
+            </div>
+            <div class="color-name">Charging Blue</div>
+            <div class="color-code"><code>--c1-st-charging</code> <span>#2563eb</span></div>
+            <div class="color-desc">충전중 상태 대표 색상</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: 10대 충전 상태 뱃지 -->
+      <section id="sec-badge" class="guide-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🏷️</span>
+            <span>2. 10대 충전 상태 배지</span>
+          </div>
+          <span class="section-badge">10 Status Tokens</span>
+        </div>
+
+        <div class="badge-grid">
+          <div class="badge-card">
+            <div>
+              <div style="font-weight: 700; font-size: 13px;">충전중 (Charging)</div>
+              <div style="font-size: 11px; color: var(--text-dim);">파란색 실시간 펄스</div>
+            </div>
+            <span class="badge-preview" style="background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd;">
+              ⚡ 충전중
+            </span>
+          </div>
+
+          <div class="badge-card">
+            <div>
+              <div style="font-weight: 700; font-size: 13px;">충전대기 (Available)</div>
+              <div style="font-size: 11px; color: var(--text-dim);">대기 오렌지</div>
+            </div>
+            <span class="badge-preview" style="background: #ffedd5; color: #c2410c; border: 1px solid #fdba74;">
+              ● 충전대기
+            </span>
+          </div>
+
+          <div class="badge-card">
+            <div>
+              <div style="font-weight: 700; font-size: 13px;">충전완료 (Finished)</div>
+              <div style="font-size: 11px; color: var(--text-dim);">완료 에메랄드</div>
+            </div>
+            <span class="badge-preview" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac;">
+              ✓ 충전완료
+            </span>
+          </div>
+
+          <div class="badge-card">
+            <div>
+              <div style="font-weight: 700; font-size: 13px;">통신이상 (Faulted)</div>
+              <div style="font-size: 11px; color: var(--text-dim);">경보 레드</div>
+            </div>
+            <span class="badge-preview" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;">
+              ⚠️ 통신이상
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: 컴포넌트 샘플 -->
+      <section id="sec-comp" class="guide-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🧩</span>
+            <span>3. 시안 1 전용 버튼 & 카드 컴포넌트</span>
+          </div>
+          <span class="section-badge">UI Components</span>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary">충전 시작 (RemoteStart)</button>
+          <button class="btn btn-secondary">단말 상세 조회</button>
+          <button class="btn" style="background: #dc2626; color: #fff;">충전 중지</button>
+          <button class="btn" style="background: #475569; color: #fff;">단말 리셋</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- Toast Box -->
+<div id="toast" class="toast-box">📋 <span id="toastMsg">복사되었습니다.</span></div>
+
+<script>
+  function changeTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+
+  function copyToken(text, name) {
+    navigator.clipboard.writeText(text);
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').innerText = `[${name}] ${text} 복사 완료!`;
+    toast.style.display = 'flex';
+    setTimeout(() => { toast.style.display = 'none'; }, 2000);
+  }
+</script>
+
+</body>
+</html>

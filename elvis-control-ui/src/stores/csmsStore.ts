@@ -255,6 +255,9 @@ export const useCsmsStore = defineStore('csms', {
     // 테마 설정
     currentTheme: 'light' as 'light' | 'cyber',
 
+    // 화면 디자인 컨셉 (3개 시안 스위처)
+    activeConcept: 'concept1' as 'concept1' | 'concept2' | 'concept3',
+
     // 반응형 드로어 상태 (프로토타입 LAYOUT-OPTION-B 규격)
     isSidebarOpen: false,
     isControlDrawerOpen: false,
@@ -291,6 +294,10 @@ export const useCsmsStore = defineStore('csms', {
   actions: {
     setTheme(theme: string) {
       this.currentTheme = theme as 'light' | 'cyber'
+    },
+
+    setConcept(concept: 'concept1' | 'concept2' | 'concept3') {
+      this.activeConcept = concept
     },
 
     toggleSidebar(isOpen?: boolean) {

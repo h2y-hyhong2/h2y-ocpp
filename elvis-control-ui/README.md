@@ -14,6 +14,12 @@
   - `Pure Tailwind & Pinia`: 2,000대 충전기 실시간 상태 그리드 및 원격 제어(시작/중지/리셋)
   - `OCPP WireTap`: 실시간 Inbound/Outbound OCPP JSON 패킷 스트림 디버거
 - 🌙 **글래스모피즘 다크 테마**: 장시간 관제 모니터링 시 피로도를 최소화하는 현대적인 관제실 전용 다크 UI
+- 🎨 **3대 디자인 컨셉 & 전용 스타일 독립 분리**:
+  - `src/views/concept1/`: **시안 1 (Enterprise Modern)** - [`Concept1View.vue`](./src/views/concept1/Concept1View.vue) + [`concept1.css`](./src/views/concept1/concept1.css) + [`05-디자인가이드.html`](./src/views/concept1/05-디자인가이드.html)
+  - `src/views/concept2/`: **시안 2 (Cyber Situation Room)** - [`Concept2View.vue`](./src/views/concept2/Concept2View.vue) + [`concept2.css`](./src/views/concept2/concept2.css) + [`05-디자인가이드.html`](./src/views/concept2/05-디자인가이드.html)
+  - `src/views/concept3/`: **시안 3 (Eco Fleet Cockpit)** - [`Concept3View.vue`](./src/views/concept3/Concept3View.vue) + [`concept3.css`](./src/views/concept3/concept3.css) + [`05-디자인가이드.html`](./src/views/concept3/05-디자인가이드.html)
+  - 각 컨셉 폴더 내부의 `.css` 파일을 직접 수정하여 **컬러 팔레트, 폰트, 카드 스타일, 10대 상태 색상을 완전히 독립적으로 커스텀 정의** 가능!
+  - 상단 헤더의 탭 버튼으로 **실시간 무중단 원클릭 전환** 지원
 
 ---
 

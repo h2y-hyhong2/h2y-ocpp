@@ -1,0 +1,49 @@
+/* ==========================================================================
+   [컨셉 3 디자인 테마] Eco Fleet Cockpit (친환경 차고지 & 에너지 콕핏)
+   - 특징: Deep Forest 배경, 에코 에메랄드 & 솔라 골드 액센트, 라운디드 카드
+   - 사용자가 이 파일의 색상과 변수를 자유롭게 수정하여 시안 3만의 룩앤필을 정의할 수 있습니다.
+   ========================================================================== */
+
+.concept3-theme {
+  /* 1. 배경 및 서피스 색상 */
+  --c3-bg-base: #04120c;
+  --c3-bg-surface-1: #09261d;
+  --c3-bg-surface-2: rgba(13, 48, 37, 0.75);
+  --c3-border: rgba(16, 185, 129, 0.22);
+  --c3-border-glow: rgba(16, 185, 129, 0.45);
+
+  /* 2. 브랜드 및 에코/에너지 포인트 색상 */
+  --c3-primary: #10b981;
+  --c3-primary-glow: rgba(16, 185, 129, 0.25);
+  --c3-accent-solar: #fbbf24;  /* 태양광/전력 솔라 골드 */
+  --c3-accent-cyan: #06b6d4;
+
+  /* 3. 텍스트 색상 단계 */
+  --c3-text-bright: #f0fdf4;
+  --c3-text-body: #a7f3d0;
+  --c3-text-muted: #6ee7b7;
+
+  /* 4. 박스 스타일 (라운디드 & 소프트 틴트) */
+  --c3-radius: 16px;
+  --c3-shadow: 0 4px 16px rgba(4, 18, 12, 0.6), inset 0 1px 0 rgba(16, 185, 129, 0.15);
+
+  /* 5. 에코 미네랄 상태 컬러 토큰 */
+  --c3-st-charging: #06b6d4;
+  --c3-st-standby: #f59e0b;
+  --c3-st-finished: #10b981;
+  --c3-st-fault: #ef4444;
+  --c3-st-preparing: #14b8a6;
+}
+
+/* 컨셉 3 전용 컨테이너 스타일 */
+.concept3-theme {
+  background-color: var(--c3-bg-base);
+  color: var(--c3-text-body);
+}
+
+.concept3-theme .c3-card {
+  background-color: var(--c3-bg-surface-1);
+  border: 1px solid var(--c3-border);
+  border-radius: var(--c3-radius);
+  box-shadow: var(--c3-shadow);
+}
