@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 [UI] 프로토타입 브라우저 실행",
+      "type": "shell",
+      "command": "start \"\" \"d:/project/lselink/lselink-work/2026/과제/[3368]2026-07-02-002-CSMS Lite 버전(POC)/prototype/index.html\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "🌐 [UI] Vite 개발 서버 (pnpm dev)",
+      "type": "shell",
+      "command": "pnpm dev",
+      "options": {
+        "cwd": "${workspaceFolder}/elvis-control-ui"
+      },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "🖥️ [UI] Tauri 데스크톱 앱 (pnpm tauri dev)",
+      "type": "shell",
+      "command": "pnpm tauri dev",
+      "options": {
+        "cwd": "${workspaceFolder}/elvis-control-ui"
+      },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "🛠️ [Infra] 미들웨어 기동 (Kafka & MySQL)",
+      "type": "shell",
+      "command": "cmd.exe /c scripts\\start-all-middleware.bat",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
