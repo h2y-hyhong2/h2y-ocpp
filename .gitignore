@@ -27,14 +27,33 @@ binaries
 
 # Node / Frontend dependencies & build artifacts
 node_modules/
-/elvis-control-ui/node_modules/
-/elvis-control-ui/dist/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+*.timestamp-*.mjs
+*.timestamp-*.js
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Rust / Tauri build artifacts
-/elvis-control-ui/src-tauri/target/
+target/
+**/target/
+src-tauri/target/
+**/src-tauri/target/
 
 # Gradle / Java build artifacts
 .gradle/
+**/.gradle/
 build/
+**/build/
 bin/
 out/
+
+# IDE files
+.idea/
+*.iml

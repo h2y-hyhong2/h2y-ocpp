@@ -1,0 +1,47 @@
+# ==============================================================================
+# ELVIS-CSMS Dedicated Test Harness & Simulator (elvis-tester) Configuration
+# ==============================================================================
+
+server:
+  port: 8085
+
+spring:
+  application:
+    name: elvis-tester
+  threads:
+    virtual:
+      enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: 1
+      retries: 2
+    consumer:
+      group-id: elvis-tester-group
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+elvis:
+  tester:
+    topics:
+      inbound: "ocpp-raw-events"
+      outbound: "ocpp-outbound-commands"
+      ui-notifications: "ocpp-ui-notifications"
+      dlt: "ocpp-raw-events.DLT"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    root: INFO
+    com.lselink.elvis.tester: DEBUG
