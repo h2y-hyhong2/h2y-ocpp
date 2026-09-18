@@ -114,21 +114,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useCsmsStore } from '@/stores/csmsStore'
 
 const store = useCsmsStore()
 const searchQuery = ref('')
+const dbRecords = ref<any[]>([])
+const dbSummary = ref<any>({
+  totalCount: 5,
+  totalKwh: 262.5,
+  totalAmount: 75638,
+  avgMinutes: 38.6
+})
+
+async function loadCdrRecords() {
+  try {
+    const res = await fetch('/api/v1/cdr')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.records && data.records.length > 0) {
+        dbRecords.value = data.records.map((r: any) => ({
+          transactionId: r.transactionId,
+          userTag: r.userTag,
+          chargeBoxId: r.chargeBoxId,
+          stationName: r.stationName,
+          startTime: r.startTime,
+          stopTime: r.stopTime,
+          energyKwh: Number(r.kwh || 0),
+          avgPriceWon: Number(r.unitPrice || 288.1),
+          totalAmountWon: Number(r.totalAmount || 0),
+          paymentStatus: r.paymentStatus
+        }))
+        if (data.summary) {
+          dbSummary.value = data.summary
+        }
+      }
+    }
+  } catch (err) {
+    // API 연결 실패 시 기존 Mock 상태 유지
+  }
+}
+
+onMounted(() => {
+  loadCdrRecords()
+})
 
 const filteredRecords = computed(() => {
-  return store.cdrRecords.filter(r => {
-    return r.userTag.includes(searchQuery.value) ||
-           r.chargeBoxId.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-           r.stationName.includes(searchQuery.value)
+  const source = dbRecords.value.length > 0 ? dbRecords.value : (store as any).cdrRecords || []
+  return source.filter((r: any) => {
+    return (r.userTag && r.userTag.includes(searchQuery.value)) ||
+           (r.chargeBoxId && r.chargeBoxId.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+           (r.stationName && r.stationName.includes(searchQuery.value))
   })
 })
 
 const exportExcel = () => {
-  store.showToast('info', 'Excel 내보내기', '과금 원장 5건의 CSV 파일 다운로드가 시작되었습니다.')
+  store.addToast('info', 'Excel 내보내기', `과금 원장 ${filteredRecords.value.length}건의 CSV 파일 다운로드가 시작되었습니다.`)
 }
 </script>

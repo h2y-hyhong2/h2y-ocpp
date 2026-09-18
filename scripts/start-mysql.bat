@@ -4,11 +4,23 @@ chcp 65001 > nul
 
 set SCRIPT_DIR=%~dp0
 set MYSQL_HOME=%SCRIPT_DIR%..\binaries\mysql-9.7.1-winx64
-set DATA_DIR=%MYSQL_HOME%\data
+set DATA_DIR=D:\elvis-lite\data\mysql
+
+set MYSQL_PORT=13306
+
+rem paths.env 설정 파일이 존재하면 동적 경로 및 포트 반영
+if exist "%SCRIPT_DIR%..\config\paths.env" (
+    for /f "usebackq tokens=1,2 delims==" %%A in ("%SCRIPT_DIR%..\config\paths.env") do (
+        if "%%A"=="ELVIS_DATA_DIR" set DATA_DIR=%%B\mysql
+        if "%%A"=="ELVIS_MYSQL_PORT" set MYSQL_PORT=%%B
+    )
+)
 
 echo ========================================================
-echo  [ELVIS-CSMS] MySQL 9.71 로컬 서버 기동 (Port: 3306)
+echo  [ELVIS-CSMS] MySQL 9.71 로컬 서버 기동 (Port: %MYSQL_PORT%)
 echo  MYSQL_HOME: %MYSQL_HOME%
+echo  DATA_DIR:   %DATA_DIR%
+echo  PORT:       %MYSQL_PORT%
 echo ========================================================
 
 if not exist "%DATA_DIR%" (

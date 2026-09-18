@@ -1,8 +1,3 @@
-# ==============================================================================
-# ELVIS-CSMS Admin REST API (elvis-control-api) Configuration
-# 위치: config/control-api/application.yml
-# ==============================================================================
-
 server:
   port: 18081
 
@@ -32,22 +27,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: false
 
-  # ClickHouse 시계열 DB 연동
-  clickhouse:
-    url: jdbc:ch://${CLICKHOUSE_HOST:localhost}:${CLICKHOUSE_PORT:8123}/elvis_analytics
-    user: ${CLICKHOUSE_USER:default}
-    password: ${CLICKHOUSE_PASSWORD:}
-
-  # Kafka 메시징 연동 (하향 제어 명령 발행)
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
-
-elvis:
-  jwt:
-    secret: "elvis-csms-poc-jwt-super-secret-key-2026-very-long-secure-key"
-    expiration-ms: 86400000
-
 logging:
   level:
     root: INFO
-    com.lselink.elvis.control.api: DEBUG
+    com.lselink.elvis.control: DEBUG

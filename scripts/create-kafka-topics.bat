@@ -6,6 +6,11 @@ set SCRIPT_DIR=%~dp0
 set KAFKA_HOME=%SCRIPT_DIR%..\binaries\kafka_2.13-4.3.1
 set BOOTSTRAP=localhost:9092
 
+if exist "d:\project\lselink\ocpp\jdk\jdk-25.0.2+10" (
+    set "JAVA_HOME=d:\project\lselink\ocpp\jdk\jdk-25.0.2+10"
+    set "PATH=d:\project\lselink\ocpp\jdk\jdk-25.0.2+10\bin;%PATH%"
+)
+
 echo ========================================================
 echo  [ELVIS-CSMS] Kafka 4대 핵심 토픽 생성 스크립트
 echo ========================================================

@@ -16,9 +16,9 @@ spring:
 
   # RDBMS (MySQL) 접속 설정
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/elvis_csms?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:}
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/elvis-lite?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${MYSQL_USER:elvis}
+    password: ${MYSQL_PASSWORD:elvis1234!}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 50
@@ -27,7 +27,7 @@ spring:
 
   # Kafka 메시징 연동
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
     consumer:
       group-id: elvis-sync-consumer-group
       auto-offset-reset: earliest

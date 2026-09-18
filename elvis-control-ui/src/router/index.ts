@@ -8,6 +8,7 @@ import ChargersView from '@/views/ChargersView.vue'
 import MeterValuesView from '@/views/MeterValuesView.vue'
 import BillingCdrView from '@/views/BillingCdrView.vue'
 import LiveLogsView from '@/views/LiveLogsView.vue'
+import AdminSettingsView from '@/views/AdminSettingsView.vue'
 
 const routes = [
   {
@@ -63,6 +64,12 @@ const routes = [
     name: 'LiveLogs',
     component: LiveLogsView,
     meta: { title: 'OCPP 실시간 패킷 로그' }
+  },
+  {
+    path: '/settings',
+    name: 'AdminSettings',
+    component: AdminSettingsView,
+    meta: { title: '시스템 관리자 & 인프라 설정' }
   }
 ]
 

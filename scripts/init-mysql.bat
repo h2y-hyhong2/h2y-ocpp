@@ -4,7 +4,14 @@ chcp 65001 > nul
 
 set SCRIPT_DIR=%~dp0
 set MYSQL_HOME=%SCRIPT_DIR%..\binaries\mysql-9.7.1-winx64
-set DATA_DIR=%MYSQL_HOME%\data
+set DATA_DIR=D:\elvis-lite\data\mysql
+
+rem paths.env 설정 파일이 존재하면 동적 경로 반영
+if exist "%SCRIPT_DIR%..\config\paths.env" (
+    for /f "usebackq tokens=1,2 delims==" %%A in ("%SCRIPT_DIR%..\config\paths.env") do (
+        if "%%A"=="ELVIS_DATA_DIR" set DATA_DIR=%%B\mysql
+    )
+)
 
 echo ========================================================
 echo  [ELVIS-CSMS] MySQL 9.71 데이터 디렉토리 초기화
@@ -24,7 +31,7 @@ echo [1/1] MySQL 9.71 초기화 진행 중 (insecure mode)...
 
 if %ERRORLEVEL% equ 0 (
     echo ========================================================
-    echo  MySQL 초기화가 완료되었습니다! (root 비밀번호: 없음)
+    echo  MySQL 초기화가 완료되었습니다! - root 비밀번호 없음
     echo  start-mysql.bat 을 실행하여 서버를 시작하세요.
     echo ========================================================
 ) else (

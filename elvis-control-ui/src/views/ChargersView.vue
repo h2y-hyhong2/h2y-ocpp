@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useCsmsStore, STATUS_MAP, type ChargerItem, type StatusKey } from '../stores/csmsStore'
 
 const store = useCsmsStore()
+
+onMounted(() => {
+  store.fetchInitialData()
+})
 
 // 뷰 모드 상태 (프로토타입 LAYOUT-OPTION-B.html 기준)
 const topViewMode = ref<'progress' | 'heatmap'>('progress') // 프로그래스바가 1순위로 먼저 나오도록 기본 세팅
@@ -72,10 +76,9 @@ function onSelectCharger(chg: ChargerItem) {
   if (window.innerWidth < 1280) store.toggleControlDrawer(true)
 }
 
-// 원격 제어 커맨드 전송
+// 원격 제어 커맨드 전송 (REST API 연동)
 function sendRemoteCommand(action: string) {
-  if (!store.selectedCharger) return
-  store.addToast('success', `${action} 명령 발행`, `[${store.selectedCharger.chargeBoxId}] 단말에 ${action} 커맨드가 성공적으로 전달되었습니다.`)
+  store.sendRemoteAction(action)
 }
 </script>
 

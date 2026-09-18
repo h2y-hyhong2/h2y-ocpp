@@ -19,6 +19,17 @@ code, kbd, samp, pre, .font-mono, .matrix-cell {
 
 /* 5대 멀티 테마 디자인 토큰 시스템 */
 [data-theme="light"], :root {
+  /* ==========================================================================
+     LS E-LINK 통합 마스터 브랜드 컬러 토큰
+     ========================================================================== */
+  --brand-ls-blue: #0A1E5A;        /* PANTONE 281C (E-LINK & LS 공통 메인 딥 블루) */
+  --brand-ls-red: #FA002D;         /* PANTONE 199C (LS 메인 레드) */
+  --brand-elink-orange: #E96600;   /* PANTONE 1669C (E-LINK 서브 오렌지) */
+  --brand-elink-yellow: #FFD800;   /* PANTONE 108C (E-LINK 서브 옐로우) */
+  --brand-ls-green: #009B74;       /* PANTONE 312C (LS 서브 그린) */
+  --brand-ls-sub-blue: #0569A0;    /* PANTONE 3005C (LS 서브 블루) */
+  --brand-ls-gray: #7D8282;        /* PANTONE 430C (LS 서브 그레이) */
+
   --bg-base: #eaf0f6;
   --bg-sidebar: #f8fafc;
   --bg-surface-1: #ffffff;
