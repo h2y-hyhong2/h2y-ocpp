@@ -29,10 +29,13 @@ if not exist "%KAFKA_HOME%\bin\windows\kafka-server-start.bat" (
     exit /b 1
 )
 
+title ELVIS - Apache Kafka 4.3.1 KRaft (Port: 19092)
+color 0E
+
 echo [1/2] Checking KRaft storage format...
 call "%KAFKA_HOME%\bin\windows\kafka-storage.bat" format -t %CLUSTER_ID% -c "%KRAFT_CONFIG%" --ignore-formatted
 
-echo [2/2] Starting Kafka Broker (Port: 9092)...
+echo [2/2] Starting Kafka Broker (Port: 19092)...
 call "%KAFKA_HOME%\bin\windows\kafka-server-start.bat" "%KRAFT_CONFIG%"
 
-pause
+if not "%NO_PAUSE%"=="1" pause

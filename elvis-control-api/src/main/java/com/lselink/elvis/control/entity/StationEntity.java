@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "TBL_STATION")
+@Table(name = "tb_station")
 @Getter
 @Setter
 @NoArgsConstructor

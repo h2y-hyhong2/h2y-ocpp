@@ -28,6 +28,9 @@ if not exist "%DATA_DIR%" (
     call "%SCRIPT_DIR%init-mysql.bat"
 )
 
+title ELVIS - MySQL 9.71 Server (Port: %MYSQL_PORT%)
+color 0B
+
 echo MySQL 서버를 콘솔 모드로 기동합니다...
 set MYSQL_INI=%SCRIPT_DIR%..\config\mysql\my.ini
 if not exist "%MYSQL_INI%" (
@@ -42,4 +45,4 @@ if exist "%MYSQL_INI%" (
     "%MYSQL_HOME%\bin\mysqld.exe" --basedir="%MYSQL_HOME%" --datadir="%DATA_DIR%" --port=3306 --console
 )
 
-pause
+if not "%NO_PAUSE%"=="1" pause

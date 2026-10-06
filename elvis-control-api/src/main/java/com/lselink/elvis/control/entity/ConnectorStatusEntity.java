@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "TBL_CONNECTOR_STATUS")
+@Table(name = "tb_connector_status")
 @Getter
 @Setter
 @NoArgsConstructor

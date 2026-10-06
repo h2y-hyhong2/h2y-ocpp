@@ -30,13 +30,60 @@
           <span>상태 새로고침</span>
         </button>
         <button
+          @click="openMiddlewareConsole"
+          :disabled="isExecuting"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-black shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+          title="바탕화면에 MySQL 9.71 및 Apache Kafka KRaft 콘솔 창을 즉시 팝업합니다"
+        >
+          <span>🖥️</span>
+          <span>미들웨어 콘솔 창 열기</span>
+        </button>
+        <button
+          @click="restartBackground"
+          :disabled="isExecuting"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+          title="기존 실행 중인 창을 닫고, 무창 백그라운드로 전환하여 실시간 콘솔 로그를 파일/UI에 연결합니다"
+        >
+          <span>🔄</span>
+          <span>백그라운드 전환 (로그 연동)</span>
+        </button>
+        <button
           @click="startAllMiddleware"
           :disabled="isExecuting"
-          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#0A1E5A] to-[#0569A0] hover:opacity-90 text-white text-xs font-black shadow-md hover:shadow-sky-500/20 transition-all disabled:opacity-50"
+          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#0A1E5A] to-[#0569A0] hover:opacity-90 text-white text-xs font-black shadow-md hover:shadow-sky-500/20 transition-all disabled:opacity-50 cursor-pointer"
         >
           <span class="text-[#E96600]">⚡</span>
           <span>전체 서비스 일괄 기동</span>
         </button>
+      </div>
+    </div>
+
+    <!-- 독립 인프라 런처 (elvis-launcher) 안내 배너 -->
+    <div class="mt-4 p-4 rounded-2xl bg-gradient-to-r from-[#0A1E5A]/30 via-sky-950/20 to-amber-950/20 border border-sky-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-amber-500 flex items-center justify-center text-xl text-white shadow-md">
+          🚀
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-black text-white">ELVIS Launcher 독립 인프라 관리 센터 분리 완료</h3>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">포트 1422</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">24/7 지속 구동</span>
+          </div>
+          <p class="text-xs text-slate-300 mt-0.5">
+            관제 UI를 종료하거나 재시작해도 MySQL 9.71과 Kafka KRaft가 강제 종료되지 않고 유지되는 독립 런처 서비스입니다.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <a
+          href="http://localhost:1422"
+          target="_blank"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-xs font-black shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+        >
+          <span>ELVIS Launcher 열기 (포트 1422)</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
       </div>
     </div>
 
@@ -93,19 +140,28 @@
 
           <div class="mt-6 pt-4 border-t border-[var(--border-glass)] flex items-center gap-2">
             <button
-              @click="controlService('start', 'mysql')"
+              @click="controlService('start', 'mysql', true)"
               :disabled="infra.mysql || isExecuting"
-              class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1"
-              :class="infra.mysql ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'"
+              class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm"
+              :class="infra.mysql ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'"
+              title="화면 창 없이 백그라운드로 안전하게 기동하고 아래 터미널에 로그를 표시합니다"
             >
               <span>▶</span>
-              <span>기동</span>
+              <span>백그라운드 기동</span>
+            </button>
+            <button
+              @click="controlService('start', 'mysql', false)"
+              :disabled="infra.mysql || isExecuting"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center border border-[var(--border-glass)] hover:bg-[var(--bg-surface-2)] text-slate-500 dark:text-slate-400 disabled:opacity-40"
+              title="새 콘솔(CMD) 창을 화면에 띄워서 기동합니다"
+            >
+              <span>🪟 창</span>
             </button>
             <button
               @click="controlService('stop', 'mysql')"
               :disabled="!infra.mysql || isExecuting"
-              class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1"
-              :class="!infra.mysql ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm"
+              :class="!infra.mysql ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-500 text-white'"
             >
               <span>⏹</span>
               <span>중지</span>
@@ -140,19 +196,28 @@
 
           <div class="mt-6 pt-4 border-t border-[var(--border-glass)] flex items-center gap-2">
             <button
-              @click="controlService('start', 'kafka')"
+              @click="controlService('start', 'kafka', true)"
               :disabled="infra.kafka || isExecuting"
-              class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1"
-              :class="infra.kafka ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'"
+              class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm"
+              :class="infra.kafka ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'"
+              title="화면 창 없이 백그라운드로 안전하게 기동하고 아래 터미널에 로그를 표시합니다"
             >
               <span>▶</span>
-              <span>기동</span>
+              <span>백그라운드 기동</span>
+            </button>
+            <button
+              @click="controlService('start', 'kafka', false)"
+              :disabled="infra.kafka || isExecuting"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center border border-[var(--border-glass)] hover:bg-[var(--bg-surface-2)] text-slate-500 dark:text-slate-400 disabled:opacity-40"
+              title="새 콘솔(CMD) 창을 화면에 띄워서 기동합니다"
+            >
+              <span>🪟 창</span>
             </button>
             <button
               @click="controlService('stop', 'kafka')"
               :disabled="!infra.kafka || isExecuting"
-              class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1"
-              :class="!infra.kafka ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm"
+              :class="!infra.kafka ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-500 text-white'"
             >
               <span>⏹</span>
               <span>중지</span>
@@ -189,6 +254,134 @@
             <span class="text-[11px] text-slate-500">
               {{ infra.controlApi ? '✅ 정상 연동 중 (/api/v1/*)' : '💡 Mock Fallback 모드로 실행 중' }}
             </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🖥️ 미들웨어 실시간 콘솔 로그 뷰어 (Console Terminal) -->
+      <div class="p-5 rounded-2xl bg-[var(--bg-surface-1)] border border-[var(--border-glass)] shadow-sm flex flex-col gap-4">
+        <!-- 터미널 상단 툴바 -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-glass)]">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+            </div>
+            <h3 class="text-sm font-bold text-[var(--text-bright)] flex items-center gap-2">
+              <span>🖥️ 미들웨어 실시간 콘솔 로그 터미널</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-400 font-semibold">
+                {{ selectedLogService === 'mysql' ? 'MySQL 9.71 Server' : 'Apache Kafka 4.3.1 KRaft' }}
+              </span>
+            </h3>
+          </div>
+
+          <!-- 탭 선택 & 제어 도구 -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- 서비스 선택 탭 -->
+            <div class="flex items-center p-0.5 rounded-lg bg-[var(--bg-surface-2)] border border-[var(--border-glass)]">
+              <button
+                @click="selectedLogService = 'mysql'"
+                class="px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer"
+                :class="selectedLogService === 'mysql' ? 'bg-sky-500 text-white shadow-xs' : 'text-slate-500 hover:text-slate-300'"
+              >
+                🐬 MySQL
+              </button>
+              <button
+                @click="selectedLogService = 'kafka'"
+                class="px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer"
+                :class="selectedLogService === 'kafka' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-300'"
+              >
+                📨 Kafka
+              </button>
+            </div>
+
+            <!-- 자동 새로고침 토글 -->
+            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg bg-[var(--bg-surface-2)] border border-[var(--border-glass)]">
+              <input type="checkbox" v-model="autoRefreshLogs" class="sr-only peer" />
+              <div class="w-7 h-3.5 bg-slate-400 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1.5px] after:left-[1.5px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-sky-500 relative"></div>
+              <span class="text-[11px] font-medium">자동 갱신 (2s)</span>
+            </label>
+
+            <!-- 자동 스크롤 토글 -->
+            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg bg-[var(--bg-surface-2)] border border-[var(--border-glass)]">
+              <input type="checkbox" v-model="autoScrollLogs" class="sr-only peer" />
+              <div class="w-7 h-3.5 bg-slate-400 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1.5px] after:left-[1.5px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+              <span class="text-[11px] font-medium">자동 스크롤</span>
+            </label>
+
+            <!-- 수동 새로고침 -->
+            <button
+              @click="fetchLogs"
+              :disabled="isFetchingLogs"
+              class="p-1.5 rounded-lg border border-[var(--border-glass)] bg-[var(--bg-surface-2)] hover:bg-[var(--bg-surface-1)] text-slate-500 dark:text-slate-400 transition-all text-xs cursor-pointer"
+              title="지금 새로고침"
+            >
+              <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': isFetchingLogs }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+
+            <!-- 클립보드 복사 -->
+            <button
+              @click="copyLogs"
+              class="px-2 py-1 rounded-lg border border-[var(--border-glass)] bg-[var(--bg-surface-2)] hover:bg-[var(--bg-surface-1)] text-[11px] font-bold text-slate-500 dark:text-slate-400 transition-all flex items-center gap-1 cursor-pointer"
+              title="로그 전체 복사"
+            >
+              <span>📋</span>
+              <span>복사</span>
+            </button>
+
+            <!-- 로그 비우기 -->
+            <button
+              @click="clearLogs"
+              class="px-2 py-1 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-[11px] font-bold text-rose-500 transition-all flex items-center gap-1 cursor-pointer"
+              title="콘솔 로그 비우기"
+            >
+              <span>🗑️</span>
+              <span>비우기</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 터미널 본문 윈도우 -->
+        <div
+          ref="logContainerRef"
+          class="h-80 overflow-y-auto rounded-xl p-4 font-mono text-[11px] leading-relaxed bg-[#0b0f19] text-slate-300 border border-slate-800 shadow-inner select-text"
+        >
+          <div v-if="logLines.length === 0" class="h-full flex flex-col items-center justify-center text-slate-500 gap-2.5 select-none">
+            <span class="text-2xl">💤</span>
+            <span>현재 수집된 {{ selectedLogService.toUpperCase() }} 콘솔 로그가 없습니다.</span>
+            <div class="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap justify-center">
+              <span>* 기존 콘솔 창으로 띄워진 경우 파일 로그가 수집되지 않습니다.</span>
+              <button
+                @click="restartBackground"
+                :disabled="isExecuting"
+                class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                🔄 백그라운드로 전환 (로그 보기)
+              </button>
+            </div>
+          </div>
+          <div v-else class="space-y-0.5">
+            <div
+              v-for="(line, idx) in logLines"
+              :key="idx"
+              class="flex items-start gap-2 hover:bg-white/5 px-1 py-0.5 rounded transition-colors"
+            >
+              <span class="text-slate-600 select-none text-[10px] w-8 text-right shrink-0">{{ idx + 1 }}</span>
+              <span :class="formatLogLine(line)" class="break-all whitespace-pre-wrap flex-1">{{ line }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 터미널 푸터 정보 -->
+        <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
+          <div class="flex items-center gap-3">
+            <span>스토리지 파일: <code class="font-mono text-sky-500">{{ paths.logDir || 'D:\\elvis-lite\\logs' }}\{{ selectedLogService }}.log</code></span>
+            <span>용량: <strong class="text-slate-300">{{ formatBytes(logFileSize) }}</strong></span>
+            <span>표시 라인: <strong class="text-slate-300">{{ logLines.length }}</strong> 줄</span>
+          </div>
+          <div v-if="logLastModified">
+            마지막 수집: {{ new Date(logLastModified).toLocaleTimeString() }}
           </div>
         </div>
       </div>
@@ -549,16 +742,16 @@
             <div class="mt-4 p-3 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-glass)] text-[11px] flex flex-col gap-1.5">
               <div class="font-bold text-slate-400">적재 대상 테이블:</div>
               <div class="font-mono text-sky-600 dark:text-sky-400 flex flex-wrap gap-1">
-                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">TBL_CORP</span>
-                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">TBL_STATION</span>
-                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">TBL_CHARGER</span>
-                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">TBL_CONNECTOR_STATUS</span>
-                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">TBL_TRANSACTION_CDR</span>
+                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">tb_corp</span>
+                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">tb_station</span>
+                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">tb_charger</span>
+                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">tb_connector_status</span>
+                <span class="px-1.5 py-0.5 rounded bg-sky-500/10">tb_transaction_cdr</span>
               </div>
             </div>
           </div>
 
-          <div class="mt-6 pt-4 border-t border-[var(--border-glass)]">
+          <div class="mt-6 pt-4 border-t border-[var(--border-glass)] flex flex-col gap-2">
             <button
               @click="executeSchemaLoad"
               :disabled="!infra.mysql || isExecutingSchema"
@@ -566,10 +759,21 @@
               :class="!infra.mysql ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-500 text-white'"
             >
               <span>🚀</span>
-              <span>{{ isExecutingSchema ? '적재 프로세스 실행 중...' : 'MySQL 9.71 스키마 & 시드 적재 실행' }}</span>
+              <span>{{ isExecutingSchema ? '적재 프로세스 실행 중...' : 'MySQL 9.71 스키마 & 시드 데이터 적재 (Restore)' }}</span>
             </button>
-            <div v-if="!infra.mysql" class="text-[10px] text-rose-500 mt-1.5 text-center">
-              * 먼저 MySQL 서버({{ ports.mysql }})를 기동해야 적재할 수 있습니다.
+
+            <!-- DB 전체 클리어 버튼 -->
+            <button
+              @click="executeDbClear"
+              :disabled="!infra.mysql || isClearingDb"
+              class="w-full py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 shadow-sm"
+              :class="!infra.mysql ? 'opacity-50 cursor-not-allowed' : ''"
+            >
+              <span>🗑️</span>
+              <span>{{ isClearingDb ? '데이터 초기화 중...' : 'DB 데이터 전체 클리어 (0건 초기 상태 만들기)' }}</span>
+            </button>
+            <div v-if="!infra.mysql" class="text-[10px] text-rose-500 mt-1 text-center">
+              * 먼저 MySQL 서버({{ ports.mysql }})를 기동해야 실행할 수 있습니다.
             </div>
           </div>
         </div>
@@ -617,7 +821,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useCsmsStore } from '@/stores/csmsStore'
 
 const store = useCsmsStore()
@@ -672,7 +876,21 @@ const isExecuting = ref(false)
 const isSavingPaths = ref(false)
 const isSavingPorts = ref(false)
 const isCheckingAllPorts = ref(false)
+
+// =========================================================================
+// 🖥️ 실시간 미들웨어 콘솔 로그 뷰어 상태
+// =========================================================================
+const selectedLogService = ref<'mysql' | 'kafka'>('mysql')
+const logLines = ref<string[]>([])
+const logFileSize = ref(0)
+const logLastModified = ref<string | null>(null)
+const isFetchingLogs = ref(false)
+const autoRefreshLogs = ref(true)
+const autoScrollLogs = ref(true)
+const logContainerRef = ref<HTMLElement | null>(null)
+let logPollingTimer: any = null
 const isExecutingSchema = ref(false)
+const isClearingDb = ref(false)
 let pollingTimer: any = null
 
 const tabs = computed(() => [
@@ -786,16 +1004,23 @@ async function savePaths() {
 }
 
 // 4. 서비스 개별 제어 (기동/중지)
-async function controlService(action: 'start' | 'stop', service: string) {
+async function controlService(action: 'start' | 'stop', service: string, isBackground: boolean = true) {
   isExecuting.value = true
   try {
-    const endpoint = `/api/infra/${action}?service=${service}`
+    const bgParam = action === 'start' ? `&background=${isBackground}` : ''
+    const endpoint = `/api/infra/${action}?service=${service}${bgParam}`
     const res = await fetch(endpoint, { method: 'POST' })
     const result = await res.json()
 
     if (result.success) {
-      store.addToast(`${service} 제어`, result.message, 'success')
+      store.addToast(`${service.toUpperCase()} 제어`, result.message, 'success')
       setTimeout(checkStatus, 1500)
+      if (action === 'start') {
+        if (service === 'mysql' || service === 'kafka') {
+          selectedLogService.value = service
+        }
+        setTimeout(fetchLogs, 500)
+      }
     } else {
       store.addToast('제어 실패', result.message, 'error')
     }
@@ -806,15 +1031,16 @@ async function controlService(action: 'start' | 'stop', service: string) {
   }
 }
 
-// 5. 전체 미들웨어 기동
+// 5. 전체 미들웨어 기동 (백그라운드 기본)
 async function startAllMiddleware() {
   isExecuting.value = true
   try {
-    const res = await fetch('/api/infra/start?service=all', { method: 'POST' })
+    const res = await fetch('/api/infra/start?service=all&background=true', { method: 'POST' })
     const result = await res.json()
     if (result.success) {
-      store.addToast('전체 기동', 'Kafka 및 MySQL 전체 기동 배치가 실행되었습니다.', 'success')
+      store.addToast('전체 백그라운드 기동', result.message || 'Kafka 및 MySQL 백그라운드 기동이 실행되었습니다.', 'success')
       setTimeout(checkStatus, 2500)
+      setTimeout(fetchLogs, 1000)
     }
   } catch (err: any) {
     store.addToast('기동 실패', err.message, 'error')
@@ -822,6 +1048,125 @@ async function startAllMiddleware() {
     isExecuting.value = false
   }
 }
+
+// 5-1. 미들웨어 콘솔 윈도우 동시 띄우기 (MySQL 9.71 & Kafka KRaft)
+async function openMiddlewareConsole() {
+  isExecuting.value = true
+  try {
+    const res = await fetch('/api/infra/open-console', { method: 'POST' })
+    const result = await res.json()
+    if (result.success) {
+      store.addToast('미들웨어 콘솔 창 실행', result.message || 'MySQL 및 Kafka 콘솔 윈도우가 화면에 실행되었습니다.', 'success')
+      setTimeout(checkStatus, 2000)
+      setTimeout(fetchLogs, 1500)
+    } else {
+      store.addToast('콘솔 실행 실패', result.message || '콘솔 창 실행 중 오류 발생', 'error')
+    }
+  } catch (err: any) {
+    store.addToast('콘솔 실행 오류', err.message, 'error')
+  } finally {
+    isExecuting.value = false
+  }
+}
+
+// 5-1-2. 미들웨어 백그라운드 전환/재기동 (실시간 로그 수집 연동)
+async function restartBackground() {
+  isExecuting.value = true
+  try {
+    const res = await fetch('/api/infra/restart-background', { method: 'POST' })
+    const result = await res.json()
+    if (result.success) {
+      store.addToast('백그라운드 전환', result.message, 'success')
+      setTimeout(checkStatus, 2500)
+      setTimeout(fetchLogs, 3000)
+    } else {
+      store.addToast('전환 실패', result.message, 'error')
+    }
+  } catch (err: any) {
+    store.addToast('전환 오류', err.message, 'error')
+  } finally {
+    isExecuting.value = false
+  }
+}
+
+// =========================================================================
+// 🖥️ 실시간 미들웨어 콘솔 로그 제어 함수
+// =========================================================================
+async function fetchLogs() {
+  if (isFetchingLogs.value) return
+  isFetchingLogs.value = true
+  try {
+    const res = await fetch(`/api/infra/logs?service=${selectedLogService.value}&tail=250`)
+    const data = await res.json()
+    if (data.success) {
+      logLines.value = data.lines || []
+      logFileSize.value = data.fileSize || 0
+      logLastModified.value = data.lastModified
+      if (autoScrollLogs.value) {
+        nextTick(() => {
+          if (logContainerRef.value) {
+            logContainerRef.value.scrollTop = logContainerRef.value.scrollHeight
+          }
+        })
+      }
+    }
+  } catch (e: any) {
+    console.warn('[Log-Fetch-Warn]', e.message)
+  } finally {
+    isFetchingLogs.value = false
+  }
+}
+
+async function clearLogs() {
+  try {
+    const res = await fetch(`/api/infra/logs/clear?service=${selectedLogService.value}`, { method: 'POST' })
+    const data = await res.json()
+    if (data.success) {
+      logLines.value = []
+      logFileSize.value = 0
+      store.addToast('로그 초기화', `${selectedLogService.value.toUpperCase()} 콘솔 로그를 비웠습니다.`, 'success')
+    }
+  } catch (err: any) {
+    store.addToast('초기화 실패', err.message, 'error')
+  }
+}
+
+function copyLogs() {
+  if (!logLines.value.length) return
+  navigator.clipboard.writeText(logLines.value.join('\n')).then(() => {
+    store.addToast('로그 복사', '클립보드에 콘솔 로그가 복사되었습니다.', 'success')
+  }).catch(() => {
+    store.addToast('복사 실패', '클립보드 접근 권한이 없습니다.', 'error')
+  })
+}
+
+function formatBytes(bytes: number) {
+  if (!bytes || bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+function formatLogLine(line: string) {
+  if (line.includes('[ERROR]') || line.includes('ERROR') || line.includes('Exception') || line.includes('fatal')) {
+    return 'text-rose-400 font-semibold'
+  }
+  if (line.includes('[WARN]') || line.includes('Warning') || line.includes('[Warning]')) {
+    return 'text-amber-400'
+  }
+  if (line.includes('[System]') || line.includes('[OK]') || line.includes('ready for connections') || line.includes('started')) {
+    return 'text-emerald-400'
+  }
+  if (line.includes('[INFO]') || line.includes('INFO')) {
+    return 'text-sky-300'
+  }
+  return 'text-slate-300'
+}
+
+watch(selectedLogService, () => {
+  fetchLogs()
+})
 
 // 6. DB 스키마 & 시드 데이터 적재
 async function executeSchemaLoad() {
@@ -843,6 +1188,31 @@ async function executeSchemaLoad() {
     store.addToast('오류 발생', err.message, 'error')
   } finally {
     isExecutingSchema.value = false
+  }
+}
+
+// 6-1. DB 데이터 전체 초기화 (0건 만들기)
+async function executeDbClear() {
+  if (!infra.mysql) {
+    store.addToast('MySQL 오프라인', '먼저 MySQL 서버를 기동해주세요.', 'error')
+    return
+  }
+
+  isClearingDb.value = true
+  try {
+    const res = await fetch('/api/infra/db-clear', { method: 'POST' })
+    const result = await res.json()
+    if (result.success) {
+      store.addToast('데이터 초기화 완료', '모든 충전소/단말/CDR 데이터가 0건으로 초기화되었습니다.', 'info')
+      // 스토어 데이터 즉시 재조회 (0건 반영)
+      await store.fetchInitialData()
+    } else {
+      store.addToast('초기화 실패', result.message, 'error')
+    }
+  } catch (err: any) {
+    store.addToast('오류 발생', err.message, 'error')
+  } finally {
+    isClearingDb.value = false
   }
 }
 
@@ -976,12 +1346,21 @@ onMounted(() => {
   checkStatus()
   fetchPaths()
   fetchPorts()
+  fetchLogs()
   pollingTimer = setInterval(checkStatus, 3000)
+  logPollingTimer = setInterval(() => {
+    if (autoRefreshLogs.value && activeTab.value === 'middleware') {
+      fetchLogs()
+    }
+  }, 2000)
 })
 
 onUnmounted(() => {
   if (pollingTimer) {
     clearInterval(pollingTimer)
+  }
+  if (logPollingTimer) {
+    clearInterval(logPollingTimer)
   }
 })
 </script>

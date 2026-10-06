@@ -35,6 +35,15 @@
               <span>LITE</span>
             </span>
             <span class="hidden md:inline-block text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-[#E96600]/10 text-[#E96600] dark:text-[#FFA04D] border border-[#E96600]/30 shadow-2xs font-mono">v0.0.1</span>
+            <!-- 🐬 MySQL 실시간 연동 뱃지 -->
+            <span
+              v-if="store.isDbConnected"
+              class="hidden lg:inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs font-mono cursor-pointer"
+              title="MySQL 9.71 elvis-lite 실시간 연동 중"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>DB LIVE</span>
+            </span>
           </div>
         </div>
 
@@ -142,6 +151,17 @@
           <span class="hidden md:inline text-[11px]">관리자 설정</span>
         </router-link>
 
+        <!-- 🖥️ 미들웨어 콘솔 창 즉시 띄우기 원클릭 버튼 -->
+        <button
+          @click="openMiddlewareConsole"
+          :disabled="infraLoading"
+          class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold text-xs transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+          title="MySQL 9.71 및 Apache Kafka KRaft 콘솔 창을 바탕화면에 즉시 띄웁니다"
+        >
+          <span class="text-xs">🖥️</span>
+          <span class="hidden lg:inline text-[11px]">미들웨어 콘솔</span>
+        </button>
+
         <!-- 🛠️ 미들웨어(Kafka & MySQL) 인프라 제어 팝오버 -->
         <div class="relative">
           <button
@@ -153,8 +173,8 @@
             <span class="text-xs">🛠️</span>
             <span class="hidden md:inline text-[11px]">미들웨어</span>
             <span class="flex items-center gap-1 ml-0.5">
-              <span class="w-2 h-2 rounded-full transition-all" :class="infraStatus.kafka ? 'bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse' : 'bg-rose-400'" title="Kafka (Port: 9092)"></span>
-              <span class="w-2 h-2 rounded-full transition-all" :class="infraStatus.mysql ? 'bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse' : 'bg-rose-400'" title="MySQL (Port: 3306)"></span>
+              <span class="w-2 h-2 rounded-full transition-all" :class="infraStatus.kafka ? 'bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse' : 'bg-rose-400'" title="Kafka (Port: 19092)"></span>
+              <span class="w-2 h-2 rounded-full transition-all" :class="infraStatus.mysql ? 'bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse' : 'bg-rose-400'" title="MySQL (Port: 13306)"></span>
             </span>
           </button>
 
@@ -169,13 +189,23 @@
                 <span>⚙️</span>
                 <span>로컬 미들웨어 제어 센터</span>
               </div>
-              <button
-                @click="controlInfra('start', 'all')"
-                :disabled="infraLoading"
-                class="px-2 py-0.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] shadow-xs transition-all disabled:opacity-50"
-              >
-                ⚡ 전체 기동
-              </button>
+              <div class="flex items-center gap-1">
+                <button
+                  @click="openMiddlewareConsole"
+                  :disabled="infraLoading"
+                  class="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] shadow-xs transition-all disabled:opacity-50"
+                  title="미들웨어 콘솔 창 동시 실행"
+                >
+                  🖥️ 콘솔 띄우기
+                </button>
+                <button
+                  @click="controlInfra('start', 'all')"
+                  :disabled="infraLoading"
+                  class="px-2 py-0.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] shadow-xs transition-all disabled:opacity-50"
+                >
+                  ⚡ 기동
+                </button>
+              </div>
             </div>
 
             <!-- Kafka 제어 카드 -->
@@ -184,7 +214,7 @@
                 <div class="flex items-center gap-1.5">
                   <span class="w-2 h-2 rounded-full" :class="infraStatus.kafka ? 'bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse' : 'bg-rose-400'"></span>
                   <span class="font-bold text-xs text-[var(--text-bright)]">Apache Kafka</span>
-                  <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-500/10 text-slate-400">9092</span>
+                  <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-500/10 text-slate-400">19092</span>
                 </div>
                 <span
                   class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full"
@@ -228,7 +258,7 @@
                 <div class="flex items-center gap-1.5">
                   <span class="w-2 h-2 rounded-full" :class="infraStatus.mysql ? 'bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse' : 'bg-rose-400'"></span>
                   <span class="font-bold text-xs text-[var(--text-bright)]">MySQL 9.71</span>
-                  <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-500/10 text-slate-400">3306</span>
+                  <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-500/10 text-slate-400">13306</span>
                 </div>
                 <span
                   class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full"
@@ -580,6 +610,37 @@ async function controlInfra(action: 'start' | 'stop', service: 'kafka' | 'mysql'
   }
 }
 
+// 🖥️ 미들웨어 콘솔 윈도우 동시 띄우기 (MySQL 9.71 & Kafka KRaft)
+async function openMiddlewareConsole() {
+  infraLoading.value = true
+  try {
+    const res = await fetch('/api/infra/open-console', { method: 'POST' })
+    const data = await res.json()
+    if (data.success) {
+      store.addToast({
+        title: '미들웨어 콘솔 창 실행',
+        detail: data.message || 'MySQL 및 Kafka 콘솔 윈도우 창이 화면에 실행되었습니다.',
+        type: 'success'
+      })
+      setTimeout(checkInfraStatus, 2000)
+    } else {
+      store.addToast({
+        title: '콘솔 창 실행 실패',
+        detail: data.message || '콘솔 창 실행 중 오류가 발생했습니다.',
+        type: 'error'
+      })
+    }
+  } catch (err: any) {
+    store.addToast({
+      title: '콘솔 실행 오류',
+      detail: err.message || '서버 통신 실패',
+      type: 'error'
+    })
+  } finally {
+    infraLoading.value = false
+  }
+}
+
 function updateTime() {
   const now = new Date()
   currentTime.value = now.toLocaleTimeString('ko-KR', { hour12: false })
@@ -621,6 +682,7 @@ onMounted(() => {
 
   // 미들웨어 초기 상태 확인 및 3초 주기 자동 감지
   checkInfraStatus()
+  store.fetchInitialData()
   infraTimer = window.setInterval(checkInfraStatus, 3000)
 
   // ⚡🐬 앱 실행 1.5초 후 MySQL 또는 Kafka 미실행 상태이면 원클릭 기동 유도 모달 자동 표출

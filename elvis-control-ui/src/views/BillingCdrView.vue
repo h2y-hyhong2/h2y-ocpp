@@ -13,12 +13,12 @@
       </div>
     </div>
 
-    <!-- 1. 정산 요약 KPI 4종 -->
+    <!-- 1. 정산 요약 KPI 4종 (MySQL elvis-lite 실시간 연동) -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="glass-card p-4">
         <div class="text-xs text-slate-500 font-medium">총 충전 세션 건수</div>
         <div class="mt-2 text-2xl font-bold font-display text-slate-900 dark:text-slate-100">
-          5 <span class="text-xs font-normal text-slate-500">건</span>
+          {{ dbSummary.totalCount }} <span class="text-xs font-normal text-slate-500">건</span>
         </div>
         <div class="text-xs text-emerald-600 dark:text-emerald-400 font-mono mt-1">100% 정상 정산</div>
       </div>
@@ -26,15 +26,15 @@
       <div class="glass-card p-4">
         <div class="text-xs text-slate-500 font-medium">총 누적 충전량 (kWh)</div>
         <div class="mt-2 text-2xl font-bold font-display text-slate-900 dark:text-slate-100">
-          262.5 <span class="text-xs font-normal text-slate-500">kWh</span>
+          {{ Number(dbSummary.totalKwh).toFixed(1) }} <span class="text-xs font-normal text-slate-500">kWh</span>
         </div>
-        <div class="text-xs text-sky-600 dark:text-sky-400 font-mono mt-1">평균 52.5 kWh/건</div>
+        <div class="text-xs text-sky-600 dark:text-sky-400 font-mono mt-1">평균 {{ (dbSummary.totalKwh / (dbSummary.totalCount || 1)).toFixed(1) }} kWh/건</div>
       </div>
 
       <div class="glass-card p-4">
         <div class="text-xs text-slate-500 font-medium">총 과금 매출액 (원)</div>
         <div class="mt-2 text-2xl font-bold font-display text-slate-900 dark:text-slate-100">
-          75,638 <span class="text-xs font-normal text-slate-500">원</span>
+          {{ Number(dbSummary.totalAmount).toLocaleString() }} <span class="text-xs font-normal text-slate-500">원</span>
         </div>
         <div class="text-xs text-violet-600 dark:text-violet-400 font-mono mt-1">TOU 가중평균 288.1원</div>
       </div>
@@ -42,7 +42,7 @@
       <div class="glass-card p-4">
         <div class="text-xs text-slate-500 font-medium">평균 충전 소요 시간</div>
         <div class="mt-2 text-2xl font-bold font-display text-slate-900 dark:text-slate-100">
-          38.6 <span class="text-xs font-normal text-slate-500">분</span>
+          {{ Number(dbSummary.avgMinutes).toFixed(1) }} <span class="text-xs font-normal text-slate-500">분</span>
         </div>
         <div class="text-xs text-amber-600 dark:text-amber-400 font-mono mt-1">급속 충전 기준</div>
       </div>
@@ -91,6 +91,13 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="filteredRecords.length === 0">
+              <td colspan="10" class="py-12 text-center text-slate-400">
+                <div class="text-3xl mb-2">🧾</div>
+                <div class="font-bold text-xs text-[var(--text-bright)]">과금 원장 내역이 없습니다</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 아직 완료된 충전 세션이 없습니다.</div>
+              </td>
+            </tr>
             <tr v-for="rec in filteredRecords" :key="rec.transactionId">
               <td class="font-bold text-sky-600 dark:text-sky-400">#{{ rec.transactionId }}</td>
               <td class="text-slate-600 dark:text-slate-400">{{ rec.userTag }}</td>
@@ -121,10 +128,10 @@ const store = useCsmsStore()
 const searchQuery = ref('')
 const dbRecords = ref<any[]>([])
 const dbSummary = ref<any>({
-  totalCount: 5,
-  totalKwh: 262.5,
-  totalAmount: 75638,
-  avgMinutes: 38.6
+  totalCount: 0,
+  totalKwh: 0,
+  totalAmount: 0,
+  avgMinutes: 0
 })
 
 async function loadCdrRecords() {
@@ -132,7 +139,7 @@ async function loadCdrRecords() {
     const res = await fetch('/api/v1/cdr')
     if (res.ok) {
       const data = await res.json()
-      if (data.records && data.records.length > 0) {
+      if (Array.isArray(data.records)) {
         dbRecords.value = data.records.map((r: any) => ({
           transactionId: r.transactionId,
           userTag: r.userTag,
@@ -151,7 +158,7 @@ async function loadCdrRecords() {
       }
     }
   } catch (err) {
-    // API 연결 실패 시 기존 Mock 상태 유지
+    // API 연결 실패 시 무시
   }
 }
 
@@ -160,7 +167,7 @@ onMounted(() => {
 })
 
 const filteredRecords = computed(() => {
-  const source = dbRecords.value.length > 0 ? dbRecords.value : (store as any).cdrRecords || []
+  const source = store.isDbConnected ? dbRecords.value : (dbRecords.value.length > 0 ? dbRecords.value : (store as any).cdrRecords || [])
   return source.filter((r: any) => {
     return (r.userTag && r.userTag.includes(searchQuery.value)) ||
            (r.chargeBoxId && r.chargeBoxId.toLowerCase().includes(searchQuery.value.toLowerCase())) ||

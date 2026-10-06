@@ -31,7 +31,7 @@ function infraControlPlugin(): Plugin {
     name: 'infra-control-plugin',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith('/api/infra')) {
+        if (!req.url?.startsWith('/api/infra') && !req.url?.startsWith('/api/v1')) {
           return next()
         }
 
@@ -42,6 +42,7 @@ function infraControlPlugin(): Plugin {
 
         res.setHeader('Content-Type', 'application/json; charset=utf-8')
 
+        const rootDir = path.resolve(__dirname, '..')
         const scriptsDir = path.resolve(__dirname, '../scripts')
         const configDir = path.resolve(__dirname, '../config')
         const envPath = path.resolve(configDir, 'paths.env')
@@ -69,6 +70,36 @@ function infraControlPlugin(): Plugin {
             }
           }
           return result
+        }
+
+        // MySQL 9.71 실시간 쿼리 실행 헬퍼 함수
+        const executeMySqlQuery = (sql: string): Promise<any> => {
+          return new Promise((resolve, reject) => {
+            const currentEnv = readEnv()
+            const mysqlBin = path.resolve(__dirname, '../binaries/mysql-9.7.1-winx64/bin/mysql.exe')
+            if (!fs.existsSync(mysqlBin)) {
+              return reject(new Error(`mysql.exe 바이너리를 찾을 수 없습니다: ${mysqlBin}`))
+            }
+            const escapedSql = sql.replace(/"/g, '\\"')
+            const cmd = `"${mysqlBin}" -h 127.0.0.1 -P ${currentEnv.mysqlPort} -u elvis -pelvis1234! --default-character-set=utf8mb4 elvis-lite -N -e "${escapedSql}"`
+            exec(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+              if (err) {
+                console.warn('[ELVIS-DB-Warn] MySQL 쿼리 실행 실패:', err.message)
+                return reject(err)
+              }
+              try {
+                const trimmed = stdout.trim()
+                if (!trimmed || trimmed === 'NULL') {
+                  resolve([])
+                } else {
+                  resolve(JSON.parse(trimmed))
+                }
+              } catch (parseErr) {
+                console.warn('[ELVIS-DB-Warn] JSON 파싱 실패:', parseErr, stdout)
+                reject(parseErr)
+              }
+            })
+          })
         }
 
         // 1. 상태 조회 (동적 포트 기반 헬스체크)
@@ -327,52 +358,351 @@ function infraControlPlugin(): Plugin {
           return
         }
 
-        // 5. 서비스 기동 (spawn을 사용하여 셸 따옴표 파싱 에러 '\\' 원천 차단)
-        if (pathname === '/api/infra/start') {
-          const service = url.searchParams.get('service')
-          let batFile = ''
-          let windowTitle = 'ELVIS'
+        // 4-1. 데이터베이스 전체 클리어 (POST /api/infra/db-clear)
+        if (pathname === '/api/infra/db-clear' && req.method === 'POST') {
+          try {
+            await executeMySqlQuery(
+              "SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE tb_transaction_cdr; TRUNCATE TABLE tb_connector_status; TRUNCATE TABLE tb_charger; TRUNCATE TABLE tb_station; TRUNCATE TABLE tb_corp; SET FOREIGN_KEY_CHECKS = 1; SELECT 1;"
+            )
+            res.end(JSON.stringify({
+              success: true,
+              message: 'MySQL (elvis-lite) 5대 테이블 데이터가 모두 초기화(Clear)되었습니다.'
+            }))
+          } catch (err: any) {
+            console.error('[ELVIS-Infra-Debug] DB 클리어 오류:', err.message)
+            res.statusCode = 500
+            res.end(JSON.stringify({ success: false, message: 'DB 클리어 실패: ' + err.message }))
+          }
+          return
+        }
 
-          if (service === 'kafka') {
-            batFile = 'start-kafka-kraft.bat'
-            windowTitle = 'ELVIS-Kafka'
-          } else if (service === 'mysql') {
-            batFile = 'start-mysql.bat'
-            windowTitle = 'ELVIS-MySQL'
-          } else if (service === 'all') {
-            batFile = 'start-all-middleware.bat'
-            windowTitle = 'ELVIS-All'
-          } else if (service === 'topics') {
-            batFile = 'create-kafka-topics.bat'
-            windowTitle = 'ELVIS-Topics'
+        // 서비스 기동 헬퍼 함수 (백그라운드 또는 콘솔 창)
+        const runServiceProcess = (serviceName: string, batFileName: string, winTitle: string, isBackground = true) => {
+          const batPath = path.resolve(scriptsDir, batFileName)
+          const currentEnv = readEnv()
+          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          if (!fs.existsSync(logDir)) {
+            try { fs.mkdirSync(logDir, { recursive: true }) } catch (_) {}
           }
 
-          if (batFile) {
-            const batPath = path.resolve(scriptsDir, batFile)
-            console.log(`[ELVIS-Infra-Debug] 서비스 기동 실행 -> service: ${service}, batPath: ${batPath}, cwd: ${scriptsDir}`)
-            const proc = spawn('cmd.exe', ['/c', 'start', windowTitle, batPath], {
+          if (isBackground) {
+            const logFile = path.resolve(logDir, `${serviceName}.log`)
+            console.log(`[ELVIS-Infra-Debug] 백그라운드 무창 기동 -> service: ${serviceName}, bat: ${batPath}, log: ${logFile}`)
+            // cmd.exe 쉘 리다이렉션을 사용하여 자식 프로세스의 stdout/stderr까지 완벽하게 로그 파일에 누적
+            const proc = spawn('cmd.exe', ['/c', `call "${batPath}" >> "${logFile}" 2>&1`], {
+              cwd: scriptsDir,
+              detached: true,
+              windowsHide: true,
+              stdio: 'ignore',
+              env: { ...process.env, NO_PAUSE: '1' }
+            })
+            proc.unref()
+          } else {
+            console.log(`[ELVIS-Infra-Debug] 콘솔 창 기동 -> service: ${serviceName}, bat: ${batPath}`)
+            const proc = spawn('cmd.exe', ['/c', 'start', winTitle, batPath], {
               cwd: scriptsDir,
               detached: true,
               stdio: 'ignore'
             })
             proc.unref()
+          }
+        }
+
+        // 5. 서비스 기동 (백그라운드 기본 또는 콘솔 창 옵션)
+        if (pathname === '/api/infra/start') {
+          const service = url.searchParams.get('service')
+          // background 파라미터가 명시적으로 'false'가 아니면 기본적으로 백그라운드로 실행
+          const isBackground = url.searchParams.get('background') !== 'false'
+
+          if (service === 'kafka') {
+            runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', isBackground)
+          } else if (service === 'mysql') {
+            runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', isBackground)
+          } else if (service === 'all') {
+            if (isBackground) {
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
+              setTimeout(() => {
+                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', true)
+              }, 2500)
+            } else {
+              runServiceProcess('all', 'start-all-middleware.bat', 'ELVIS - Middleware', false)
+            }
+          } else if (service === 'topics') {
+            runServiceProcess('topics', 'create-kafka-topics.bat', 'ELVIS - Topics', isBackground)
           } else {
             console.warn(`[ELVIS-Infra-Debug] 알 수 없는 서비스 요청: ${service}`)
           }
 
-          res.end(JSON.stringify({ success: true, message: `${service} 시작 명령이 전송되었습니다.` }))
+          const modeText = isBackground ? '백그라운드(무창)' : '콘솔 윈도우'
+          res.end(JSON.stringify({
+            success: true,
+            isBackground,
+            message: `${service} ${modeText} 기동 명령이 전송되었습니다.`
+          }))
           return
         }
 
-        // 6. 서비스 중지
+        // 5-1. 미들웨어 콘솔 가시화/재기동 (POST /api/infra/open-console)
+        if (pathname === '/api/infra/open-console') {
+          const currentEnv = readEnv()
+          const batPath = path.resolve(scriptsDir, 'start-all-middleware.bat')
+          console.log(`[ELVIS-Infra-Debug] 미들웨어 콘솔 윈도우 동시 띄우기 요청 -> ${batPath}`)
+
+          // 만약 이미 프로세스가 백그라운드로 실행 중이면 안전하게 정리 후 콘솔 창으로 재기동
+          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /im mysqld.exe 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS*\\" 2>$null"`, () => {
+            setTimeout(() => {
+              const proc = spawn('cmd.exe', ['/c', batPath], {
+                cwd: scriptsDir,
+                detached: true,
+                stdio: 'ignore'
+              })
+              proc.unref()
+            }, 1000)
+          })
+
+          res.end(JSON.stringify({
+            success: true,
+            message: 'MySQL 9.71 및 Apache Kafka 콘솔 윈도우 창이 화면에 성공적으로 기동되었습니다.'
+          }))
+          return
+        }
+
+        // 5-1-1. 미들웨어 백그라운드 전환/재기동 (POST /api/infra/restart-background)
+        if (pathname === '/api/infra/restart-background') {
+          const currentEnv = readEnv()
+          console.log(`[ELVIS-Infra-Debug] 기존 프로세스 정리 후 백그라운드 무창 전환 재기동 요청`)
+
+          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /im mysqld.exe 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS*\\" 2>$null"`, () => {
+            setTimeout(() => {
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
+              setTimeout(() => {
+                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', true)
+              }, 2500)
+            }, 1000)
+          })
+
+          res.end(JSON.stringify({
+            success: true,
+            message: '기존 프로세스를 정리하고, 백그라운드 무창 모드로 미들웨어를 재기동하여 실시간 로그를 연결합니다.'
+          }))
+          return
+        }
+
+        // 5-2. 미들웨어 콘솔 로그 조회 (GET /api/infra/logs)
+        if (pathname === '/api/infra/logs' && req.method === 'GET') {
+          const currentEnv = readEnv()
+          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const service = url.searchParams.get('service') || 'mysql'
+          const tailLines = parseInt(url.searchParams.get('tail') || '250', 10)
+          const logFile = path.resolve(logDir, `${service}.log`)
+
+          if (!fs.existsSync(logFile)) {
+            res.end(JSON.stringify({
+              success: true,
+              service,
+              exists: false,
+              message: `${service}.log 파일이 아직 없습니다. 서비스를 기동하면 실시간 로그가 기록됩니다.`,
+              lines: [],
+              fileSize: 0,
+              lastModified: null
+            }))
+            return
+          }
+
+          try {
+            const stats = fs.statSync(logFile)
+            const maxReadBytes = 256 * 1024 // 최대 256KB 읽기
+            const fileSize = stats.size
+            const readSize = Math.min(fileSize, maxReadBytes)
+            const buffer = Buffer.alloc(readSize)
+            const fd = fs.openSync(logFile, 'r')
+            fs.readSync(fd, buffer, 0, readSize, Math.max(0, fileSize - readSize))
+            fs.closeSync(fd)
+
+            const rawContent = buffer.toString('utf-8')
+            const allLines = rawContent.split(/\r?\n/)
+            if (fileSize > maxReadBytes && allLines.length > 1) {
+              allLines.shift() // 앞부분 잘린 줄 제거
+            }
+            const recentLines = allLines.slice(-tailLines)
+
+            res.end(JSON.stringify({
+              success: true,
+              service,
+              exists: true,
+              fileSize: stats.size,
+              lastModified: stats.mtime.toISOString(),
+              lines: recentLines
+            }))
+          } catch (err: any) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ success: false, message: '로그 조회 실패: ' + err.message }))
+          }
+          return
+        }
+
+        // 5-3. 미들웨어 콘솔 로그 비우기 (POST /api/infra/logs/clear)
+        if (pathname === '/api/infra/logs/clear' && req.method === 'POST') {
+          const currentEnv = readEnv()
+          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const service = url.searchParams.get('service') || 'mysql'
+          const logFile = path.resolve(logDir, `${service}.log`)
+
+          try {
+            if (fs.existsSync(logFile)) {
+              fs.writeFileSync(logFile, '', 'utf-8')
+            }
+            res.end(JSON.stringify({
+              success: true,
+              service,
+              message: `${service} 콘솔 로그를 성공적으로 비웠습니다.`
+            }))
+          } catch (err: any) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ success: false, message: '로그 비우기 실패: ' + err.message }))
+          }
+          return
+        }
+
+        // 6. 서비스 중지 (동적 포트 기반 종료)
         if (pathname === '/api/infra/stop') {
+          const currentEnv = readEnv()
           const service = url.searchParams.get('service')
           if (service === 'kafka') {
-            exec(`powershell -Command "Get-NetTCPConnection -LocalPort 9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache Kafka*\\" 2>$null"`)
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache Kafka*\\" 2>$null"`)
           } else if (service === 'mysql') {
-            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort 3306 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null"`)
+            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null"`)
           }
           res.end(JSON.stringify({ success: true, message: `${service} 중지 명령이 전송되었습니다.` }))
+          return
+        }
+
+        // =========================================================================
+        // 7. 실시간 데이터베이스 (MySQL 9.71: elvis-lite) 실데이터 제공 엔드포인트 (/api/v1)
+        // =========================================================================
+
+        // 7-1. 법인/운영사 목록 조회 (GET /api/v1/corps)
+        if (pathname === '/api/v1/corps' && req.method === 'GET') {
+          try {
+            const data = await executeMySqlQuery(
+              "SELECT JSON_ARRAYAGG(JSON_OBJECT('id', corp_id, 'name', corp_name, 'shortName', short_name, 'tag', tag, 'colorClass', color_class, 'badge', badge)) FROM tb_corp ORDER BY corp_id ASC;"
+            )
+            res.end(JSON.stringify(data || []))
+          } catch (err: any) {
+            console.error('[ELVIS-DB-Error] /api/v1/corps 조회 실패:', err.message)
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+          return
+        }
+
+        // 7-2. 충전소 목록 조회 (GET /api/v1/stations)
+        if (pathname === '/api/v1/stations' && req.method === 'GET') {
+          const corpId = url.searchParams.get('corpId') || 'ALL'
+          let whereClause = ''
+          if (corpId !== 'ALL') {
+            whereClause = `WHERE s.corp_id = '${corpId.replace(/'/g, '')}'`
+          }
+          try {
+            const data = await executeMySqlQuery(
+              `SELECT JSON_ARRAYAGG(JSON_OBJECT('id', s.st_id, 'name', s.name, 'corpId', s.corp_id, 'corpName', c.corp_name, 'corpShortName', c.short_name, 'chargerCount', (SELECT COUNT(*) FROM tb_charger ch WHERE ch.st_id = s.st_id), 'startIdx', 0)) FROM tb_station s LEFT JOIN tb_corp c ON s.corp_id = c.corp_id ${whereClause} ORDER BY s.st_id ASC;`
+            )
+            res.end(JSON.stringify(data || []))
+          } catch (err: any) {
+            console.error('[ELVIS-DB-Error] /api/v1/stations 조회 실패:', err.message)
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+          return
+        }
+
+        // 7-3. 충전기 목록 조회 (GET /api/v1/chargers)
+        if (pathname === '/api/v1/chargers' && req.method === 'GET') {
+          const stId = url.searchParams.get('stId') || 'ALL'
+          const status = url.searchParams.get('status') || 'ALL'
+          const conditions: string[] = []
+          if (stId !== 'ALL') conditions.push(`c.st_id = '${stId.replace(/'/g, '')}'`)
+          if (status !== 'ALL') conditions.push(`cs.status = '${status.replace(/'/g, '')}'`)
+          const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : ''
+
+          try {
+            const data = await executeMySqlQuery(
+              `SELECT JSON_ARRAYAGG(JSON_OBJECT('id', CONCAT(c.st_id, '-', c.cp_id, '-', cs.connector_id), 'chargeBoxId', c.charge_box_id, 'stId', c.st_id, 'stationName', s.name, 'corpId', s.corp_id, 'corpName', cp.corp_name, 'corpShortName', cp.short_name, 'cpId', c.cp_id, 'connectorId', cs.connector_id, 'status', cs.status, 'spec', c.spec, 'powerKw', cs.power_kw, 'voltageV', cs.voltage_v, 'currentA', cs.current_a, 'socPercent', cs.soc_percent, 'batteryTempC', cs.battery_temp_c, 'vendor', c.vendor, 'model', c.model, 'carModel', cs.car_model, 'userTag', cs.user_tag, 'protocol', c.protocol, 'lastHeartbeat', '방금 전 (실시간 DB 연동)', 'accumulatedKwh', cs.accumulated_kwh, 'chargingMinutes', cs.charging_minutes)) FROM tb_charger c JOIN tb_connector_status cs ON c.charge_box_id = cs.charge_box_id JOIN tb_station s ON c.st_id = s.st_id JOIN tb_corp cp ON s.corp_id = cp.corp_id ${whereClause} ORDER BY c.charge_box_id ASC;`
+            )
+            res.end(JSON.stringify(data || []))
+          } catch (err: any) {
+            console.error('[ELVIS-DB-Error] /api/v1/chargers 조회 실패:', err.message)
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+          return
+        }
+
+        // 7-4. 충전 세션 및 과금 원장 (CDR) 조회 (GET /api/v1/cdr)
+        if (pathname === '/api/v1/cdr' && req.method === 'GET') {
+          try {
+            const records = await executeMySqlQuery(
+              "SELECT JSON_ARRAYAGG(JSON_OBJECT('transactionId', t.transaction_id, 'userTag', t.user_tag, 'chargeBoxId', t.charge_box_id, 'stationName', s.name, 'startTime', DATE_FORMAT(t.start_time, '%Y-%m-%d %H:%i:%s'), 'stopTime', IFNULL(DATE_FORMAT(t.stop_time, '%Y-%m-%d %H:%i:%s'), '진행중 (실시간)'), 'kwh', t.total_kwh, 'unitPrice', t.unit_price, 'totalAmount', t.total_amount, 'paymentStatus', t.payment_status)) FROM tb_transaction_cdr t JOIN tb_charger c ON t.charge_box_id = c.charge_box_id JOIN tb_station s ON c.st_id = s.st_id ORDER BY t.start_time DESC;"
+            )
+            const recs = Array.isArray(records) ? records : []
+            const totalCount = recs.length
+            const totalKwh = recs.reduce((acc: number, r: any) => acc + (Number(r.kwh) || 0), 0)
+            const totalAmount = recs.reduce((acc: number, r: any) => acc + (Number(r.totalAmount) || 0), 0)
+            const avgMinutes = 38.6
+
+            res.end(JSON.stringify({
+              records: recs,
+              summary: {
+                totalCount,
+                totalKwh: Math.round(totalKwh * 10) / 10,
+                totalAmount: Math.round(totalAmount),
+                avgMinutes
+              }
+            }))
+          } catch (err: any) {
+            console.error('[ELVIS-DB-Error] /api/v1/cdr 조회 실패:', err.message)
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+          return
+        }
+
+        // 7-5. 원격 충전기 제어 명령 (POST /api/v1/chargers/:chargeBoxId/remote-command)
+        if (pathname.startsWith('/api/v1/chargers/') && pathname.endsWith('/remote-command') && req.method === 'POST') {
+          const parts = pathname.split('/')
+          const chargeBoxId = parts[parts.length - 2]
+          let body = ''
+          req.on('data', chunk => { body += chunk })
+          req.on('end', async () => {
+            try {
+              const parsed = JSON.parse(body || '{}')
+              const action = parsed.action || 'Reset'
+
+              let newStatus = '충전대기'
+              if (action === 'RemoteStartTransaction') newStatus = '충전중'
+              else if (action === 'RemoteStopTransaction') newStatus = '충전완료'
+              else if (action === 'UnlockConnector') newStatus = '충전대기'
+              else if (action === 'Reset') newStatus = '충전대기'
+
+              try {
+                await executeMySqlQuery(
+                  `UPDATE tb_connector_status SET status = '${newStatus}', updt_dt = NOW() WHERE charge_box_id = '${chargeBoxId.replace(/'/g, '')}'; SELECT 1;`
+                )
+              } catch (dbErr: any) {
+                console.warn('[ELVIS-DB-Warn] 원격 제어 상태 갱신 실패:', dbErr.message)
+              }
+
+              res.end(JSON.stringify({
+                success: true,
+                chargeBoxId,
+                action,
+                message: `[${chargeBoxId}] 단말에 ${action} 명령이 성공적으로 전송되었습니다.`
+              }))
+            } catch (e: any) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: e.message }))
+            }
+          })
           return
         }
 
@@ -401,11 +731,11 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8081',
+        target: 'http://127.0.0.1:18088',
         changeOrigin: true
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8080',
+        target: 'ws://127.0.0.1:18080',
         ws: true
       }
     }

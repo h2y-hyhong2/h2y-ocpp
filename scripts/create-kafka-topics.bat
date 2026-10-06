@@ -4,7 +4,14 @@ chcp 65001 > nul
 
 set SCRIPT_DIR=%~dp0
 set KAFKA_HOME=%SCRIPT_DIR%..\binaries\kafka_2.13-4.3.1
-set BOOTSTRAP=localhost:9092
+set KAFKA_PORT=19092
+
+if exist "%SCRIPT_DIR%..\config\paths.env" (
+    for /f "usebackq tokens=1,2 delims==" %%A in ("%SCRIPT_DIR%..\config\paths.env") do (
+        if "%%A"=="ELVIS_KAFKA_PORT" set KAFKA_PORT=%%B
+    )
+)
+set BOOTSTRAP=localhost:%KAFKA_PORT%
 
 if exist "d:\project\lselink\ocpp\jdk\jdk-25.0.2+10" (
     set "JAVA_HOME=d:\project\lselink\ocpp\jdk\jdk-25.0.2+10"

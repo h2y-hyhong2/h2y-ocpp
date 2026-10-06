@@ -21,11 +21,16 @@ const filteredStations = computed(() => {
 
 // 현재 선택된 충전소 정보
 const currentStationInfo = computed(() => {
-  if (store.curStFilter === 'ALL') {
-    return { id: 'ALL', name: '전체 충전소 통합 관제', corpName: '전체 법인', count: store.chargers.length }
+  if (store.curStFilter === 'ALL' || store.stations.length === 0) {
+    return {
+      id: 'ALL',
+      name: store.stations.length === 0 ? '등록된 충전소 없음 (DB 초기화 상태)' : '전체 충전소 통합 관제',
+      corpName: store.corps.length === 0 ? '미등록' : '전체 법인',
+      count: store.chargers.length
+    }
   }
   const st = store.stations.find(s => s.id === store.curStFilter)
-  return st ? { id: st.id, name: st.name, corpName: st.corpName, count: st.chargerCount } : { id: '10001', name: store.stations[0]?.name || '', corpName: store.stations[0]?.corpName || '', count: store.stations[0]?.chargerCount || 10 }
+  return st ? { id: st.id, name: st.name, corpName: st.corpName, count: st.chargerCount } : { id: '-', name: store.stations[0]?.name || '등록된 충전소 없음', corpName: store.stations[0]?.corpName || '미등록', count: store.stations[0]?.chargerCount || 0 }
 })
 
 // 현재 선택된 충전소에 소속된 충전기 목록
@@ -150,6 +155,11 @@ function sendRemoteCommand(action: string) {
 
       <!-- 3. 선택된 법인의 소속 충전소 평면 목록 (스크롤 지원) -->
       <div class="mt-2 space-y-1.5 overflow-y-auto flex-1 text-xs pr-1">
+        <div v-if="filteredStations.length === 0" class="p-4 text-center text-slate-400 space-y-1 my-4">
+          <div class="text-2xl">⚡</div>
+          <div class="font-bold text-[11px]">등록된 충전소가 없습니다</div>
+          <div class="text-[10px] text-slate-500">DB 초기화 상태 (0건)</div>
+        </div>
         <div
           v-for="st in filteredStations"
           :key="st.id"
@@ -386,6 +396,13 @@ function sendRemoteCommand(action: string) {
               </tr>
             </thead>
             <tbody>
+              <tr v-if="filteredChargers.length === 0">
+                <td colspan="9" class="py-12 text-center text-slate-400">
+                  <div class="text-3xl mb-2">🔌</div>
+                  <div class="font-bold text-xs text-[var(--text-bright)]">조회된 충전기 단말이 없습니다</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있는 초기 상태이거나 필터 조건에 부합하는 충전기가 없습니다.</div>
+                </td>
+              </tr>
               <tr
                 v-for="chg in filteredChargers"
                 :key="chg.id"
@@ -430,6 +447,11 @@ function sendRemoteCommand(action: string) {
 
         <!-- MODE 2: 카드 그리드 뷰 -->
         <div v-else class="flex-1 overflow-y-auto mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 pr-1">
+          <div v-if="filteredChargers.length === 0" class="col-span-full py-12 text-center text-slate-400">
+            <div class="text-3xl mb-2">🗂️</div>
+            <div class="font-bold text-xs text-[var(--text-bright)]">표시할 충전기 카드가 없습니다</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 등록된 단말이 없습니다.</div>
+          </div>
           <div
             v-for="chg in filteredChargers"
             :key="chg.id"
@@ -602,6 +624,15 @@ function sendRemoteCommand(action: string) {
                 🛑 충전 강제종료
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- 미선택 / 빈 데이터 상태 -->
+        <div v-else class="py-16 text-center text-slate-400 space-y-2">
+          <div class="text-3xl">📡</div>
+          <div class="font-bold text-xs text-[var(--text-bright)]">선택된 충전기 없음</div>
+          <div class="text-[10px] text-slate-500 leading-relaxed px-3">
+            충전기 목록에서 단말을 선택하면 실시간 텔레메트리 계측치 및 원격 제어반이 활성화됩니다.
           </div>
         </div>
       </div>
