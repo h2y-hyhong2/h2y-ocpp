@@ -3,6 +3,7 @@ package com.lselink.elvis.connect.sync.consumer;
 import com.lselink.elvis.connect.sync.dto.OcppRawEventEnvelope;
 import com.lselink.elvis.connect.sync.ocpp.OcppMessageParser;
 import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
+import com.lselink.elvis.connect.sync.service.AuthorizeService;
 import com.lselink.elvis.connect.sync.service.ConnectorStatusService;
 import com.lselink.elvis.connect.sync.service.TransactionSessionService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.concurrent.Executor;
  * <p>Sprint 17: OCPP 메시지 파서 연계</p>
  * <p>Sprint 18: StatusNotification / Heartbeat / BootNotification → MySQL Upsert 연계</p>
  * <p>Sprint 19: StartTransaction / StopTransaction → 세션 생성 및 마감 연계</p>
+ * <p>Sprint 20: Authorize → DB/Redis 회원 유효성 체크 및 즉시 응답 하향 (S20-SYNC-0070-CO)</p>
  */
 @Slf4j
 @Component
@@ -28,6 +30,7 @@ public class OcppRawEventConsumer {
     private final OcppMessageParser ocppMessageParser;
     private final ConnectorStatusService connectorStatusService;
     private final TransactionSessionService transactionSessionService;
+    private final AuthorizeService authorizeService;
 
     @KafkaListener(
             topics = "${elvis.sync.kafka.inbound-topic:ocpp-raw-events}",
@@ -75,8 +78,11 @@ public class OcppRawEventConsumer {
             case "StartTransaction"   -> transactionSessionService.handleStartTransaction(msg);
             case "StopTransaction"    -> transactionSessionService.handleStopTransaction(msg);
 
-            // ─── Sprint 20~21 이후 연계 예정 ─────────────────────────────────────
-            case "MeterValues", "Authorize" ->
+            // ─── Sprint 20: Authorize 회원 인증 처리 (S20-SYNC-0070-CO) ───────────
+            case "Authorize"          -> authorizeService.handleAuthorize(msg);
+
+            // ─── Sprint 21~22 이후 연계 예정 ─────────────────────────────────────
+            case "MeterValues" ->
                 log.debug("[SyncConsumer] 미구현 Action 수신 (향후 Sprint 처리 예정): action={}", action);
 
             default ->

@@ -30,6 +30,13 @@ spring:
         format_sql: false
         show_sql: false
 
+  # ─── Redis Cache (Sprint 20: S20-SYNC-0070-CO) ────────────────────────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 100ms
+
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -44,11 +51,15 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "com.lselink.elvis.*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 elvis:
   sync:
     kafka:
       inbound-topic: ocpp-raw-events
+      outbound-topic: ocpp-outbound-commands
 
 management:
   endpoints:

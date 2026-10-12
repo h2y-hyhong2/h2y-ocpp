@@ -20,6 +20,11 @@ dependencies {
     // Spring Kafka
     implementation 'org.springframework.kafka:spring-kafka'
 
+    // Cache: L1 (Caffeine) & L2 (Redis) - Sprint 20: S20-SYNC-0070-CO
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
     // JSON Processing
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
