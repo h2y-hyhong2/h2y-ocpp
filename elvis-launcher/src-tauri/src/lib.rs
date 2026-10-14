@@ -510,6 +510,26 @@ fn open_log_window(service: Option<String>) -> Result<String, String> {
         let full_log_path = format!("{}\\{}", log_dir, log_file_name);
         let win_title = format!("ELVIS - {} 실시간 콘솔 로그", display_name);
 
+        // 1) 기존 동일 서비스 로그창이 이미 열려 있는지 검사 -> 활성화(Focus) 성공 시 중복 생성 방지
+        let check_script = format!(
+            "$w = New-Object -ComObject WScript.Shell; \
+             if ($w.AppActivate('{title}')) {{ exit 10 }}; \
+             $p = Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like '*{title}*' }}; \
+             if ($p) {{ if ($w.AppActivate($p[0].Id)) {{ exit 10 }} }}; \
+             exit 0",
+            title = win_title
+        );
+
+        if let Ok(st) = Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", &check_script])
+            .status()
+        {
+            if st.code() == Some(10) {
+                return Ok(format!("기존 {} 실시간 콘솔 창을 활성화했습니다.", display_name));
+            }
+        }
+
+        // 2) 열려 있지 않은 경우 단독 신규 창 기동
         let ps_cmd = format!(
             "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
              chcp 65001 >$null; \
@@ -555,11 +575,32 @@ fn open_log_window(service: Option<String>) -> Result<String, String> {
 fn open_process_status_window(target: Option<String>) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
+        let win_title = "ELVIS - 프로세스 및 포트 점유 실시간 진단";
+
+        // 기존 진단창이 열려 있으면 포커스 활성화 (중복 기동 방지)
+        let check_script = format!(
+            "$w = New-Object -ComObject WScript.Shell; \
+             if ($w.AppActivate('{title}')) {{ exit 10 }}; \
+             $p = Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like '*{title}*' }}; \
+             if ($p) {{ if ($w.AppActivate($p[0].Id)) {{ exit 10 }} }}; \
+             exit 0",
+            title = win_title
+        );
+
+        if let Ok(st) = Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", &check_script])
+            .status()
+        {
+            if st.code() == Some(10) {
+                return Ok("기존 프로세스 진단 터미널을 활성화했습니다.".to_string());
+            }
+        }
+
         let target_bat = find_script_file("check-status.bat")?;
         let target_arg = target.unwrap_or_else(|| "all".to_string());
         let cwd = target_bat.parent().unwrap();
         Command::new("cmd")
-            .args(["/c", "start", "ELVIS - 프로세스 및 포트 점유 실시간 진단", target_bat.to_str().unwrap(), &target_arg])
+            .args(["/c", "start", win_title, target_bat.to_str().unwrap(), &target_arg])
             .current_dir(cwd)
             .spawn()
             .map_err(|e| format!("프로세스 진단창 실행 실패: {}", e))?;

@@ -1007,12 +1007,13 @@ async function openProcessStatus(target: string = 'all') {
   }
 }
 
-// 9. 독립 실시간 콘솔 터미널 창 띄우기 (PowerShell 실시간 스트리밍)
+// 9. 독립 실시간 콘솔 터미널 창 띄우기 (PowerShell 실시간 스트리밍: 서비스별 단일 창 보장)
 async function openLogWindow(svc?: string) {
   const targetService = svc || 'mysql'
   try {
     // 1) Tauri 데스크톱 환경: Rust 커맨드로 PowerShell 콘솔 창 실행
-    await invoke('open_log_window', { service: targetService })
+    const msg = await invoke<string>('open_log_window', { service: targetService })
+    addToast('로그 콘솔', msg, 'info')
     return
   } catch (_) {}
 
@@ -1020,7 +1021,9 @@ async function openLogWindow(svc?: string) {
   try {
     const res = await fetch('/api/infra/logs/open-terminal?service=' + targetService, { method: 'POST' })
     const data = await res.json()
-    if (!data.success) {
+    if (data.success) {
+      addToast('로그 콘솔', data.message, 'info')
+    } else {
       addToast('터미널 기동 실패', data.message, 'error')
     }
   } catch (err: any) {

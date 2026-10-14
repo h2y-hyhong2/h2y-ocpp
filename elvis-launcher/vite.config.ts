@@ -567,19 +567,31 @@ function infraLauncherPlugin(): Plugin {
           }
           const display = titles[service] || service
           const winTitle = `ELVIS - ${display} 실시간 콘솔 로그`
-          const psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 콘솔 로그' -ForegroundColor Cyan; Write-Host '  로그 경로: ${logFile}' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host ''; if (Test-Path '${logFile}') { Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 } else { Write-Host '[안내] 아직 로그 파일이 없습니다. 서비스 기동 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${logFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 로그 감시를 시작합니다.' -ForegroundColor Green; Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 }`
 
-          try {
-            const child = spawn('cmd.exe', ['/c', 'start', winTitle, 'powershell', '-NoExit', '-Command', psCmd], {
-              detached: true,
-              stdio: 'ignore'
-            })
-            child.unref()
-            res.end(JSON.stringify({ success: true, message: `${display} 터미널 콘솔이 실행되었습니다.` }))
-          } catch (err: any) {
-            res.statusCode = 500
-            res.end(JSON.stringify({ success: false, message: '터미널 기동 실패: ' + err.message }))
-          }
+          // 1) 기존 동일 서비스 로그창이 이미 열려 있는지 검사 -> 활성화(Focus) 성공 시 중복 생성 방지
+          const checkCmd = `powershell -NoProfile -Command "$w = New-Object -ComObject WScript.Shell; if ($w.AppActivate('${winTitle}')) { exit 10 }; $p = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like '*${winTitle}*' }; if ($p) { if ($w.AppActivate($p[0].Id)) { exit 10 } }; exit 0"`
+
+          exec(checkCmd, (checkErr) => {
+            if (checkErr && checkErr.code === 10) {
+              res.end(JSON.stringify({ success: true, message: `기존 ${display} 콘솔 창을 활성화했습니다.` }))
+              return
+            }
+
+            // 2) 신규 창 기동
+            const psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 콘솔 로그' -ForegroundColor Cyan; Write-Host '  로그 경로: ${logFile}' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host ''; if (Test-Path '${logFile}') { Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 } else { Write-Host '[안내] 아직 로그 파일이 없습니다. 서비스 기동 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${logFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 로그 감시를 시작합니다.' -ForegroundColor Green; Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 }`
+
+            try {
+              const child = spawn('cmd.exe', ['/c', 'start', winTitle, 'powershell', '-NoExit', '-Command', psCmd], {
+                detached: true,
+                stdio: 'ignore'
+              })
+              child.unref()
+              res.end(JSON.stringify({ success: true, message: `${display} 터미널 콘솔이 실행되었습니다.` }))
+            } catch (err: any) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ success: false, message: '터미널 기동 실패: ' + err.message }))
+            }
+          })
           return
         }
 
