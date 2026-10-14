@@ -1,8 +1,21 @@
+use std::process::Command;
+use std::sync::atomic::{AtomicU8, Ordering};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
+    Emitter, Manager, WindowEvent,
 };
+
+// 서비스별 비동기 작업 진행 상태 추적 (0: Idle, 1: Starting, 2: Stopping)
+static PENDING_MYSQL: AtomicU8 = AtomicU8::new(0);
+static PENDING_KAFKA: AtomicU8 = AtomicU8::new(0);
+static PENDING_WS: AtomicU8 = AtomicU8::new(0);
+static PENDING_SYNC: AtomicU8 = AtomicU8::new(0);
+static PENDING_API: AtomicU8 = AtomicU8::new(0);
+
+// 그룹 작업 진행 상태 추적
+// 0: Idle, 1: StartingAll, 2: StoppingAll, 3: RestartingAll, 4: RestartingBackend, 5: RestartingInfra
+static PENDING_GROUP: AtomicU8 = AtomicU8::new(0);
 
 fn check_single_port(port: u16) -> bool {
     let addr = format!("127.0.0.1:{}", port);
@@ -36,52 +49,248 @@ fn update_tray_status_view(
     ws_item: &MenuItem<tauri::Wry>,
     sync_item: &MenuItem<tauri::Wry>,
     api_item: &MenuItem<tauri::Wry>,
+    start_all_item: &MenuItem<tauri::Wry>,
+    stop_all_item: &MenuItem<tauri::Wry>,
+    restart_all_item: &MenuItem<tauri::Wry>,
+    restart_backend_item: &MenuItem<tauri::Wry>,
+    restart_infra_item: &MenuItem<tauri::Wry>,
 ) {
     let (mysql, kafka, ws, sync, api, count) = check_all_service_ports();
+    let infra_count = (if mysql { 1 } else { 0 }) + (if kafka { 1 } else { 0 });
+    let core_count = (if ws { 1 } else { 0 }) + (if sync { 1 } else { 0 }) + (if api { 1 } else { 0 });
 
-    let summary_text = if count == 5 {
-        "● [ STATUS: 5/5 전체 정상 가동 중 ]".to_string()
-    } else if count > 0 {
-        format!("◐ [ STATUS: {}/5 서비스 실행 중 ]", count)
-    } else {
-        "○ [ STATUS: 0/5 모든 서비스 정지됨 ]".to_string()
+    let p_group = PENDING_GROUP.load(Ordering::Relaxed);
+
+    // 1) 전체 요약 텍스트 (완전 기동/종료될 때까지 진행 상태 유지)
+    let summary_text = match p_group {
+        1 => {
+            if count == 5 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                "● [ STATUS: 5/5 전체 정상 가동 중 ]".to_string()
+            } else {
+                format!("⏳ [ STATUS: 전체 순차 기동 중... ({}/5) ]", count)
+            }
+        }
+        2 => {
+            if count == 0 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                "○ [ STATUS: 0/5 모든 서비스 정지됨 ]".to_string()
+            } else {
+                format!("⏳ [ STATUS: 전체 순차 종료 중... ({}/5 잔여) ]", count)
+            }
+        }
+        3 => {
+            if count == 5 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                "● [ STATUS: 5/5 전체 정상 가동 중 ]".to_string()
+            } else {
+                format!("⏳ [ STATUS: 전체 재기동 중... ({}/5) ]", count)
+            }
+        }
+        _ => {
+            if count == 5 {
+                "● [ STATUS: 5/5 전체 정상 가동 중 ]".to_string()
+            } else if count > 0 {
+                format!("◐ [ STATUS: {}/5 서비스 실행 중 ]", count)
+            } else {
+                "○ [ STATUS: 0/5 모든 서비스 정지됨 ]".to_string()
+            }
+        }
     };
     let _ = summary_item.set_text(summary_text);
 
-    let _ = mysql_item.set_text(if mysql {
-        "[ON]  ● MySQL 9.71 (:13306)"
+    // 2) MySQL (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
+    let p_mysql = PENDING_MYSQL.load(Ordering::Relaxed);
+    if p_mysql == 1 {
+        if mysql {
+            PENDING_MYSQL.store(0, Ordering::Relaxed);
+            let _ = mysql_item.set_text("● [인프라] MySQL 9.71 (:13306) [ON]");
+        } else {
+            let _ = mysql_item.set_text("⏳ [인프라] MySQL 9.71 (:13306) [기동 중...]");
+        }
+    } else if p_mysql == 2 {
+        if !mysql {
+            PENDING_MYSQL.store(0, Ordering::Relaxed);
+            let _ = mysql_item.set_text("○ [인프라] MySQL 9.71 (:13306) [OFF]");
+        } else {
+            let _ = mysql_item.set_text("⏳ [인프라] MySQL 9.71 (:13306) [종료 중...]");
+        }
     } else {
-        "[OFF] ○ MySQL 9.71 (:13306)"
-    });
+        if mysql {
+            let _ = mysql_item.set_text("● [인프라] MySQL 9.71 (:13306) [ON]");
+        } else {
+            let _ = mysql_item.set_text("○ [인프라] MySQL 9.71 (:13306) [OFF]");
+        }
+    }
 
-    let _ = kafka_item.set_text(if kafka {
-        "[ON]  ● Apache Kafka (:19092)"
+    // 3) Kafka (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
+    let p_kafka = PENDING_KAFKA.load(Ordering::Relaxed);
+    if p_kafka == 1 {
+        if kafka {
+            PENDING_KAFKA.store(0, Ordering::Relaxed);
+            let _ = kafka_item.set_text("● [인프라] Apache Kafka (:19092) [ON]");
+        } else {
+            let _ = kafka_item.set_text("⏳ [인프라] Apache Kafka (:19092) [기동 중...]");
+        }
+    } else if p_kafka == 2 {
+        if !kafka {
+            PENDING_KAFKA.store(0, Ordering::Relaxed);
+            let _ = kafka_item.set_text("○ [인프라] Apache Kafka (:19092) [OFF]");
+        } else {
+            let _ = kafka_item.set_text("⏳ [인프라] Apache Kafka (:19092) [종료 중...]");
+        }
     } else {
-        "[OFF] ○ Apache Kafka (:19092)"
-    });
+        if kafka {
+            let _ = kafka_item.set_text("● [인프라] Apache Kafka (:19092) [ON]");
+        } else {
+            let _ = kafka_item.set_text("○ [인프라] Apache Kafka (:19092) [OFF]");
+        }
+    }
 
-    let _ = ws_item.set_text(if ws {
-        "[ON]  ● elvis-connect-ws (:18080)"
+    // 4) WS (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
+    let p_ws = PENDING_WS.load(Ordering::Relaxed);
+    if p_ws == 1 {
+        if ws {
+            PENDING_WS.store(0, Ordering::Relaxed);
+            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:18080) [ON]");
+        } else {
+            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:18080) [기동 중...]");
+        }
+    } else if p_ws == 2 {
+        if !ws {
+            PENDING_WS.store(0, Ordering::Relaxed);
+            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:18080) [OFF]");
+        } else {
+            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:18080) [종료 중...]");
+        }
     } else {
-        "[OFF] ○ elvis-connect-ws (:18080)"
-    });
+        if ws {
+            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:18080) [ON]");
+        } else {
+            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:18080) [OFF]");
+        }
+    }
 
-    let _ = sync_item.set_text(if sync {
-        "[ON]  ● elvis-connect-sync (:8082)"
+    // 5) Sync (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
+    let p_sync = PENDING_SYNC.load(Ordering::Relaxed);
+    if p_sync == 1 {
+        if sync {
+            PENDING_SYNC.store(0, Ordering::Relaxed);
+            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:8082) [ON]");
+        } else {
+            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:8082) [기동 중...]");
+        }
+    } else if p_sync == 2 {
+        if !sync {
+            PENDING_SYNC.store(0, Ordering::Relaxed);
+            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:8082) [OFF]");
+        } else {
+            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:8082) [종료 중...]");
+        }
     } else {
-        "[OFF] ○ elvis-connect-sync (:8082)"
-    });
+        if sync {
+            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:8082) [ON]");
+        } else {
+            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:8082) [OFF]");
+        }
+    }
 
-    let _ = api_item.set_text(if api {
-        "[ON]  ● elvis-control-api (:18088)"
+    // 6) API (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
+    let p_api = PENDING_API.load(Ordering::Relaxed);
+    if p_api == 1 {
+        if api {
+            PENDING_API.store(0, Ordering::Relaxed);
+            let _ = api_item.set_text("● [코어] elvis-control-api (:18088) [ON]");
+        } else {
+            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18088) [기동 중...]");
+        }
+    } else if p_api == 2 {
+        if !api {
+            PENDING_API.store(0, Ordering::Relaxed);
+            let _ = api_item.set_text("○ [코어] elvis-control-api (:18088) [OFF]");
+        } else {
+            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18088) [종료 중...]");
+        }
     } else {
-        "[OFF] ○ elvis-control-api (:18088)"
-    });
+        if api {
+            let _ = api_item.set_text("● [코어] elvis-control-api (:18088) [ON]");
+        } else {
+            let _ = api_item.set_text("○ [코어] elvis-control-api (:18088) [OFF]");
+        }
+    }
 
-    let tooltip = format!(
-        "ELVIS Launcher [5개 중 {}개 가동 중]",
-        count
-    );
+    // 7) 그룹 메뉴 버튼 상태 및 텍스트 갱신
+    match p_group {
+        1 => {
+            if count == 5 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                let _ = start_all_item.set_text("▶ 전체 서비스 시작");
+                let _ = start_all_item.set_enabled(false);
+                let _ = stop_all_item.set_enabled(true);
+            } else {
+                let _ = start_all_item.set_text(format!("⏳ 전체 서비스 시작 중... ({}/5)", count));
+                let _ = start_all_item.set_enabled(false);
+                let _ = stop_all_item.set_enabled(true);
+            }
+        }
+        2 => {
+            if count == 0 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                let _ = stop_all_item.set_text("■ 전체 서비스 종료");
+                let _ = stop_all_item.set_enabled(false);
+                let _ = start_all_item.set_enabled(true);
+            } else {
+                let _ = stop_all_item.set_text(format!("⏳ 전체 서비스 종료 중... ({}/5)", 5 - count));
+                let _ = stop_all_item.set_enabled(false);
+                let _ = start_all_item.set_enabled(true);
+            }
+        }
+        3 => {
+            if count == 5 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                let _ = restart_all_item.set_text("🔄 전체 재기동");
+                let _ = restart_all_item.set_enabled(true);
+            } else {
+                let _ = restart_all_item.set_text(format!("⏳ 전체 재기동 중... ({}/5)", count));
+                let _ = restart_all_item.set_enabled(false);
+            }
+        }
+        4 => {
+            if core_count == 3 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                let _ = restart_backend_item.set_text("⚡ 백엔드만 재기동 (WS/Sync/API)");
+                let _ = restart_backend_item.set_enabled(true);
+            } else {
+                let _ = restart_backend_item.set_text(format!("⏳ 백엔드 재기동 중... ({}/3)", core_count));
+                let _ = restart_backend_item.set_enabled(false);
+            }
+        }
+        5 => {
+            if infra_count == 2 {
+                PENDING_GROUP.store(0, Ordering::Relaxed);
+                let _ = restart_infra_item.set_text("📦 인프라만 재기동 (MySQL/Kafka)");
+                let _ = restart_infra_item.set_enabled(true);
+            } else {
+                let _ = restart_infra_item.set_text(format!("⏳ 인프라 재기동 중... ({}/2)", infra_count));
+                let _ = restart_infra_item.set_enabled(false);
+            }
+        }
+        _ => {
+            let _ = start_all_item.set_text("▶ 전체 서비스 시작");
+            let _ = stop_all_item.set_text("■ 전체 서비스 종료");
+            let _ = restart_all_item.set_text("🔄 전체 재기동");
+            let _ = restart_backend_item.set_text("⚡ 백엔드만 재기동 (WS/Sync/API)");
+            let _ = restart_infra_item.set_text("📦 인프라만 재기동 (MySQL/Kafka)");
+
+            let _ = start_all_item.set_enabled(count < 5);
+            let _ = stop_all_item.set_enabled(count > 0);
+            let _ = restart_all_item.set_enabled(count > 0);
+            let _ = restart_backend_item.set_enabled(core_count > 0);
+            let _ = restart_infra_item.set_enabled(infra_count > 0);
+        }
+    }
+
+    let tooltip = format!("ELVIS Launcher [5개 중 {}개 가동 중]", count);
     let _ = tray.set_tooltip(Some(tooltip));
 }
 
@@ -121,35 +330,70 @@ fn check_middleware_status(
     })
 }
 
+fn find_script_file(script_file: &str) -> Result<std::path::PathBuf, String> {
+    let fixed_path = std::path::PathBuf::from("D:\\project\\lselink\\ocpp-lite\\git\\h2y-ocpp\\scripts").join(script_file);
+    if fixed_path.exists() {
+        return Ok(fixed_path);
+    }
+
+    if let Ok(cur_dir) = std::env::current_dir() {
+        for candidate in [
+            cur_dir.join("scripts").join(script_file),
+            cur_dir.join("../scripts").join(script_file),
+            cur_dir.join("../../scripts").join(script_file),
+        ] {
+            if candidate.exists() {
+                return Ok(candidate);
+            }
+        }
+    }
+
+    if let Ok(cur_exe) = std::env::current_exe() {
+        for ancestor in cur_exe.ancestors().take(5) {
+            let candidate = ancestor.join("scripts").join(script_file);
+            if candidate.exists() {
+                return Ok(candidate);
+            }
+        }
+    }
+
+    Err(format!("스크립트 파일을 찾을 수 없습니다: {}", script_file))
+}
+
 fn execute_bat_script(script_file: &str, service_name: &str) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
         use std::process::Command;
 
-        const DETACHED_PROCESS: u32 = 0x00000008;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
 
-        let script_path = std::env::current_dir().unwrap_or_default();
-        let candidates = [
-            script_path.join("../scripts").join(script_file),
-            script_path.join("scripts").join(script_file),
-            script_path.join("../../scripts").join(script_file),
-            std::path::PathBuf::from("D:\\project\\lselink\\ocpp-lite\\git\\h2y-ocpp\\scripts").join(script_file),
-        ];
-
-        let target_bat = candidates
-            .into_iter()
-            .find(|p| p.exists())
-            .ok_or_else(|| format!("스크립트 파일을 찾을 수 없습니다: {}", script_file))?;
-
+        let target_bat = find_script_file(script_file)?;
         let cwd = target_bat.parent().unwrap();
 
-        let title = format!("ELVIS-LAUNCHER-{}", service_name);
+        let log_dir = std::path::PathBuf::from("D:\\elvis-lite\\logs");
+        if !log_dir.exists() {
+            let _ = std::fs::create_dir_all(&log_dir);
+        }
+        let log_file_path = log_dir.join(format!("{}.log", service_name));
+
+        let bat_str = target_bat.to_str().ok_or("배치 스크립트 경로 변환 실패")?;
+        let log_str = log_file_path.to_str().ok_or("로그 경로 변환 실패")?;
+
+        // 런처(vite.config.ts)의 무창 백그라운드 기동 방식과 100% 동일하게 구성:
+        // cmd.exe /c start /b cmd /c "call \"bat_path\" >> \"log_path\" 2>&1"
+        // Rust의 자동 따옴표 이스케이프 문제를 피하기 위해 Windows raw_arg 사용
+        let raw_cmd = format!(
+            "/c start /b cmd /c \"call \"{}\" >> \"{}\" 2>&1\"",
+            bat_str, log_str
+        );
+
         Command::new("cmd")
-            .args(["/c", "start", &title, target_bat.to_str().unwrap()])
+            .raw_arg(&raw_cmd)
             .current_dir(cwd)
-            .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+            .env("NO_PAUSE", "1")
+            .creation_flags(CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP)
             .spawn()
             .map_err(|e| format!("프로세스 기동 실패: {}", e))?;
 
@@ -160,6 +404,19 @@ fn execute_bat_script(script_file: &str, service_name: &str) -> Result<String, S
     {
         Err("Windows OS에서만 지원됩니다.".to_string())
     }
+}
+
+fn start_all_services_sequence() {
+    std::thread::spawn(|| {
+        let _ = execute_bat_script("start-kafka-kraft.bat", "kafka");
+        std::thread::sleep(std::time::Duration::from_millis(2500));
+        let _ = execute_bat_script("start-mysql.bat", "mysql");
+        std::thread::sleep(std::time::Duration::from_millis(3000));
+        let _ = execute_bat_script("start-elvis-connect-ws.bat", "ws");
+        let _ = execute_bat_script("start-elvis-connect-sync.bat", "sync");
+        std::thread::sleep(std::time::Duration::from_millis(2500));
+        let _ = execute_bat_script("start-elvis-control-api.bat", "api");
+    });
 }
 
 fn stop_service_processes(service: &str) -> Result<String, String> {
@@ -194,19 +451,37 @@ fn stop_service_processes(service: &str) -> Result<String, String> {
 
 #[tauri::command]
 fn start_middleware_detached(service: String) -> Result<String, String> {
-    let script = match service.as_str() {
-        "kafka" => "start-kafka-kraft.bat",
-        "mysql" => "start-mysql.bat",
-        "ws" => "start-elvis-connect-ws.bat",
-        "sync" => "start-elvis-connect-sync.bat",
-        "api" => "start-elvis-control-api.bat",
-        "tester" => "start-elvis-tester.bat",
-        "all-infra" => "start-all-middleware.bat",
-        "all" => "start-all-middleware.bat",
-        "topics" => "create-kafka-topics.bat",
-        _ => return Err("알 수 없는 서비스 이름입니다.".to_string()),
-    };
-    execute_bat_script(script, &service)
+    match service.as_str() {
+        "all" => {
+            start_all_services_sequence();
+            Ok("전체 5대 서비스가 순차적으로 백그라운드 기동됩니다.".to_string())
+        }
+        "all-infra" => {
+            std::thread::spawn(|| {
+                let _ = execute_bat_script("start-kafka-kraft.bat", "kafka");
+                std::thread::sleep(std::time::Duration::from_millis(2500));
+                let _ = execute_bat_script("start-mysql.bat", "mysql");
+            });
+            Ok("인프라(Kafka, MySQL)가 순차적으로 백그라운드 기동됩니다.".to_string())
+        }
+        "all-services" => {
+            std::thread::spawn(|| {
+                let _ = execute_bat_script("start-elvis-connect-ws.bat", "ws");
+                let _ = execute_bat_script("start-elvis-connect-sync.bat", "sync");
+                std::thread::sleep(std::time::Duration::from_millis(2500));
+                let _ = execute_bat_script("start-elvis-control-api.bat", "api");
+            });
+            Ok("코어 백엔드(WS, Sync, API)가 순차적으로 백그라운드 기동됩니다.".to_string())
+        }
+        "kafka" => execute_bat_script("start-kafka-kraft.bat", "kafka"),
+        "mysql" => execute_bat_script("start-mysql.bat", "mysql"),
+        "ws" => execute_bat_script("start-elvis-connect-ws.bat", "ws"),
+        "sync" => execute_bat_script("start-elvis-connect-sync.bat", "sync"),
+        "api" => execute_bat_script("start-elvis-control-api.bat", "api"),
+        "tester" => execute_bat_script("start-elvis-tester.bat", "tester"),
+        "topics" => execute_bat_script("create-kafka-topics.bat", "topics"),
+        _ => Err("알 수 없는 서비스 이름입니다.".to_string()),
+    }
 }
 
 #[tauri::command]
@@ -280,18 +555,7 @@ fn open_log_window(service: Option<String>) -> Result<String, String> {
 fn open_process_status_window(target: Option<String>) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
-        use std::process::Command;
-        let script_path = std::path::PathBuf::from("D:\\project\\lselink\\ocpp-lite\\git\\h2y-ocpp\\scripts\\check-status.bat");
-        let target_bat = if script_path.exists() {
-            script_path
-        } else {
-            std::env::current_dir().unwrap_or_default().join("../scripts/check-status.bat")
-        };
-
-        if !target_bat.exists() {
-            return Err("check-status.bat 스크립트 파일을 찾을 수 없습니다.".to_string());
-        }
-
+        let target_bat = find_script_file("check-status.bat")?;
         let target_arg = target.unwrap_or_else(|| "all".to_string());
         let cwd = target_bat.parent().unwrap();
         Command::new("cmd")
@@ -317,6 +581,16 @@ fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+fn trigger_ui_command(app: &tauri::AppHandle, action: &str, service: &str) {
+    if let Some(window) = app.get_webview_window("main") {
+        let js = format!(
+            "window.__triggerTrayCommand && window.__triggerTrayCommand('{}', '{}');",
+            action, service
+        );
+        let _ = window.eval(&js);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -340,24 +614,35 @@ pub fn run() {
             let summary_i = MenuItem::with_id(app, "status_summary", "● [ STATUS: 점검 중... ]", false, None::<&str>)?;
             let sep1 = PredefinedMenuItem::separator(app)?;
 
-            let mysql_i = MenuItem::with_id(app, "status_mysql", "[OFF] ○ MySQL 9.71 (:13306)", true, None::<&str>)?;
-            let kafka_i = MenuItem::with_id(app, "status_kafka", "[OFF] ○ Apache Kafka (:19092)", true, None::<&str>)?;
-            let ws_i = MenuItem::with_id(app, "status_ws", "[OFF] ○ elvis-connect-ws (:18080)", true, None::<&str>)?;
-            let sync_i = MenuItem::with_id(app, "status_sync", "[OFF] ○ elvis-connect-sync (:8082)", true, None::<&str>)?;
-            let api_i = MenuItem::with_id(app, "status_api", "[OFF] ○ elvis-control-api (:18088)", true, None::<&str>)?;
+            // 1. 인프라 미들웨어 상태 (클릭 시 단독 기동/종료 토글)
+            let mysql_i = MenuItem::with_id(app, "status_mysql", "○ [인프라] MySQL 9.71 (:13306) [OFF]", true, None::<&str>)?;
+            let kafka_i = MenuItem::with_id(app, "status_kafka", "○ [인프라] Apache Kafka (:19092) [OFF]", true, None::<&str>)?;
+            let sep_infra = PredefinedMenuItem::separator(app)?;
+
+            // 2. 코어 백엔드 엔진 상태 (클릭 시 단독 기동/종료 토글)
+            let ws_i = MenuItem::with_id(app, "status_ws", "○ [코어] elvis-connect-ws (:18080) [OFF]", true, None::<&str>)?;
+            let sync_i = MenuItem::with_id(app, "status_sync", "○ [코어] elvis-connect-sync (:8082) [OFF]", true, None::<&str>)?;
+            let api_i = MenuItem::with_id(app, "status_api", "○ [코어] elvis-control-api (:18088) [OFF]", true, None::<&str>)?;
 
             let sep2 = PredefinedMenuItem::separator(app)?;
-            let start_all_i = MenuItem::with_id(app, "start_all", "⚡ 전체 서비스 시작", true, None::<&str>)?;
-            let stop_all_i = MenuItem::with_id(app, "stop_all", "🛑 전체 서비스 종료", true, None::<&str>)?;
-            let restart_all_i = MenuItem::with_id(app, "restart_all", "🔄 전체 서비스 재기동", true, None::<&str>)?;
+
+            // 3. 일괄 제어 명령
+            let start_all_i = MenuItem::with_id(app, "start_all", "▶ 전체 서비스 시작", true, None::<&str>)?;
+            let stop_all_i = MenuItem::with_id(app, "stop_all", "■ 전체 서비스 종료", true, None::<&str>)?;
+            let restart_all_i = MenuItem::with_id(app, "restart_all", "🔄 전체 재기동", true, None::<&str>)?;
+            let restart_backend_i = MenuItem::with_id(app, "restart_backend", "⚡ 백엔드만 재기동 (WS/Sync/API)", true, None::<&str>)?;
+            let restart_infra_i = MenuItem::with_id(app, "restart_infra", "📦 인프라만 재기동 (MySQL/Kafka)", true, None::<&str>)?;
 
             let sep3 = PredefinedMenuItem::separator(app)?;
-            let show_i = MenuItem::with_id(app, "show", "🚀 런처 제어판 열기", true, None::<&str>)?;
-            let check_proc_i = MenuItem::with_id(app, "check_proc", "🔍 프로세스 & 포트 진단 터미널", true, None::<&str>)?;
-            let open_ui_i = MenuItem::with_id(app, "open_control_ui", "📊 CSMS 관제 UI (:1420)", true, None::<&str>)?;
+
+            // 4. 진단 도구 및 창 제어
+            let check_proc_i = MenuItem::with_id(app, "check_proc", "🔍 프로세스 & 포트 점유 진단", true, None::<&str>)?;
+            let show_i = MenuItem::with_id(app, "show", "런처 창 열기", true, None::<&str>)?;
 
             let sep4 = PredefinedMenuItem::separator(app)?;
-            let quit_i = MenuItem::with_id(app, "quit", "🚪 런처 완전히 종료", true, None::<&str>)?;
+
+            // 5. 종료
+            let quit_i = MenuItem::with_id(app, "quit", "런처 종료", true, None::<&str>)?;
 
             let menu = Menu::with_items(
                 app,
@@ -366,6 +651,7 @@ pub fn run() {
                     &sep1,
                     &mysql_i,
                     &kafka_i,
+                    &sep_infra,
                     &ws_i,
                     &sync_i,
                     &api_i,
@@ -373,10 +659,11 @@ pub fn run() {
                     &start_all_i,
                     &stop_all_i,
                     &restart_all_i,
+                    &restart_backend_i,
+                    &restart_infra_i,
                     &sep3,
-                    &show_i,
                     &check_proc_i,
-                    &open_ui_i,
+                    &show_i,
                     &sep4,
                     &quit_i,
                 ],
@@ -384,11 +671,23 @@ pub fn run() {
 
             // 시스템 트레이 아이콘 등록
             if let Some(icon) = app.default_window_icon() {
+                let m_summary = summary_i.clone();
+                let m_mysql = mysql_i.clone();
+                let m_kafka = kafka_i.clone();
+                let m_ws = ws_i.clone();
+                let m_sync = sync_i.clone();
+                let m_api = api_i.clone();
+                let m_start_all = start_all_i.clone();
+                let m_stop_all = stop_all_i.clone();
+                let m_restart_all = restart_all_i.clone();
+                let m_restart_backend = restart_backend_i.clone();
+                let m_restart_infra = restart_infra_i.clone();
+
                 let tray = TrayIconBuilder::new()
                     .icon(icon.clone())
                     .tooltip("ELVIS Launcher [상태 점검 중...]")
                     .menu(&menu)
-                    .on_menu_event(|app, event| match event.id.as_ref() {
+                    .on_menu_event(move |app, event| match event.id.as_ref() {
                         "show" => {
                             if let Some(window) = app.get_webview_window("main") {
                                 let _ = window.show();
@@ -401,60 +700,110 @@ pub fn run() {
                         "status_mysql" => {
                             let (mysql, ..) = check_all_service_ports();
                             if mysql {
-                                let _ = stop_service_processes("mysql");
+                                PENDING_MYSQL.store(2, Ordering::Relaxed);
+                                let _ = m_mysql.set_text("⏳ [인프라] MySQL 9.71 (:13306) [종료 중...]");
+                                trigger_ui_command(app, "stop", "mysql");
                             } else {
-                                let _ = execute_bat_script("start-mysql.bat", "mysql");
+                                PENDING_MYSQL.store(1, Ordering::Relaxed);
+                                let _ = m_mysql.set_text("⏳ [인프라] MySQL 9.71 (:13306) [기동 중...]");
+                                trigger_ui_command(app, "start", "mysql");
                             }
                         }
                         "status_kafka" => {
                             let (_, kafka, ..) = check_all_service_ports();
                             if kafka {
-                                let _ = stop_service_processes("kafka");
+                                PENDING_KAFKA.store(2, Ordering::Relaxed);
+                                let _ = m_kafka.set_text("⏳ [인프라] Apache Kafka (:19092) [종료 중...]");
+                                trigger_ui_command(app, "stop", "kafka");
                             } else {
-                                let _ = execute_bat_script("start-kafka-kraft.bat", "kafka");
+                                PENDING_KAFKA.store(1, Ordering::Relaxed);
+                                let _ = m_kafka.set_text("⏳ [인프라] Apache Kafka (:19092) [기동 중...]");
+                                trigger_ui_command(app, "start", "kafka");
                             }
                         }
                         "status_ws" => {
                             let (_, _, ws, ..) = check_all_service_ports();
                             if ws {
-                                let _ = stop_service_processes("ws");
+                                PENDING_WS.store(2, Ordering::Relaxed);
+                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:18080) [종료 중...]");
+                                trigger_ui_command(app, "stop", "ws");
                             } else {
-                                let _ = execute_bat_script("start-elvis-connect-ws.bat", "ws");
+                                PENDING_WS.store(1, Ordering::Relaxed);
+                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:18080) [기동 중...]");
+                                trigger_ui_command(app, "start", "ws");
                             }
                         }
                         "status_sync" => {
                             let (_, _, _, sync, ..) = check_all_service_ports();
                             if sync {
-                                let _ = stop_service_processes("sync");
+                                PENDING_SYNC.store(2, Ordering::Relaxed);
+                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:8082) [종료 중...]");
+                                trigger_ui_command(app, "stop", "sync");
                             } else {
-                                let _ = execute_bat_script("start-elvis-connect-sync.bat", "sync");
+                                PENDING_SYNC.store(1, Ordering::Relaxed);
+                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:8082) [기동 중...]");
+                                trigger_ui_command(app, "start", "sync");
                             }
                         }
                         "status_api" => {
                             let (_, _, _, _, api, ..) = check_all_service_ports();
                             if api {
-                                let _ = stop_service_processes("api");
+                                PENDING_API.store(2, Ordering::Relaxed);
+                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18088) [종료 중...]");
+                                trigger_ui_command(app, "stop", "api");
                             } else {
-                                let _ = execute_bat_script("start-elvis-control-api.bat", "api");
+                                PENDING_API.store(1, Ordering::Relaxed);
+                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18088) [기동 중...]");
+                                trigger_ui_command(app, "start", "api");
                             }
                         }
                         "start_all" => {
-                            let _ = execute_bat_script("start-all-middleware.bat", "all");
+                            PENDING_GROUP.store(1, Ordering::Relaxed);
+                            PENDING_MYSQL.store(1, Ordering::Relaxed);
+                            PENDING_KAFKA.store(1, Ordering::Relaxed);
+                            PENDING_WS.store(1, Ordering::Relaxed);
+                            PENDING_SYNC.store(1, Ordering::Relaxed);
+                            PENDING_API.store(1, Ordering::Relaxed);
+                            let _ = m_summary.set_text("⏳ [ STATUS: 전체 서비스 순차 기동 중... ]");
+                            let _ = m_start_all.set_text("⏳ 전체 서비스 시작 중...");
+                            trigger_ui_command(app, "start_all", "");
                         }
                         "stop_all" => {
-                            let _ = stop_service_processes("all");
+                            PENDING_GROUP.store(2, Ordering::Relaxed);
+                            PENDING_MYSQL.store(2, Ordering::Relaxed);
+                            PENDING_KAFKA.store(2, Ordering::Relaxed);
+                            PENDING_WS.store(2, Ordering::Relaxed);
+                            PENDING_SYNC.store(2, Ordering::Relaxed);
+                            PENDING_API.store(2, Ordering::Relaxed);
+                            let _ = m_summary.set_text("⏳ [ STATUS: 전체 서비스 종료 중... ]");
+                            let _ = m_stop_all.set_text("⏳ 전체 서비스 종료 중...");
+                            trigger_ui_command(app, "stop_all", "");
                         }
                         "restart_all" => {
-                            let _ = stop_service_processes("all");
-                            std::thread::sleep(std::time::Duration::from_millis(1500));
-                            let _ = execute_bat_script("start-all-middleware.bat", "all");
+                            PENDING_GROUP.store(3, Ordering::Relaxed);
+                            PENDING_MYSQL.store(1, Ordering::Relaxed);
+                            PENDING_KAFKA.store(1, Ordering::Relaxed);
+                            PENDING_WS.store(1, Ordering::Relaxed);
+                            PENDING_SYNC.store(1, Ordering::Relaxed);
+                            PENDING_API.store(1, Ordering::Relaxed);
+                            let _ = m_summary.set_text("⏳ [ STATUS: 전체 서비스 재기동 중... ]");
+                            let _ = m_restart_all.set_text("⏳ 전체 재기동 중...");
+                            trigger_ui_command(app, "restart_all", "");
                         }
-                        "open_control_ui" => {
-                            #[cfg(target_os = "windows")]
-                            {
-                                use std::process::Command;
-                                let _ = Command::new("cmd").args(["/c", "start", "http://localhost:1420"]).spawn();
-                            }
+                        "restart_backend" => {
+                            PENDING_GROUP.store(4, Ordering::Relaxed);
+                            PENDING_WS.store(1, Ordering::Relaxed);
+                            PENDING_SYNC.store(1, Ordering::Relaxed);
+                            PENDING_API.store(1, Ordering::Relaxed);
+                            let _ = m_restart_backend.set_text("⏳ 백엔드 재기동 중...");
+                            trigger_ui_command(app, "restart_backend", "");
+                        }
+                        "restart_infra" => {
+                            PENDING_GROUP.store(5, Ordering::Relaxed);
+                            PENDING_MYSQL.store(1, Ordering::Relaxed);
+                            PENDING_KAFKA.store(1, Ordering::Relaxed);
+                            let _ = m_restart_infra.set_text("⏳ 인프라 재기동 중...");
+                            trigger_ui_command(app, "restart_infra", "");
                         }
                         "quit" => {
                             app.exit(0);
@@ -487,6 +836,11 @@ pub fn run() {
                     &ws_i,
                     &sync_i,
                     &api_i,
+                    &start_all_i,
+                    &stop_all_i,
+                    &restart_all_i,
+                    &restart_backend_i,
+                    &restart_infra_i,
                 );
 
                 // 백그라운드 3초 주기 자동 감시 스레드 기동
@@ -497,6 +851,11 @@ pub fn run() {
                 let t_ws = ws_i.clone();
                 let t_sync = sync_i.clone();
                 let t_api = api_i.clone();
+                let t_start_all = start_all_i.clone();
+                let t_stop_all = stop_all_i.clone();
+                let t_restart_all = restart_all_i.clone();
+                let t_restart_backend = restart_backend_i.clone();
+                let t_restart_infra = restart_infra_i.clone();
 
                 std::thread::spawn(move || {
                     loop {
@@ -509,6 +868,11 @@ pub fn run() {
                             &t_ws,
                             &t_sync,
                             &t_api,
+                            &t_start_all,
+                            &t_stop_all,
+                            &t_restart_all,
+                            &t_restart_backend,
+                            &t_restart_infra,
                         );
                     }
                 });

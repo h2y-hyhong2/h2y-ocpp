@@ -71,29 +71,145 @@ function Show-Dashboard {
     Write-Host (" [요약] " + $scopeName + " (" + $totalTarget + "개 대상) 중 " + $activeCount + "개 포트가 정상 활성화(LISTEN)되어 있습니다.") -ForegroundColor Cyan
     Write-Host ""
 
-    Write-Host "▶ 실행 중인 Java 프로세스 세부 PID 현황:" -ForegroundColor Yellow
+    Write-Host "▶ 실행 중인 서비스 프로세스 세부 PID 현황 (MySQL / Kafka / Core / Web / Tester):" -ForegroundColor Yellow
+    $detectedProcs = @()
+
+    # 1) MySQL 데이터베이스 프로세스 감지
+    $mysqlProcs = Get-CimInstance Win32_Process -Filter "Name = 'mysqld.exe'" -ErrorAction SilentlyContinue
+    if ($mysqlProcs) {
+        foreach ($mp in $mysqlProcs) {
+            $pObj = Get-Process -Id $mp.ProcessId -ErrorAction SilentlyContinue
+            $memMb = if ($pObj) { [math]::Round($pObj.WorkingSet64 / 1MB, 1) } else { 0 }
+            $detectedProcs += [PSCustomObject]@{
+                Group = "infra"
+                Category = "인프라"
+                Name = "MySQL 9.71 Database Engine"
+                PID = $mp.ProcessId
+                ProcessName = "mysqld.exe"
+                PortStr = ":13306"
+                Memory = $memMb
+            }
+        }
+    }
+
+    # 2) Java 프로세스 감지 (Kafka 및 코어 백엔드)
     $javaProcs = Get-CimInstance Win32_Process -Filter "Name = 'java.exe'" -ErrorAction SilentlyContinue
     if ($javaProcs) {
         foreach ($jp in $javaProcs) {
             $cmd = $jp.CommandLine
-            $tag = "기타 Java"
-            $matchGroup = "other"
-            if ($cmd -match "kafka\.Kafka") { $tag = "Kafka KRaft Broker"; $matchGroup = "infra" }
-            elseif ($cmd -match "elvis-connect-ws") { $tag = "elvis-connect-ws Gateway"; $matchGroup = "core" }
-            elseif ($cmd -match "elvis-connect-sync") { $tag = "elvis-connect-sync Engine"; $matchGroup = "core" }
-            elseif ($cmd -match "elvis-control-api") { $tag = "elvis-control-api Server"; $matchGroup = "core" }
-            elseif ($cmd -match "elvis-tester") { $tag = "elvis-tester Harness"; $matchGroup = "tester" }
-            elseif ($cmd -match "GradleDaemon") { $tag = "Gradle Daemon"; $matchGroup = "gradle" }
-            
-            if ($targetMode -eq "infra" -and $matchGroup -ne "infra") { continue }
-            if ($targetMode -eq "core" -and $matchGroup -ne "core") { continue }
+            $tag = $null
+            $grp = "other"
+            $cat = "기타"
+            $pStr = "-"
+            if ($cmd -match "kafka\.Kafka") {
+                $tag = "Apache Kafka KRaft Broker"
+                $grp = "infra"
+                $cat = "인프라"
+                $pStr = ":19092"
+            } elseif ($cmd -match "elvis-connect-ws") {
+                $tag = "elvis-connect-ws Gateway"
+                $grp = "core"
+                $cat = "코어엔진"
+                $pStr = ":18080"
+            } elseif ($cmd -match "elvis-connect-sync") {
+                $tag = "elvis-connect-sync Engine"
+                $grp = "core"
+                $cat = "코어엔진"
+                $pStr = ":8082"
+            } elseif ($cmd -match "elvis-control-api") {
+                $tag = "elvis-control-api Server"
+                $grp = "core"
+                $cat = "코어엔진"
+                $pStr = ":18088"
+            } elseif ($cmd -match "elvis-tester") {
+                $tag = "elvis-tester Harness"
+                $grp = "tester"
+                $cat = "독립테스터"
+                $pStr = ":8085"
+            } elseif ($cmd -match "GradleDaemon") {
+                $tag = "Gradle Build Daemon"
+                $grp = "build"
+                $cat = "빌드도구"
+                $pStr = "-"
+            }
 
-            $pObj = Get-Process -Id $jp.ProcessId -ErrorAction SilentlyContinue
-            $memMb = if ($pObj) { [math]::Round($pObj.WorkingSet64 / 1MB, 1) } else { 0 }
-            Write-Host ("  - PID: " + $jp.ProcessId.ToString().PadRight(6) + " | 메모리: " + $memMb.ToString().PadLeft(6) + " MB | 역할: " + $tag) -ForegroundColor White
+            if ($tag) {
+                $pObj = Get-Process -Id $jp.ProcessId -ErrorAction SilentlyContinue
+                $memMb = if ($pObj) { [math]::Round($pObj.WorkingSet64 / 1MB, 1) } else { 0 }
+                $detectedProcs += [PSCustomObject]@{
+                    Group = $grp
+                    Category = $cat
+                    Name = $tag
+                    PID = $jp.ProcessId
+                    ProcessName = "java.exe"
+                    PortStr = $pStr
+                    Memory = $memMb
+                }
+            }
+        }
+    }
+
+    # 3) Node.js 프로세스 감지 (관제 UI, 테스터 UI, 런처)
+    $nodeProcs = Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue
+    if ($nodeProcs) {
+        foreach ($np in $nodeProcs) {
+            $cmd = $np.CommandLine
+            $tag = $null
+            $grp = "other"
+            $cat = "웹서버"
+            $pStr = "-"
+            if ($cmd -match "elvis-control-ui") {
+                $tag = "elvis-control-ui (Admin Web)"
+                $grp = "ui"
+                $cat = "관제웹UI"
+                $pStr = ":1420"
+            } elseif ($cmd -match "elvis-launcher") {
+                $tag = "elvis-launcher (Dev Host)"
+                $grp = "launcher"
+                $cat = "런처UI"
+                $pStr = ":1422"
+            } elseif ($cmd -match "elvis-tester-ui") {
+                $tag = "elvis-tester-ui (Test Web)"
+                $grp = "tester"
+                $cat = "독립테스터"
+                $pStr = ":1421"
+            }
+
+            if ($tag) {
+                $pObj = Get-Process -Id $np.ProcessId -ErrorAction SilentlyContinue
+                $memMb = if ($pObj) { [math]::Round($pObj.WorkingSet64 / 1MB, 1) } else { 0 }
+                $detectedProcs += [PSCustomObject]@{
+                    Group = $grp
+                    Category = $cat
+                    Name = $tag
+                    PID = $np.ProcessId
+                    ProcessName = "node.exe"
+                    PortStr = $pStr
+                    Memory = $memMb
+                }
+            }
+        }
+    }
+
+    # 범위 필터링 적용
+    $filteredProcs = $detectedProcs | Where-Object {
+        if ($targetMode -eq "infra") { $_.Group -eq "infra" }
+        elseif ($targetMode -eq "core") { $_.Group -eq "core" }
+        else { $true }
+    }
+
+    if ($filteredProcs -and ($filteredProcs | Measure-Object).Count -gt 0) {
+        foreach ($item in $filteredProcs) {
+            $catLabel = ("[{0}]" -f $item.Category).PadRight(8)
+            $nameLabel = $item.Name.PadRight(28)
+            $pidLabel = ("PID: {0}" -f $item.PID).PadRight(12)
+            $memLabel = ("메모리: {0,6} MB" -f $item.Memory).PadRight(18)
+            $portLabel = ("포트: {0,-7}" -f $item.PortStr)
+            $exeLabel = ("({0})" -f $item.ProcessName)
+            Write-Host ("  - " + $catLabel + " " + $nameLabel + " | " + $pidLabel + " | " + $memLabel + " | " + $portLabel + " | " + $exeLabel) -ForegroundColor White
         }
     } else {
-        Write-Host "  (현재 구동 중인 Java 프로세스가 없습니다)" -ForegroundColor DarkGray
+        Write-Host "  (감지된 서비스 프로세스가 없습니다)" -ForegroundColor DarkGray
     }
 
     Write-Host ""
