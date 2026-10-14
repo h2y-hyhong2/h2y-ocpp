@@ -5,23 +5,38 @@ import fs from 'fs'
 import { exec, spawn } from 'child_process'
 import net from 'net'
 
-// 포트 점유 여부 확인 헬퍼 함수
-function checkPort(port: number, host = '127.0.0.1'): Promise<boolean> {
+// 포트 점유 여부 확인 헬퍼 함수 (IPv4 & IPv6 동시 점검)
+function checkPort(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = new net.Socket()
-    socket.setTimeout(600)
-    socket.once('connect', () => {
-      socket.destroy()
-      resolve(true)
-    })
-    socket.once('timeout', () => {
-      socket.destroy()
-      resolve(false)
-    })
-    socket.once('error', () => {
-      resolve(false)
-    })
-    socket.connect(port, host)
+    let resolved = false
+    const checkHost = (host: string) => {
+      const socket = new net.Socket()
+      socket.setTimeout(500)
+      socket.once('connect', () => {
+        socket.destroy()
+        if (!resolved) {
+          resolved = true
+          resolve(true)
+        }
+      })
+      socket.once('timeout', () => {
+        socket.destroy()
+      })
+      socket.once('error', () => {
+        socket.destroy()
+      })
+      socket.connect(port, host)
+    }
+
+    checkHost('127.0.0.1')
+    checkHost('::1')
+
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        resolve(false)
+      }
+    }, 600)
   })
 }
 
@@ -53,7 +68,9 @@ function infraLauncherPlugin(): Plugin {
             mysqlPort: 13306,
             kafkaPort: 19092,
             apiPort: 18088,
-            wsPort: 18080
+            wsPort: 18080,
+            syncPort: 8082,
+            testerPort: 8085
           }
           if (fs.existsSync(envPath)) {
             const lines = fs.readFileSync(envPath, 'utf-8').split(/\r?\n/)
@@ -67,6 +84,8 @@ function infraLauncherPlugin(): Plugin {
               if (key === 'ELVIS_KAFKA_PORT' && val) env.kafkaPort = parseInt(val.trim(), 10) || env.kafkaPort
               if (key === 'ELVIS_API_PORT' && val) env.apiPort = parseInt(val.trim(), 10) || env.apiPort
               if (key === 'ELVIS_WS_PORT' && val) env.wsPort = parseInt(val.trim(), 10) || env.wsPort
+              if (key === 'ELVIS_SYNC_PORT' && val) env.syncPort = parseInt(val.trim(), 10) || env.syncPort
+              if (key === 'ELVIS_TESTER_PORT' && val) env.testerPort = parseInt(val.trim(), 10) || env.testerPort
             }
           }
           return env
@@ -84,43 +103,42 @@ function infraLauncherPlugin(): Plugin {
           if (isBackground) {
             const logFile = path.resolve(logDir, `${serviceName}.log`)
             console.log(`[ELVIS-Launcher] 백그라운드 무창 기동 -> service: ${serviceName}, bat: ${batPath}, log: ${logFile}`)
-            const proc = spawn('cmd.exe', ['/c', `call "${batPath}" >> "${logFile}" 2>&1`], {
+            exec(`start /b cmd /c "call \"${batPath}\" >> \"${logFile}\" 2>&1"`, {
               cwd: scriptsDir,
-              detached: true,
-              windowsHide: true,
-              stdio: 'ignore',
               env: { ...process.env, NO_PAUSE: '1' }
             })
-            proc.unref()
           } else {
             console.log(`[ELVIS-Launcher] 콘솔 창 기동 -> service: ${serviceName}, bat: ${batPath}`)
-            const proc = spawn('cmd.exe', ['/c', 'start', winTitle, batPath], {
+            exec(`start "${winTitle}" cmd /c "call \"${batPath}\""`, {
               cwd: scriptsDir,
-              detached: true,
-              stdio: 'ignore'
+              env: { ...process.env, NO_PAUSE: '1' }
             })
-            proc.unref()
           }
         }
 
-        // 1. 미들웨어 헬스체크 (GET /api/infra/status)
+        // 1. 미들웨어 및 전체 서비스 헬스체크 (GET /api/infra/status)
         if (pathname === '/api/infra/status') {
           const currentEnv = readEnv()
-          const [isKafka, isMysql, isControlApi] = await Promise.all([
+          const [isKafka, isMysql, isControlApi, isConnectWs, isConnectSync] = await Promise.all([
             checkPort(currentEnv.kafkaPort),
             checkPort(currentEnv.mysqlPort),
-            checkPort(currentEnv.apiPort)
+            checkPort(currentEnv.apiPort),
+            checkPort(currentEnv.wsPort),
+            checkPort(currentEnv.syncPort)
           ])
 
           res.end(JSON.stringify({
             kafka: isKafka,
             mysql: isMysql,
             controlApi: isControlApi,
+            connectWs: isConnectWs,
+            connectSync: isConnectSync,
             ports: {
               mysql: currentEnv.mysqlPort,
               kafka: currentEnv.kafkaPort,
               api: currentEnv.apiPort,
-              ws: currentEnv.wsPort
+              ws: currentEnv.wsPort,
+              sync: currentEnv.syncPort
             }
           }))
           return
@@ -244,7 +262,7 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 6. 서비스 기동 (POST /api/infra/start?service=mysql|kafka|all|topics&background=true|false)
+        // 6. 서비스 기동 (POST /api/infra/start?service=mysql|kafka|ws|sync|api|tester|all-infra|all-services|all|topics&background=true|false)
         if (pathname === '/api/infra/start') {
           const service = url.searchParams.get('service')
           const isBackground = url.searchParams.get('background') !== 'false'
@@ -253,7 +271,16 @@ function infraLauncherPlugin(): Plugin {
             runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', isBackground)
           } else if (service === 'mysql') {
             runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', isBackground)
-          } else if (service === 'all') {
+          } else if (service === 'ws') {
+            runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', isBackground)
+          } else if (service === 'sync') {
+            runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
+          } else if (service === 'api') {
+            runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
+          } else if (service === 'tester') {
+            runServiceProcess('tester', 'start-elvis-tester.bat', 'ELVIS - Tester Harness', isBackground)
+          } else if (service === 'all-infra') {
+            // 인프라 전체 기동: Kafka -> MySQL
             if (isBackground) {
               runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
               setTimeout(() => {
@@ -261,6 +288,39 @@ function infraLauncherPlugin(): Plugin {
               }, 2500)
             } else {
               runServiceProcess('all', 'start-all-middleware.bat', 'ELVIS - Middleware', false)
+            }
+          } else if (service === 'all-services') {
+            // 코어 서비스 전체 기동: WS -> Sync -> Control API
+            runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', isBackground)
+            setTimeout(() => {
+              runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
+              setTimeout(() => {
+                runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
+              }, 2500)
+            }, 2500)
+          } else if (service === 'all') {
+            // 전체 기동: 인프라 기동 후 코어 백엔드 순차 부팅
+            if (isBackground) {
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
+              setTimeout(() => {
+                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', true)
+                setTimeout(() => {
+                  runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', true)
+                  runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', true)
+                  setTimeout(() => {
+                    runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', true)
+                  }, 2500)
+                }, 4000)
+              }, 2500)
+            } else {
+              runServiceProcess('all', 'start-all-middleware.bat', 'ELVIS - Middleware', false)
+              setTimeout(() => {
+                runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', false)
+                runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', false)
+                setTimeout(() => {
+                  runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', false)
+                }, 2500)
+              }, 3000)
             }
           } else if (service === 'topics') {
             runServiceProcess('topics', 'create-kafka-topics.bat', 'ELVIS - Topics', isBackground)
@@ -277,16 +337,28 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 7. 서비스 중지 (POST /api/infra/stop?service=mysql|kafka|all)
+        // 7. 서비스 중지 (POST /api/infra/stop?service=mysql|kafka|ws|sync|api|tester|all-infra|all-services|all)
         if (pathname === '/api/infra/stop') {
           const currentEnv = readEnv()
           const service = url.searchParams.get('service')
           if (service === 'kafka') {
-            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache Kafka*\\" 2>$null"`)
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache Kafka*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`)
           } else if (service === 'mysql') {
             exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null"`)
+          } else if (service === 'ws') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.wsPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect WS*\\" 2>$null"`)
+          } else if (service === 'sync') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.syncPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect Sync*\\" 2>$null"`)
+          } else if (service === 'api') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control API*\\" 2>$null"`)
+          } else if (service === 'tester') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.testerPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Tester Harness*\\" 2>$null"`)
+          } else if (service === 'all-infra') {
+            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache Kafka*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`)
+          } else if (service === 'all-services') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null"`)
           } else if (service === 'all') {
-            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS*\\" 2>$null"`)
+            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort}, ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`)
           }
           res.end(JSON.stringify({ success: true, message: `${service} 중지 명령이 전송되었습니다.` }))
           return
@@ -297,18 +369,68 @@ function infraLauncherPlugin(): Plugin {
           const currentEnv = readEnv()
           console.log(`[ELVIS-Launcher] 기존 프로세스 정리 후 백그라운드 무창 전환 재기동 요청`)
 
-          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /im mysqld.exe 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS*\\" 2>$null"`, () => {
+          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort}, ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /im mysqld.exe 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`, () => {
+            setTimeout(() => {
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
+              setTimeout(() => {
+                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', true)
+                setTimeout(() => {
+                  runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', true)
+                  runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', true)
+                  setTimeout(() => {
+                    runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', true)
+                  }, 2500)
+                }, 4000)
+              }, 2500)
+            }, 1200)
+          })
+
+          res.end(JSON.stringify({
+            success: true,
+            message: '전체 프로세스를 정리하고, 백그라운드 무창 모드로 인프라 및 코어 서비스를 순차 재기동합니다.'
+          }))
+          return
+        }
+
+        // 8-1. 인프라 미들웨어만 재기동 (POST /api/infra/restart-infra)
+        if (pathname === '/api/infra/restart-infra') {
+          const currentEnv = readEnv()
+          console.log(`[ELVIS-Launcher] 인프라 미들웨어(MySQL, Kafka) 전용 재기동 요청`)
+
+          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /im mysqld.exe 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache Kafka*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`, () => {
             setTimeout(() => {
               runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
               setTimeout(() => {
                 runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', true)
               }, 2500)
-            }, 1000)
+            }, 1200)
           })
 
           res.end(JSON.stringify({
             success: true,
-            message: '기존 프로세스를 정리하고, 백그라운드 무창 모드로 미들웨어를 재기동하여 실시간 로그를 연결합니다.'
+            message: '인프라 미들웨어(MySQL, Kafka)를 순차 재기동합니다.'
+          }))
+          return
+        }
+
+        // 8-2. 코어 백엔드 엔진만 재기동 (POST /api/infra/restart-services)
+        if (pathname === '/api/infra/restart-services') {
+          const currentEnv = readEnv()
+          console.log(`[ELVIS-Launcher] 코어 백엔드 엔진(WS, Sync, API) 전용 재기동 요청`)
+
+          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null"`, () => {
+            setTimeout(() => {
+              runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', true)
+              runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', true)
+              setTimeout(() => {
+                runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', true)
+              }, 2500)
+            }, 1200)
+          })
+
+          res.end(JSON.stringify({
+            success: true,
+            message: '코어 백엔드 엔진(WS, Sync, API)을 순차 재기동합니다.'
           }))
           return
         }
@@ -316,21 +438,33 @@ function infraLauncherPlugin(): Plugin {
         // 9. 미들웨어 콘솔 가시화/재기동 (POST /api/infra/open-console)
         if (pathname === '/api/infra/open-console') {
           const currentEnv = readEnv()
-          const batPath = path.resolve(scriptsDir, 'start-all-middleware.bat')
-          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /im mysqld.exe 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS*\\" 2>$null"`, () => {
+          exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /im mysqld.exe 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - *\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`, () => {
             setTimeout(() => {
-              const proc = spawn('cmd.exe', ['/c', batPath], {
-                cwd: scriptsDir,
-                detached: true,
-                stdio: 'ignore'
-              })
-              proc.unref()
-            }, 1000)
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', false)
+              setTimeout(() => {
+                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', false)
+              }, 2000)
+            }, 1200)
           })
 
           res.end(JSON.stringify({
             success: true,
             message: 'MySQL 9.71 및 Apache Kafka 콘솔 윈도우 창이 화면에 성공적으로 기동되었습니다.'
+          }))
+          return
+        }
+
+        // 9-1. 프로세스 및 포트 점유 실시간 진단 콘솔 기동 (POST /api/infra/open-process-monitor?target=all|infra|core)
+        if (pathname === '/api/infra/open-process-monitor') {
+          const target = url.searchParams.get('target') || 'all'
+          const batPath = path.resolve(scriptsDir, 'check-status.bat')
+          exec(`start "ELVIS - 프로세스 및 포트 점유 실시간 진단" cmd /c "call \"${batPath}\" ${target}"`, {
+            cwd: scriptsDir
+          })
+          res.end(JSON.stringify({
+            success: true,
+            target,
+            message: `[${target.toUpperCase()}] 프로세스 및 포트 점유 실시간 진단 터미널이 열렸습니다.`
           }))
           return
         }
@@ -382,8 +516,14 @@ function infraLauncherPlugin(): Plugin {
               lines: recentLines
             }))
           } catch (err: any) {
-            res.statusCode = 500
-            res.end(JSON.stringify({ success: false, message: '로그 조회 실패: ' + err.message }))
+            res.end(JSON.stringify({
+              success: true,
+              service,
+              exists: true,
+              fileSize: 0,
+              lastModified: null,
+              lines: [`[시스템 안내] 로그 파일 접근 대기 중... (${err.message})`]
+            }))
           }
           return
         }
@@ -411,10 +551,45 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
+        // 11-1. 실시간 콘솔 터미널 창 기동 (POST /api/infra/logs/open-terminal?service=mysql)
+        if (pathname === '/api/infra/logs/open-terminal') {
+          const currentEnv = readEnv()
+          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const service = url.searchParams.get('service') || 'mysql'
+          const logFile = path.resolve(logDir, `${service}.log`)
+          const titles: Record<string, string> = {
+            mysql: 'MySQL 9.71 (:13306)',
+            kafka: 'Apache Kafka (:19092)',
+            ws: 'elvis-connect-ws (:18080)',
+            sync: 'elvis-connect-sync (:8082)',
+            api: 'elvis-control-api (:18088)',
+            tester: 'elvis-tester (:8085)'
+          }
+          const display = titles[service] || service
+          const winTitle = `ELVIS - ${display} 실시간 콘솔 로그`
+          const psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 콘솔 로그' -ForegroundColor Cyan; Write-Host '  로그 경로: ${logFile}' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host ''; if (Test-Path '${logFile}') { Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 } else { Write-Host '[안내] 아직 로그 파일이 없습니다. 서비스 기동 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${logFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 로그 감시를 시작합니다.' -ForegroundColor Green; Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 }`
+
+          try {
+            const child = spawn('cmd.exe', ['/c', 'start', winTitle, 'powershell', '-NoExit', '-Command', psCmd], {
+              detached: true,
+              stdio: 'ignore'
+            })
+            child.unref()
+            res.end(JSON.stringify({ success: true, message: `${display} 터미널 콘솔이 실행되었습니다.` }))
+          } catch (err: any) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ success: false, message: '터미널 기동 실패: ' + err.message }))
+          }
+          return
+        }
+
         // 12. DDL 스키마 & 시드 데이터 적재 (POST /api/infra/schema)
         if (pathname === '/api/infra/schema') {
           const batPath = path.resolve(scriptsDir, 'load-mysql-schema.bat')
-          exec(`cmd.exe /c "${batPath}"`, (err, stdout, stderr) => {
+          exec(`cmd.exe /c "${batPath}"`, {
+            cwd: scriptsDir,
+            env: { ...process.env, NO_PAUSE: '1' }
+          }, (err, stdout, stderr) => {
             if (err) {
               res.statusCode = 500
               res.end(JSON.stringify({ success: false, message: '스키마 적재 실패: ' + (stderr || err.message) }))
@@ -431,7 +606,10 @@ function infraLauncherPlugin(): Plugin {
         // 13. Kafka 4대 핵심 토픽 생성 (POST /api/infra/topics)
         if (pathname === '/api/infra/topics') {
           const batPath = path.resolve(scriptsDir, 'create-kafka-topics.bat')
-          exec(`cmd.exe /c "${batPath}"`, (err, stdout, stderr) => {
+          exec(`cmd.exe /c "${batPath}"`, {
+            cwd: scriptsDir,
+            env: { ...process.env, NO_PAUSE: '1' }
+          }, (err, stdout, stderr) => {
             if (err) {
               res.statusCode = 500
               res.end(JSON.stringify({ success: false, message: '토픽 생성 실패: ' + (stderr || err.message) }))

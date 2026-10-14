@@ -8,6 +8,7 @@ dependencies {
 
     // Spring Boot Starter
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // Spring Data JPA + MySQL (Sprint 18: 실시간 상태 UPDATE)

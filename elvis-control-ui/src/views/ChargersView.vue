@@ -120,19 +120,19 @@ function sendRemoteCommand(action: string) {
           </div>
         </div>
 
-        <!-- [핵심 UI - 충전소 목록 상단 필터 조건]: 법인 선택 드롭다운 -->
+        <!-- [충전소 목록 상단 필터 조건]: 법인 선택 드롭다운 -->
         <div class="space-y-1 pt-0.5">
-          <label class="text-[10px] font-bold text-slate-500 flex items-center justify-between">
-            <span class="flex items-center gap-1"><span>🏢</span><span>법인 필터 조건:</span></span>
+          <label class="text-[10px] font-semibold text-slate-500 flex items-center justify-between">
+            <span>법인 필터</span>
           </label>
           <select
             :value="store.curCorpFilter"
             @change="store.setCorpFilter(($event.target as HTMLSelectElement).value)"
-            class="w-full bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg px-2 py-1.5 text-xs font-bold text-[var(--text-bright)] outline-none focus:border-sky-500 cursor-pointer shadow-xs"
+            class="w-full bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--text-bright)] outline-none focus:border-sky-500 cursor-pointer shadow-xs"
           >
-            <option value="ALL">🌐 전체 법인 통합 (200개소)</option>
+            <option value="ALL">전체 법인 통합 (200개소)</option>
             <option v-for="corp in store.corps" :key="corp.id" :value="corp.id">
-              🏢 {{ corp.name }}
+              {{ corp.name }}
             </option>
           </select>
         </div>
@@ -156,8 +156,8 @@ function sendRemoteCommand(action: string) {
       <!-- 3. 선택된 법인의 소속 충전소 평면 목록 (스크롤 지원) -->
       <div class="mt-2 space-y-1.5 overflow-y-auto flex-1 text-xs pr-1">
         <div v-if="filteredStations.length === 0" class="p-4 text-center text-slate-400 space-y-1 my-4">
-          <div class="text-2xl">⚡</div>
-          <div class="font-bold text-[11px]">등록된 충전소가 없습니다</div>
+          <svg class="w-8 h-8 mx-auto text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+          <div class="font-bold text-[11px] text-slate-600">등록된 충전소가 없습니다</div>
           <div class="text-[10px] text-slate-500">DB 초기화 상태 (0건)</div>
         </div>
         <div
@@ -175,11 +175,11 @@ function sendRemoteCommand(action: string) {
               <button
                 type="button"
                 @click="copyStationId(st.id, $event)"
-                class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-[var(--border-glass)] hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-center gap-0.5"
+                class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-[var(--border-glass)] hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-center gap-1"
                 title="충전소 ID 복사"
               >
                 <span>{{ st.id }}</span>
-                <span class="text-[8px] opacity-60">📋</span>
+                <svg class="w-2.5 h-2.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               </button>
             </div>
             <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
@@ -201,7 +201,7 @@ function sendRemoteCommand(action: string) {
       <!-- 1. 중앙 상단 듀얼 뷰 (프로그레스바 ↔ 히트맵) -->
       <section class="bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 space-y-2 flex-shrink-0 shadow-xs">
         
-        <!-- 상단 툴바: 충전소 타이틀 & [📊 프로그레스바 ↔ ▦ 히트맵] 뷰 스위처 -->
+        <!-- 상단 툴바: 충전소 타이틀 & [프로그레스바 ↔ 히트맵] 뷰 스위처 -->
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-glass)] pb-2">
           <div class="flex items-center gap-1.5 min-w-0">
             <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.2 rounded border border-sky-200 dark:border-sky-800">
@@ -231,8 +231,8 @@ function sendRemoteCommand(action: string) {
               class="px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1"
               :class="topViewMode === 'progress' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-700'"
             >
-              <span>📊</span>
-              <span>프로그레스바</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              <span>상태 바</span>
             </button>
             <button
               type="button"
@@ -240,13 +240,13 @@ function sendRemoteCommand(action: string) {
               class="px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1"
               :class="topViewMode === 'heatmap' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-700'"
             >
-              <span>▦</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
               <span>히트맵</span>
             </button>
           </div>
         </div>
 
-        <!-- MODE A: 10px 슬림 스택트 바 + 파스텔 필터 칩 -->
+        <!-- MODE A: 슬림 스택트 바 + 파스텔 필터 칩 -->
         <div v-if="topViewMode === 'progress'" class="space-y-2">
           <!-- 10px 슬림 스택트 프로그레스바 -->
           <div class="h-2.5 w-full bg-[var(--bg-surface-2)] rounded-full overflow-hidden flex border border-[var(--border-glass)]">
@@ -260,7 +260,7 @@ function sendRemoteCommand(action: string) {
             ></div>
           </div>
 
-          <!-- 상태별 인터랙티브 필터 칩 (10대 상태 미네랄 컬러) -->
+          <!-- 상태별 인터랙티브 필터 칩 (10대 상태) -->
           <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
             <button
               type="button"
@@ -268,7 +268,7 @@ function sendRemoteCommand(action: string) {
               class="status-chip"
               :class="store.curStatusFilter === 'ALL' ? 'status-chip-active' : ''"
             >
-              <span>🌐 전체</span>
+              <span>전체</span>
               <span class="text-[10px] px-1.5 py-0.1 rounded-full bg-slate-200 dark:bg-slate-700 font-mono">{{ currentStationChargers.length }}</span>
             </button>
             <button
@@ -354,7 +354,7 @@ function sendRemoteCommand(action: string) {
                 placeholder="충전기 ID, 차종, 충전소..."
                 class="w-full bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg pl-7 pr-2 py-1 text-xs outline-none focus:border-sky-500 text-[var(--text-bright)]"
               />
-              <span class="absolute left-2 top-1.5 text-slate-400 text-xs">🔍</span>
+              <svg class="w-3.5 h-3.5 absolute left-2 top-2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
 
             <!-- 리스트/카드 스위처 -->
@@ -362,18 +362,20 @@ function sendRemoteCommand(action: string) {
               <button
                 type="button"
                 @click="gridViewMode = 'list'"
-                class="px-2 py-0.5 rounded font-bold"
-                :class="gridViewMode === 'list' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500'"
+                class="px-2 py-1 rounded-md font-bold transition-all flex items-center justify-center"
+                :class="gridViewMode === 'list' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-800'"
+                title="리스트 뷰"
               >
-                📋
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
               </button>
               <button
                 type="button"
                 @click="gridViewMode = 'card'"
-                class="px-2 py-0.5 rounded font-bold"
-                :class="gridViewMode === 'card' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500'"
+                class="px-2 py-1 rounded-md font-bold transition-all flex items-center justify-center"
+                :class="gridViewMode === 'card' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-800'"
+                title="카드 그리드 뷰"
               >
-                🗂️
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
               </button>
             </div>
           </div>
@@ -398,7 +400,7 @@ function sendRemoteCommand(action: string) {
             <tbody>
               <tr v-if="filteredChargers.length === 0">
                 <td colspan="9" class="py-12 text-center text-slate-400">
-                  <div class="text-3xl mb-2">🔌</div>
+                  <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   <div class="font-bold text-xs text-[var(--text-bright)]">조회된 충전기 단말이 없습니다</div>
                   <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있는 초기 상태이거나 필터 조건에 부합하는 충전기가 없습니다.</div>
                 </td>
@@ -448,7 +450,7 @@ function sendRemoteCommand(action: string) {
         <!-- MODE 2: 카드 그리드 뷰 -->
         <div v-else class="flex-1 overflow-y-auto mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 pr-1">
           <div v-if="filteredChargers.length === 0" class="col-span-full py-12 text-center text-slate-400">
-            <div class="text-3xl mb-2">🗂️</div>
+            <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
             <div class="font-bold text-xs text-[var(--text-bright)]">표시할 충전기 카드가 없습니다</div>
             <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 등록된 단말이 없습니다.</div>
           </div>
@@ -593,35 +595,39 @@ function sendRemoteCommand(action: string) {
 
           <!-- OCPP 원격 제어 커맨드 4종 버튼 -->
           <div class="space-y-1.5 pt-1">
-            <div class="text-[11px] font-bold text-slate-500">OCPP 1.6/2.0.1 원격 제어</div>
+            <div class="text-[11px] font-bold text-slate-500">OCPP 원격 제어</div>
             <div class="grid grid-cols-2 gap-1.5 font-bold text-[11px]">
               <button
                 type="button"
                 @click="sendRemoteCommand('RemoteReset')"
-                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 dark:hover:bg-slate-800 text-[var(--text-bright)] border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1 shadow-xs"
+                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 dark:hover:bg-slate-800 text-[var(--text-bright)] border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
-                🔄 단말 리셋
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                <span>단말 리셋</span>
               </button>
               <button
                 type="button"
                 @click="sendRemoteCommand('UnlockConnector')"
-                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 dark:hover:bg-slate-800 text-[var(--text-bright)] border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1 shadow-xs"
+                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 dark:hover:bg-slate-800 text-[var(--text-bright)] border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
-                🔓 커넥터 잠금해제
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                <span>잠금 해제</span>
               </button>
               <button
                 type="button"
                 @click="sendRemoteCommand('RemoteStartTransaction')"
-                class="p-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white transition-all flex items-center justify-center gap-1 shadow-xs font-black"
+                class="p-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white transition-all flex items-center justify-center gap-1.5 shadow-xs font-semibold cursor-pointer"
               >
-                ⚡ 충전 시작
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                <span>충전 시작</span>
               </button>
               <button
                 type="button"
                 @click="sendRemoteCommand('RemoteStopTransaction')"
-                class="p-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-all flex items-center justify-center gap-1 shadow-xs font-black"
+                class="p-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-all flex items-center justify-center gap-1.5 shadow-xs font-semibold cursor-pointer"
               >
-                🛑 충전 강제종료
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
+                <span>충전 종료</span>
               </button>
             </div>
           </div>
@@ -629,7 +635,7 @@ function sendRemoteCommand(action: string) {
 
         <!-- 미선택 / 빈 데이터 상태 -->
         <div v-else class="py-16 text-center text-slate-400 space-y-2">
-          <div class="text-3xl">📡</div>
+          <svg class="w-10 h-10 mx-auto text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
           <div class="font-bold text-xs text-[var(--text-bright)]">선택된 충전기 없음</div>
           <div class="text-[10px] text-slate-500 leading-relaxed px-3">
             충전기 목록에서 단말을 선택하면 실시간 텔레메트리 계측치 및 원격 제어반이 활성화됩니다.

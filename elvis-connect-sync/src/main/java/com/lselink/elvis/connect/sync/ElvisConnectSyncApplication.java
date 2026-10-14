@@ -12,6 +12,13 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 public class ElvisConnectSyncApplication {
 
+    @org.springframework.context.annotation.Bean
+    public com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        return mapper;
+    }
+
     public static void main(String[] args) {
         SpringApplication.run(ElvisConnectSyncApplication.class, args);
     }

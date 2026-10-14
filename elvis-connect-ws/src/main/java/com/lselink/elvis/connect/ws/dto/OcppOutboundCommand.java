@@ -29,4 +29,11 @@ public class OcppOutboundCommand implements Serializable {
 
     /** 명령 유형 (예: RemoteStartTransaction, Reset 등) */
     private String action;
+
+    /** 메시지 고유 식별자 (Call/CallResult MessageId) */
+    private String messageId;
+
+    public String getPayload() {
+        return commandPayload;
+    }
 }

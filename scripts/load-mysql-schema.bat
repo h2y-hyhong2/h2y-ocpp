@@ -19,7 +19,7 @@ echo ========================================================
 
 if not exist "%MYSQL_BIN%" (
     echo [ERROR] MySQL 클라이언트 바이너리를 찾을 수 없습니다: %MYSQL_BIN%
-    pause
+    if not "%NO_PAUSE%"=="1" pause
     exit /b 1
 )
 
@@ -30,7 +30,7 @@ if %ERRORLEVEL% equ 0 (
     echo [OK] 01_schema.sql 적용 완료!
 ) else (
     echo [ERROR] 스키마 적용 중 오류 발생 - MySQL 서버 %MYSQL_PORT% 포트 실행 상태를 확인하세요
-    pause
+    if not "%NO_PAUSE%"=="1" pause
     exit /b 1
 )
 
@@ -46,5 +46,5 @@ if %ERRORLEVEL% equ 0 (
     echo [ERROR] 시드 데이터 적재 중 오류 발생
 )
 
-pause
+if not "%NO_PAUSE%"=="1" pause
 exit /b 0

@@ -25,12 +25,18 @@ echo ========================================================
 
 if not exist "%KAFKA_HOME%\bin\windows\kafka-server-start.bat" (
     echo [ERROR] Cannot find Kafka binary: %KAFKA_HOME%
-    pause
+    if not "%NO_PAUSE%"=="1" pause
     exit /b 1
 )
 
 title ELVIS - Apache Kafka 4.3.1 KRaft (Port: 19092)
 color 0E
+
+rem [KRaft Windows 방어] 파일 잠금 및 ReadOnly 속성 해제 (AccessDeniedException 방지)
+if exist "D:\elvis-lite\data\kafka" (
+    attrib -r "D:\elvis-lite\data\kafka\*" /s > nul 2>&1
+    powershell -NoProfile -Command "Get-ChildItem -Path 'D:\elvis-lite\data\kafka' -Filter '*.deleted*' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.IsReadOnly = $false; Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }" > nul 2>&1
+)
 
 echo [1/2] Checking KRaft storage format...
 call "%KAFKA_HOME%\bin\windows\kafka-storage.bat" format -t %CLUSTER_ID% -c "%KRAFT_CONFIG%" --ignore-formatted

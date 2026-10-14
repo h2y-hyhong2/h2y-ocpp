@@ -42,4 +42,4 @@ echo ========================================================
 echo  토픽 목록 확인:
 call "%KAFKA_HOME%\bin\windows\kafka-topics.bat" --list --bootstrap-server %BOOTSTRAP%
 echo ========================================================
-pause
+if not "%NO_PAUSE%"=="1" pause

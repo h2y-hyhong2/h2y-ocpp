@@ -1,10 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ConceptHubView from '@/views/ConceptHubView.vue'
-import Concept1View from '@/views/concept1/Concept1View.vue'
-import Concept2View from '@/views/concept2/Concept2View.vue'
-import Concept3View from '@/views/concept3/Concept3View.vue'
-import DashboardView from '@/views/DashboardView.vue'
 import ChargersView from '@/views/ChargersView.vue'
+import DashboardView from '@/views/DashboardView.vue'
 import MeterValuesView from '@/views/MeterValuesView.vue'
 import BillingCdrView from '@/views/BillingCdrView.vue'
 import LiveLogsView from '@/views/LiveLogsView.vue'
@@ -13,33 +9,9 @@ import AdminSettingsView from '@/views/AdminSettingsView.vue'
 const routes = [
   {
     path: '/',
-    name: 'ConceptHub',
-    component: ConceptHubView,
-    meta: { title: 'ELVIS 통합 관제 센터 (3대 시안)' }
-  },
-  {
-    path: '/concept1',
-    name: 'Concept1',
-    component: Concept1View,
-    meta: { title: '시안 1: 분할 제어형 관제' }
-  },
-  {
-    path: '/concept2',
-    name: 'Concept2',
-    component: Concept2View,
-    meta: { title: '시안 2: 대형 상황판 매트릭스' }
-  },
-  {
-    path: '/concept3',
-    name: 'Concept3',
-    component: Concept3View,
-    meta: { title: '시안 3: 전력 콕핏 & 분석' }
-  },
-  {
-    path: '/chargers',
-    name: 'ChargersDirect',
+    name: 'Chargers',
     component: ChargersView,
-    meta: { title: '충전기 모니터링 & 원격 제어 (기존)' }
+    meta: { title: '실시간 충전기 통합 관제' }
   },
   {
     path: '/dashboard',
@@ -70,6 +42,23 @@ const routes = [
     name: 'AdminSettings',
     component: AdminSettingsView,
     meta: { title: '시스템 관리자 & 인프라 설정' }
+  },
+  // 이전 시안 경로 접속 시 루트(/)로 리다이렉트
+  {
+    path: '/concept1',
+    redirect: '/'
+  },
+  {
+    path: '/concept2',
+    redirect: '/'
+  },
+  {
+    path: '/concept3',
+    redirect: '/'
+  },
+  {
+    path: '/chargers',
+    redirect: '/'
   }
 ]
 

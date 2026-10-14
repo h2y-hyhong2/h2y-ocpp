@@ -11,7 +11,9 @@
           <span class="text-sky-600 dark:text-sky-400 font-bold">인프라 및 환경 설정</span>
         </div>
         <h1 class="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2.5">
-          <span class="p-2 rounded-xl bg-gradient-to-br from-[#0A1E5A]/20 to-[#E96600]/20 border border-[#E96600]/30 text-amber-500 text-lg shadow-2xs">⚙️</span>
+          <div class="w-8 h-8 rounded-xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center shadow-xs">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </div>
           <span>ELVIS 인프라 & 시스템 관리자 센터</span>
         </h1>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -24,7 +26,7 @@
         <button
           @click="checkStatus"
           :disabled="isChecking"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-glass)] bg-[var(--bg-surface-1)] hover:bg-[var(--bg-surface-2)] text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-glass)] bg-[var(--bg-surface-1)] hover:bg-[var(--bg-surface-2)] text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
         >
           <svg class="w-3.5 h-3.5 text-sky-500" :class="{ 'animate-spin': isChecking }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           <span>상태 새로고침</span>
@@ -32,28 +34,28 @@
         <button
           @click="openMiddlewareConsole"
           :disabled="isExecuting"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-black shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all disabled:opacity-50 cursor-pointer"
           title="바탕화면에 MySQL 9.71 및 Apache Kafka KRaft 콘솔 창을 즉시 팝업합니다"
         >
-          <span>🖥️</span>
-          <span>미들웨어 콘솔 창 열기</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          <span>콘솔 창 열기</span>
         </button>
         <button
           @click="restartBackground"
           :disabled="isExecuting"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all disabled:opacity-50 cursor-pointer"
           title="기존 실행 중인 창을 닫고, 무창 백그라운드로 전환하여 실시간 콘솔 로그를 파일/UI에 연결합니다"
         >
-          <span>🔄</span>
-          <span>백그라운드 전환 (로그 연동)</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          <span>백그라운드 전환</span>
         </button>
         <button
           @click="startAllMiddleware"
           :disabled="isExecuting"
-          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#0A1E5A] to-[#0569A0] hover:opacity-90 text-white text-xs font-black shadow-md hover:shadow-sky-500/20 transition-all disabled:opacity-50 cursor-pointer"
+          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
         >
-          <span class="text-[#E96600]">⚡</span>
-          <span>전체 서비스 일괄 기동</span>
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+          <span>전체 기동</span>
         </button>
       </div>
     </div>

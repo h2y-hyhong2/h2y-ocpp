@@ -29,4 +29,7 @@ public class OcppRawEventEnvelope implements Serializable {
 
     /** WebSocket 세션 식별자 */
     private String sessionId;
+
+    /** 원격 클라이언트 IP/소켓 주소 */
+    private String remoteAddress;
 }

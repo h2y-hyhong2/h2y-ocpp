@@ -30,23 +30,23 @@ code, kbd, samp, pre, .font-mono, .matrix-cell {
   --brand-ls-sub-blue: #0569A0;    /* PANTONE 3005C (LS 서브 블루) */
   --brand-ls-gray: #7D8282;        /* PANTONE 430C (LS 서브 그레이) */
 
-  --bg-base: #eaf0f6;
-  --bg-sidebar: #f8fafc;
+  --bg-base: #f8fafc;
+  --bg-sidebar: #ffffff;
   --bg-surface-1: #ffffff;
   --bg-surface-2: #f1f5f9;
-  --bg-glass: rgba(255, 255, 255, 0.95);
-  --border-glass: #cbd5e1;
-  --border-bright: rgba(2, 132, 199, 0.35);
+  --bg-glass: rgba(255, 255, 255, 0.98);
+  --border-glass: #e2e8f0;
+  --border-bright: rgba(2, 132, 199, 0.3);
   --cyan-neon: #0284c7;
-  --cyan-glow: rgba(2, 132, 199, 0.2);
-  --blue-accent: #0369a1;
-  --text-bright: #1e293b;
+  --cyan-glow: rgba(2, 132, 199, 0.1);
+  --blue-accent: #0284c7;
+  --text-bright: #0f172a;
   --text-main: #334155;
-  --text-muted: #475569;
-  --text-dim: #64748b;
-  --card-hover-border: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  --card-hover-border: #cbd5e1;
   --chart-line: #0284c7;
-  --chart-line2: #7c3aed;
+  --chart-line2: #6366f1;
 
   /* 눈부심 0% 10대 상태 미네랄 컬러 토큰 (Light) */
   --st-charging: #3b82f6;

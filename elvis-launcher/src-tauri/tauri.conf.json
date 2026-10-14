@@ -12,11 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "ELVIS 인프라 & 미들웨어 런처 (시스템 트레이)",
-        "width": 1280,
-        "height": 860,
-        "minWidth": 640,
-        "minHeight": 500,
+        "label": "main",
+        "title": "ELVIS Launcher",
+        "width": 620,
+        "height": 420,
+        "minWidth": 520,
+        "minHeight": 360,
         "resizable": true,
         "fullscreen": false,
         "decorations": true,

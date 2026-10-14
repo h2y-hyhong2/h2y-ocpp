@@ -68,10 +68,10 @@ public class ConnectorStatus {
     @Column(name = "version", nullable = false)
     private int version;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "UPDT_DT", nullable = false)
     private LocalDateTime updatedAt;
 
     @PrePersist
