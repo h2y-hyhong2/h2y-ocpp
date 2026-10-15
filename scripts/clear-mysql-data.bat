@@ -23,11 +23,11 @@ if not exist "%MYSQL_BIN%" (
     exit /b 1
 )
 
-echo 5대 테이블 데이터를 모두 삭제합니다 (TRUNCATE)...
-"%MYSQL_BIN%" -h 127.0.0.1 -P %MYSQL_PORT% -u elvis -pelvis1234! --default-character-set=utf8mb4 elvis-lite -e "SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE tb_transaction_cdr; TRUNCATE TABLE tb_connector_status; TRUNCATE TABLE tb_charger; TRUNCATE TABLE tb_station; TRUNCATE TABLE tb_corp; SET FOREIGN_KEY_CHECKS = 1;"
+echo 8대 테이블 데이터를 모두 삭제합니다 (TRUNCATE)...
+"%MYSQL_BIN%" -h 127.0.0.1 -P %MYSQL_PORT% -u elvis -pelvis1234! --default-character-set=utf8mb4 elvis-lite -e "SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE tb_transaction_cdr; TRUNCATE TABLE tb_transaction_session; TRUNCATE TABLE tb_auth_hist; TRUNCATE TABLE tb_rfid_card; TRUNCATE TABLE tb_connector_status; TRUNCATE TABLE tb_charger; TRUNCATE TABLE tb_station; TRUNCATE TABLE tb_corp; SET FOREIGN_KEY_CHECKS = 1;"
 
 if %ERRORLEVEL% equ 0 (
-    echo [OK] elvis-lite 데이터 전체 클리어 완료 (초기 0건 상태)
+    echo [OK] elvis-lite 데이터 전체 클리어 완료 [초기 0건 상태]
     echo ========================================================
 ) else (
     echo [ERROR] 데이터 클리어 중 오류 발생

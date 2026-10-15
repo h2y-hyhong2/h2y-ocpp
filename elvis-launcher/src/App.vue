@@ -270,7 +270,7 @@
             <button
               @click="openProcessStatus('core')"
               class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer flex items-center gap-0.5"
-              title="코어 엔진 포트(18080, 8082, 18088) 및 Java PID 진단"
+              title="코어 엔진 포트(18080, 18081, 18082) 및 Java PID 진단"
             >
               <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               <span>프로세스</span>
@@ -520,8 +520,8 @@ const ports = reactive({
   mysql: 13306,
   kafka: 19092,
   ws: 18080,
-  sync: 8082,
-  api: 18088
+  sync: 18081,
+  api: 18082
 })
 
 const isChecking = ref(false)

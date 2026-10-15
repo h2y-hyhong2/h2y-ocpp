@@ -67,9 +67,9 @@ function infraLauncherPlugin(): Plugin {
             logDir: 'D:\\elvis-lite\\logs',
             mysqlPort: 13306,
             kafkaPort: 19092,
-            apiPort: 18088,
+            apiPort: 18082,
             wsPort: 18080,
-            syncPort: 8082,
+            syncPort: 18081,
             testerPort: 8085
           }
           if (fs.existsSync(envPath)) {
@@ -182,7 +182,7 @@ function infraLauncherPlugin(): Plugin {
               const parsed = JSON.parse(body)
               const mysqlPort = parseInt(parsed.mysql, 10) || 13306
               const kafkaPort = parseInt(parsed.kafka, 10) || 19092
-              const apiPort = parseInt(parsed.api, 10) || 18088
+              const apiPort = parseInt(parsed.api, 10) || 18082
               const wsPort = parseInt(parsed.ws, 10) || 18080
 
               const portList = [mysqlPort, kafkaPort, apiPort, wsPort]
@@ -561,8 +561,8 @@ function infraLauncherPlugin(): Plugin {
             mysql: 'MySQL 9.71 (:13306)',
             kafka: 'Apache Kafka (:19092)',
             ws: 'elvis-connect-ws (:18080)',
-            sync: 'elvis-connect-sync (:8082)',
-            api: 'elvis-control-api (:18088)',
+            sync: 'elvis-connect-sync (:18081)',
+            api: 'elvis-control-api (:18082)',
             tester: 'elvis-tester (:8085)'
           }
           const display = titles[service] || service
@@ -650,7 +650,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 1422,
+    port: 1420,
     strictPort: true,
     host: '127.0.0.1',
     watch: {

@@ -17,7 +17,7 @@ if exist "D:\jdk\windows\jdk-21.0.9+10" (
     set "PATH=d:\project\lselink\ocpp\jdk\jdk-25.0.2+10\bin;%PATH%"
 )
 
-set SYNC_PORT=8082
+set SYNC_PORT=18081
 if exist "%PROJECT_ROOT%\config\paths.env" (
     for /f "usebackq tokens=1,2 delims==" %%A in ("%PROJECT_ROOT%\config\paths.env") do (
         if "%%A"=="ELVIS_SYNC_PORT" set SYNC_PORT=%%B

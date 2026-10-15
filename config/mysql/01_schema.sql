@@ -46,7 +46,7 @@ CREATE TABLE tb_corp (
 -- 2. 충전소 마스터 (tb_station)
 -- ==============================================================================
 CREATE TABLE tb_station (
-    ST_ID           VARCHAR(20)     NOT NULL COMMENT '충전소 고유 ID (예: 10001)',
+    ST_ID           VARCHAR(20)     NOT NULL COMMENT '충전소 고유 ID (6자리: 000000~999999, 예: 000000)',
     NAME            VARCHAR(150)    NOT NULL COMMENT '충전소 명칭',
     CORP_ID         VARCHAR(20)     NOT NULL COMMENT '소속 법인 ID (FK)',
     CHARGER_COUNT   INT             NOT NULL DEFAULT 0 COMMENT '충전기 수량',
@@ -65,9 +65,9 @@ CREATE TABLE tb_station (
 -- 3. 충전기 마스터 (tb_charger)
 -- ==============================================================================
 CREATE TABLE tb_charger (
-    CHARGE_BOX_ID   VARCHAR(50)     NOT NULL COMMENT 'OCPP ChargeBoxIdentity (예: CP-001-01)',
-    ST_ID           VARCHAR(20)     NOT NULL COMMENT '소속 충전소 ID (FK)',
-    CP_ID           VARCHAR(10)     NOT NULL COMMENT '충전소 내 단말 순번 (예: 01)',
+    CHARGE_BOX_ID   VARCHAR(50)     NOT NULL COMMENT 'OCPP ChargeBoxIdentity ({ST_ID}{CP_ID} 8자리, 예: 00000001)',
+    ST_ID           VARCHAR(20)     NOT NULL COMMENT '소속 충전소 ID (FK, 6자리)',
+    CP_ID           VARCHAR(10)     NOT NULL COMMENT '충전소 내 충전기 번호 2자리 (01~99, 예: 01)',
     VENDOR          VARCHAR(50)     NOT NULL COMMENT '제조사 (LS E-Link Power, SK Signet 등)',
     MODEL           VARCHAR(50)     NOT NULL COMMENT '모델명 (ELVIS-HPC-350K 등)',
     SPEC            VARCHAR(50)     NOT NULL COMMENT '정격 사양 (350kW 초급속, 200kW 급속)',

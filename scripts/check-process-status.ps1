@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Target = "all",
     [switch]$Once
 )
@@ -22,15 +22,14 @@ function Show-Dashboard {
     Write-Host ""
 
     $allTargets = @(
+        @{ Category = "런처UI"; Name = "elvis-launcher (통합 제어)"; Port = 1420; Group = "launcher" },
         @{ Category = "인프라"; Name = "MySQL 9.71"; Port = 13306; Group = "infra" },
         @{ Category = "인프라"; Name = "Apache Kafka KRaft"; Port = 19092; Group = "infra" },
         @{ Category = "코어엔진"; Name = "elvis-connect-ws"; Port = 18080; Group = "core" },
-        @{ Category = "코어엔진"; Name = "elvis-connect-sync"; Port = 8082; Group = "core" },
-        @{ Category = "코어엔진"; Name = "elvis-control-api"; Port = 18088; Group = "core" },
-        @{ Category = "독립테스터"; Name = "elvis-tester (백엔드)"; Port = 8085; Group = "tester" },
-        @{ Category = "독립테스터"; Name = "elvis-tester-ui"; Port = 1421; Group = "tester" },
-        @{ Category = "관제웹UI"; Name = "elvis-control-ui"; Port = 1420; Group = "ui" },
-        @{ Category = "런처UI"; Name = "elvis-launcher"; Port = 1422; Group = "launcher" }
+        @{ Category = "코어엔진"; Name = "elvis-connect-sync"; Port = 18081; Group = "core" },
+        @{ Category = "코어엔진"; Name = "elvis-control-api"; Port = 18082; Group = "core" },
+        @{ Category = "관제웹UI"; Name = "elvis-control-ui"; Port = 1421; Group = "ui" },
+        @{ Category = "독립테스터"; Name = "elvis-tester-ui"; Port = 1422; Group = "tester" }
     )
 
     $targets = if ($targetMode -eq "infra") {
@@ -115,17 +114,12 @@ function Show-Dashboard {
                 $tag = "elvis-connect-sync Engine"
                 $grp = "core"
                 $cat = "코어엔진"
-                $pStr = ":8082"
+                $pStr = ":18081"
             } elseif ($cmd -match "elvis-control-api") {
                 $tag = "elvis-control-api Server"
                 $grp = "core"
                 $cat = "코어엔진"
-                $pStr = ":18088"
-            } elseif ($cmd -match "elvis-tester") {
-                $tag = "elvis-tester Harness"
-                $grp = "tester"
-                $cat = "독립테스터"
-                $pStr = ":8085"
+                $pStr = ":18082"
             } elseif ($cmd -match "GradleDaemon") {
                 $tag = "Gradle Build Daemon"
                 $grp = "build"
@@ -158,21 +152,21 @@ function Show-Dashboard {
             $grp = "other"
             $cat = "웹서버"
             $pStr = "-"
-            if ($cmd -match "elvis-control-ui") {
-                $tag = "elvis-control-ui (Admin Web)"
-                $grp = "ui"
-                $cat = "관제웹UI"
-                $pStr = ":1420"
-            } elseif ($cmd -match "elvis-launcher") {
+            if ($cmd -match "elvis-launcher") {
                 $tag = "elvis-launcher (Dev Host)"
                 $grp = "launcher"
                 $cat = "런처UI"
-                $pStr = ":1422"
+                $pStr = ":1420"
+            } elseif ($cmd -match "elvis-control-ui") {
+                $tag = "elvis-control-ui (Admin Web)"
+                $grp = "ui"
+                $cat = "관제웹UI"
+                $pStr = ":1421"
             } elseif ($cmd -match "elvis-tester-ui") {
                 $tag = "elvis-tester-ui (Test Web)"
                 $grp = "tester"
                 $cat = "독립테스터"
-                $pStr = ":1421"
+                $pStr = ":1422"
             }
 
             if ($tag) {

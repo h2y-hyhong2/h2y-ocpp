@@ -30,8 +30,8 @@ fn check_all_service_ports() -> (bool, bool, bool, bool, bool, usize) {
     let mysql = check_single_port(13306);
     let kafka = check_single_port(19092);
     let ws = check_single_port(18080);
-    let sync = check_single_port(8082);
-    let api = check_single_port(18088);
+    let sync = check_single_port(18081);
+    let api = check_single_port(18082);
     let mut count = 0;
     if mysql { count += 1; }
     if kafka { count += 1; }
@@ -176,22 +176,22 @@ fn update_tray_status_view(
     if p_sync == 1 {
         if sync {
             PENDING_SYNC.store(0, Ordering::Relaxed);
-            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:8082) [ON]");
+            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:18081) [ON]");
         } else {
-            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:8082) [기동 중...]");
+            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:18081) [기동 중...]");
         }
     } else if p_sync == 2 {
         if !sync {
             PENDING_SYNC.store(0, Ordering::Relaxed);
-            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:8082) [OFF]");
+            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:18081) [OFF]");
         } else {
-            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:8082) [종료 중...]");
+            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:18081) [종료 중...]");
         }
     } else {
         if sync {
-            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:8082) [ON]");
+            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:18081) [ON]");
         } else {
-            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:8082) [OFF]");
+            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:18081) [OFF]");
         }
     }
 
@@ -200,22 +200,22 @@ fn update_tray_status_view(
     if p_api == 1 {
         if api {
             PENDING_API.store(0, Ordering::Relaxed);
-            let _ = api_item.set_text("● [코어] elvis-control-api (:18088) [ON]");
+            let _ = api_item.set_text("● [코어] elvis-control-api (:18082) [ON]");
         } else {
-            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18088) [기동 중...]");
+            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18082) [기동 중...]");
         }
     } else if p_api == 2 {
         if !api {
             PENDING_API.store(0, Ordering::Relaxed);
-            let _ = api_item.set_text("○ [코어] elvis-control-api (:18088) [OFF]");
+            let _ = api_item.set_text("○ [코어] elvis-control-api (:18082) [OFF]");
         } else {
-            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18088) [종료 중...]");
+            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18082) [종료 중...]");
         }
     } else {
         if api {
-            let _ = api_item.set_text("● [코어] elvis-control-api (:18088) [ON]");
+            let _ = api_item.set_text("● [코어] elvis-control-api (:18082) [ON]");
         } else {
-            let _ = api_item.set_text("○ [코어] elvis-control-api (:18088) [OFF]");
+            let _ = api_item.set_text("○ [코어] elvis-control-api (:18082) [OFF]");
         }
     }
 
@@ -304,9 +304,9 @@ fn check_middleware_status(
 ) -> serde_json::Value {
     let p_mysql = mysql_port.unwrap_or(13306);
     let p_kafka = kafka_port.unwrap_or(19092);
-    let p_api = api_port.unwrap_or(18088);
+    let p_api = api_port.unwrap_or(18082);
     let p_ws = ws_port.unwrap_or(18080);
-    let p_sync = sync_port.unwrap_or(8082);
+    let p_sync = sync_port.unwrap_or(18081);
 
     let kafka = check_single_port(p_kafka);
     let mysql = check_single_port(p_mysql);
@@ -427,11 +427,11 @@ fn stop_service_processes(service: &str) -> Result<String, String> {
             "kafka" => "Get-NetTCPConnection -LocalPort 19092,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache Kafka*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
             "mysql" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,3306 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null",
             "ws" => "Get-NetTCPConnection -LocalPort 18080 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect WS*\" 2>$null",
-            "sync" => "Get-NetTCPConnection -LocalPort 8082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect Sync*\" 2>$null",
-            "api" => "Get-NetTCPConnection -LocalPort 18088 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control API*\" 2>$null",
-            "all-services" => "Get-NetTCPConnection -LocalPort 18080,8082,18088 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null",
+            "sync" => "Get-NetTCPConnection -LocalPort 18081 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect Sync*\" 2>$null",
+            "api" => "Get-NetTCPConnection -LocalPort 18082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control API*\" 2>$null",
+            "all-services" => "Get-NetTCPConnection -LocalPort 18080,18081,18082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null",
             "all-infra" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache Kafka*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
-            "all" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,18080,8082,18088,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+            "all" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,18080,18081,18082,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
             _ => return Err("지원되지 않는 서비스입니다.".to_string()),
         };
 
@@ -478,7 +478,7 @@ fn start_middleware_detached(service: String) -> Result<String, String> {
         "ws" => execute_bat_script("start-elvis-connect-ws.bat", "ws"),
         "sync" => execute_bat_script("start-elvis-connect-sync.bat", "sync"),
         "api" => execute_bat_script("start-elvis-control-api.bat", "api"),
-        "tester" => execute_bat_script("start-elvis-tester.bat", "tester"),
+        "tester" => execute_bat_script("start-all-tester.bat", "tester"),
         "topics" => execute_bat_script("create-kafka-topics.bat", "topics"),
         _ => Err("알 수 없는 서비스 이름입니다.".to_string()),
     }
@@ -500,8 +500,8 @@ fn open_log_window(service: Option<String>) -> Result<String, String> {
             "mysql" => ("mysql.log", "MySQL 9.71 (:13306)"),
             "kafka" => ("kafka.log", "Apache Kafka (:19092)"),
             "ws" => ("ws.log", "elvis-connect-ws (:18080)"),
-            "sync" => ("sync.log", "elvis-connect-sync (:8082)"),
-            "api" => ("api.log", "elvis-control-api (:18088)"),
+            "sync" => ("sync.log", "elvis-connect-sync (:18081)"),
+            "api" => ("api.log", "elvis-control-api (:18082)"),
             "tester" => ("tester.log", "elvis-tester (:8085)"),
             _ => ("mysql.log", "서비스"),
         };
@@ -662,8 +662,8 @@ pub fn run() {
 
             // 2. 코어 백엔드 엔진 상태 (클릭 시 단독 기동/종료 토글)
             let ws_i = MenuItem::with_id(app, "status_ws", "○ [코어] elvis-connect-ws (:18080) [OFF]", true, None::<&str>)?;
-            let sync_i = MenuItem::with_id(app, "status_sync", "○ [코어] elvis-connect-sync (:8082) [OFF]", true, None::<&str>)?;
-            let api_i = MenuItem::with_id(app, "status_api", "○ [코어] elvis-control-api (:18088) [OFF]", true, None::<&str>)?;
+            let sync_i = MenuItem::with_id(app, "status_sync", "○ [코어] elvis-connect-sync (:18081) [OFF]", true, None::<&str>)?;
+            let api_i = MenuItem::with_id(app, "status_api", "○ [코어] elvis-control-api (:18082) [OFF]", true, None::<&str>)?;
 
             let sep2 = PredefinedMenuItem::separator(app)?;
 
@@ -778,11 +778,11 @@ pub fn run() {
                             let (_, _, _, sync, ..) = check_all_service_ports();
                             if sync {
                                 PENDING_SYNC.store(2, Ordering::Relaxed);
-                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:8082) [종료 중...]");
+                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:18081) [종료 중...]");
                                 trigger_ui_command(app, "stop", "sync");
                             } else {
                                 PENDING_SYNC.store(1, Ordering::Relaxed);
-                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:8082) [기동 중...]");
+                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:18081) [기동 중...]");
                                 trigger_ui_command(app, "start", "sync");
                             }
                         }
@@ -790,11 +790,11 @@ pub fn run() {
                             let (_, _, _, _, api, ..) = check_all_service_ports();
                             if api {
                                 PENDING_API.store(2, Ordering::Relaxed);
-                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18088) [종료 중...]");
+                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18082) [종료 중...]");
                                 trigger_ui_command(app, "stop", "api");
                             } else {
                                 PENDING_API.store(1, Ordering::Relaxed);
-                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18088) [기동 중...]");
+                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18082) [기동 중...]");
                                 trigger_ui_command(app, "start", "api");
                             }
                         }

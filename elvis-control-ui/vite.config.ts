@@ -723,7 +723,7 @@ export default defineConfig({
   // Tauri는 고정 포트 1420 및 HMR 설정을 권장합니다.
   clearScreen: false,
   server: {
-    port: 1420,
+    port: 1421,
     strictPort: true,
     host: '127.0.0.1',
     watch: {
@@ -731,7 +731,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:18088',
+        target: 'http://127.0.0.1:18082',
         changeOrigin: true
       },
       '/ws': {

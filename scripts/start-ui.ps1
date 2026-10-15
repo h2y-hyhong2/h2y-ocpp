@@ -4,9 +4,9 @@ $Host.UI.RawUI.WindowTitle = "ELVIS-CSMS 관제 UI 실행기"
 Write-Host "===============================================================================" -ForegroundColor Cyan
 Write-Host "   🚀 ELVIS-CSMS 관제 UI & 미들웨어 콘솔 실행기" -ForegroundColor Yellow
 Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host "  [0] 🚀 ELVIS Launcher 실행 (인프라 & 미들웨어 백그라운드 관리 센터: http://127.0.0.1:1422)" -ForegroundColor Yellow
+Write-Host "  [0] 🚀 ELVIS Launcher 실행 (인프라 & 미들웨어 백그라운드 관리 센터: http://127.0.0.1:1420)" -ForegroundColor Yellow
 Write-Host "  [1] 단독 프로토타입 브라우저 실행 (서버 구동 불필요, 즉시 열림)" -ForegroundColor Green
-Write-Host "  [2] Vite 관제 웹 UI 실행 (http://127.0.0.1:1420)" -ForegroundColor Green
+Write-Host "  [2] Vite 관제 웹 UI 실행 (http://127.0.0.1:1421)" -ForegroundColor Green
 Write-Host "  [3] Tauri 데스크톱 관제 앱 실행" -ForegroundColor Green
 Write-Host "  [4] 미들웨어 콘솔만 단독 실행 (MySQL 9.71 & Kafka KRaft 콘솔 창)" -ForegroundColor Green
 Write-Host ""
@@ -47,7 +47,7 @@ switch ($choice) {
         } else {
             $launcherDir = Join-Path $h2yDir "elvis-launcher"
             Set-Location $launcherDir
-            Start-Process "http://127.0.0.1:1422"
+            Start-Process "http://127.0.0.1:1420"
             pnpm dev
         }
     }
@@ -67,9 +67,9 @@ switch ($choice) {
 
         # 2. Vite 웹 UI 기동
         Write-Host ""
-        Write-Host "🌐 Vite 개발 서버를 기동하고 브라우저(http://127.0.0.1:1420)를 엽니다..." -ForegroundColor Cyan
+        Write-Host "🌐 Vite 개발 서버를 기동하고 브라우저(http://127.0.0.1:1421)를 엽니다..." -ForegroundColor Cyan
         Set-Location $controlUiDir
-        Start-Process "http://127.0.0.1:1420"
+        Start-Process "http://127.0.0.1:1421"
         pnpm dev
     }
     "3" {

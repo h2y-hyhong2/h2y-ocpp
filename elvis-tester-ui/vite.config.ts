@@ -12,17 +12,11 @@ export default defineConfig({
   // Tauri는 고정 포트 및 HMR 설정을 권장합니다.
   clearScreen: false,
   server: {
-    port: 1421,
+    port: 1422,
     strictPort: true,
     host: '127.0.0.1',
     watch: {
       ignored: ['**/src-tauri/**']
-    },
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8085',
-        changeOrigin: true
-      }
     }
   },
   envPrefix: ['VITE_', 'TAURI_ENV_*'],

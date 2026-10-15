@@ -16,7 +16,7 @@ echo  MySQL 9.71 ^& Apache Kafka KRaft 24시간 백그라운드 운용반
 echo ========================================================
 echo.
 echo  [1] 🚀 Tauri 시스템 트레이 데스크톱 앱 실행 (권장: 작업표시줄 상주)
-echo  [2] 🌐 브라우저 웹 모드 실행 (http://127.0.0.1:1422)
+echo  [2] 🌐 브라우저 웹 모드 실행 (http://127.0.0.1:1420)
 echo.
 
 if not "%1"=="" set LAUNCHER_MODE=%1
@@ -31,7 +31,7 @@ title ELVIS Infrastructure Launcher
 
 if "%LAUNCHER_MODE%"=="2" (
     echo [INFO] 웹 브라우저에서 ELVIS Launcher를 엽니다...
-    start http://localhost:1422
+    start http://localhost:1420
     echo [INFO] Vite 런처 웹 서버 기동 중...
     call pnpm dev
 ) else (

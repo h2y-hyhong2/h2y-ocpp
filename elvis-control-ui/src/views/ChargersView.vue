@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCsmsStore, STATUS_MAP, type ChargerItem, type StatusKey } from '../stores/csmsStore'
+import { useCsmsStore, STATUS_MAP, type ChargerItem } from '../stores/csmsStore'
 
 const store = useCsmsStore()
 
@@ -8,9 +8,6 @@ onMounted(() => {
   store.fetchInitialData()
 })
 
-// 뷰 모드 상태 (프로토타입 LAYOUT-OPTION-B.html 기준)
-const topViewMode = ref<'progress' | 'heatmap'>('progress') // 프로그래스바가 1순위로 먼저 나오도록 기본 세팅
-const gridViewMode = ref<'list' | 'card'>('list')
 const searchQuery = ref<string>('')
 
 // 법인 필터링된 충전소 목록
@@ -39,7 +36,7 @@ const currentStationChargers = computed(() => {
   return store.chargers.filter(c => c.stId === store.curStFilter)
 })
 
-// 필터링 및 검색된 충전기 목록 (중앙 하단 데이터 그리드용)
+// 필터링 및 검색된 충전기 목록
 const filteredChargers = computed(() => {
   return currentStationChargers.value.filter((chg) => {
     const matchStatus = store.curStatusFilter === 'ALL' || chg.status === store.curStatusFilter
@@ -52,7 +49,7 @@ const filteredChargers = computed(() => {
   })
 })
 
-// 현재 충전소의 10대 상태별 카운트 계산
+// 상태별 카운트 계산
 const statusCounts = computed(() => {
   const counts: Record<string, number> = {}
   Object.keys(STATUS_MAP).forEach(k => counts[k] = 0)
@@ -66,7 +63,7 @@ const statusCounts = computed(() => {
 function copyStationId(id: string, e?: Event) {
   if (e) e.stopPropagation()
   navigator.clipboard?.writeText(id)
-  store.addToast('info', 'ID 복사 완료', `충전소 ID [${id}]가 클립보드에 복사되었습니다.`)
+  store.addToast({ type: 'info', title: 'ID 복사 완료', detail: `충전소 ID [${id}]가 클립보드에 복사되었습니다.` })
 }
 
 // 충전소 선택
@@ -81,7 +78,7 @@ function onSelectCharger(chg: ChargerItem) {
   if (window.innerWidth < 1280) store.toggleControlDrawer(true)
 }
 
-// 원격 제어 커맨드 전송 (REST API 연동)
+// 원격 제어 커맨드 전송
 function sendRemoteCommand(action: string) {
   store.sendRemoteAction(action)
 }
@@ -90,17 +87,14 @@ function sendRemoteCommand(action: string) {
 <template>
   <div class="flex h-full w-full overflow-hidden gap-2 md:gap-3 relative select-none">
     
-    <!-- ========================================================================= -->
-    <!-- LEFT: [시안 B] 사이드바 상단 법인 드롭다운 + 평면 충전소 목록           -->
-    <!-- (1024px 미만: 슬라이드 드로어, 1024px 이상: 좌측 고정 280px 칼럼)        -->
-    <!-- ========================================================================= -->
+    <!-- LEFT: 충전소 목록 사이드바 (260px) -->
     <aside
       id="sidebarStation"
-      class="fixed inset-y-0 left-0 z-50 w-72 bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex flex-col overflow-hidden select-none transition-transform duration-250 ease-in-out shadow-2xl
-             lg:static lg:translate-x-0 lg:w-56 xl:w-64 2xl:w-72 lg:min-w-[180px] lg:max-w-xs lg:flex-shrink lg:shadow-none"
+      class="fixed inset-y-0 left-0 z-50 w-72 bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex flex-col overflow-hidden select-none transition-transform duration-200 ease-in-out shadow-2xl
+             lg:static lg:translate-x-0 lg:w-56 xl:w-64 lg:min-w-[180px] lg:max-w-xs lg:flex-shrink lg:shadow-none"
       :class="store.isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
     >
-      <!-- 1. 사이드바 헤더: 충전소 목록 타이틀 + 법인 필터 드롭다운 (시안 B 핵심) -->
+      <!-- 1. 사이드바 헤더 -->
       <div class="pb-2.5 border-b border-[var(--border-glass)] space-y-1.5 flex-shrink-0">
         <div class="flex items-center justify-between text-xs font-bold text-[var(--text-bright)]">
           <div class="flex items-center gap-1.5 truncate">
@@ -108,29 +102,25 @@ function sendRemoteCommand(action: string) {
             <span>충전소 목록</span>
           </div>
           <div class="flex items-center gap-1">
-            <span class="text-[10px] text-sky-600 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/50 px-1.5 py-0.2 rounded border border-sky-200 dark:border-sky-800">
+            <span class="text-[10px] text-sky-600 font-bold bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
               {{ store.stations.length }}개소
             </span>
-            <!-- 소형 화면 전용 닫기 (X) 버튼 -->
             <button
               @click="store.toggleSidebar(false)"
-              class="lg:hidden text-slate-400 hover:text-slate-800 p-1 font-bold text-base leading-none"
+              class="lg:hidden text-slate-400 hover:text-slate-800 p-1 font-bold text-base leading-none cursor-pointer"
               title="사이드바 닫기"
             >✕</button>
           </div>
         </div>
 
-        <!-- [충전소 목록 상단 필터 조건]: 법인 선택 드롭다운 -->
-        <div class="space-y-1 pt-0.5">
-          <label class="text-[10px] font-semibold text-slate-500 flex items-center justify-between">
-            <span>법인 필터</span>
-          </label>
+        <!-- 법인 선택 드롭다운 -->
+        <div class="pt-0.5">
           <select
             :value="store.curCorpFilter"
             @change="store.setCorpFilter(($event.target as HTMLSelectElement).value)"
-            class="w-full bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--text-bright)] outline-none focus:border-sky-500 cursor-pointer shadow-xs"
+            class="w-full bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--text-bright)] outline-hidden focus:border-sky-500 cursor-pointer shadow-xs"
           >
-            <option value="ALL">전체 법인 통합 (200개소)</option>
+            <option value="ALL">전체 법인 통합 ({{ store.stations.length }}개소)</option>
             <option v-for="corp in store.corps" :key="corp.id" :value="corp.id">
               {{ corp.name }}
             </option>
@@ -153,36 +143,37 @@ function sendRemoteCommand(action: string) {
         </div>
       </div>
 
-      <!-- 3. 선택된 법인의 소속 충전소 평면 목록 (스크롤 지원) -->
+      <!-- 3. 충전소 목록 -->
       <div class="mt-2 space-y-1.5 overflow-y-auto flex-1 text-xs pr-1">
         <div v-if="filteredStations.length === 0" class="p-4 text-center text-slate-400 space-y-1 my-4">
           <svg class="w-8 h-8 mx-auto text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
           <div class="font-bold text-[11px] text-slate-600">등록된 충전소가 없습니다</div>
           <div class="text-[10px] text-slate-500">DB 초기화 상태 (0건)</div>
         </div>
+
         <div
           v-for="st in filteredStations"
           :key="st.id"
           @click="onSelectStation(st.id)"
-          class="station-mini-card"
+          class="station-mini-card cursor-pointer"
           :class="store.curStFilter === st.id ? 'station-mini-card-active' : ''"
         >
           <div class="flex items-center justify-between gap-1 mb-0.5">
             <div class="flex items-center gap-1">
-              <span v-if="store.curCorpFilter === 'ALL'" class="text-[9px] font-bold px-1 py-0.2 rounded bg-slate-200/50 dark:bg-slate-700/50">
+              <span v-if="store.curCorpFilter === 'ALL'" class="text-[9px] font-bold px-1 py-0.2 rounded bg-slate-200/50">
                 {{ st.corpShortName }}
               </span>
               <button
                 type="button"
                 @click="copyStationId(st.id, $event)"
-                class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-[var(--border-glass)] hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-center gap-1"
+                class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-[var(--border-glass)] hover:bg-sky-50 flex items-center gap-1 cursor-pointer"
                 title="충전소 ID 복사"
               >
                 <span>{{ st.id }}</span>
                 <svg class="w-2.5 h-2.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               </button>
             </div>
-            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 border border-sky-500/20">
               {{ st.chargerCount }}기
             </span>
           </div>
@@ -193,25 +184,23 @@ function sendRemoteCommand(action: string) {
       </div>
     </aside>
 
-    <!-- ========================================================================= -->
-    <!-- CENTER: Main Content (상단 듀얼 뷰 + 하단 데이터 그리드)                  -->
-    <!-- ========================================================================= -->
+    <!-- CENTER: 메인 충전기 데이터 테이블 영역 -->
     <main class="flex-1 flex flex-col gap-2 md:gap-3 overflow-hidden min-w-0">
       
-      <!-- 1. 중앙 상단 듀얼 뷰 (프로그레스바 ↔ 히트맵) -->
+      <!-- 1. 중앙 상단 실시간 상태 요약 카드 바 -->
       <section class="bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 space-y-2 flex-shrink-0 shadow-xs">
         
-        <!-- 상단 툴바: 충전소 타이틀 & [프로그레스바 ↔ 히트맵] 뷰 스위처 -->
+        <!-- 충전소 타이틀 바 -->
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-glass)] pb-2">
           <div class="flex items-center gap-1.5 min-w-0">
-            <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.2 rounded border border-sky-200 dark:border-sky-800">
+            <span class="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
               {{ currentStationInfo.corpName }}
             </span>
             <button
               v-if="currentStationInfo.id !== 'ALL'"
               type="button"
               @click="copyStationId(currentStationInfo.id)"
-              class="text-[10px] font-mono font-black text-sky-700 dark:text-sky-300 bg-[var(--bg-surface-2)] px-1.5 py-0.2 rounded border border-[var(--border-glass)]"
+              class="text-[10px] font-mono font-black text-sky-700 bg-[var(--bg-surface-2)] px-1.5 py-0.2 rounded border border-[var(--border-glass)] cursor-pointer"
             >
               {{ currentStationInfo.id }}
             </button>
@@ -222,316 +211,153 @@ function sendRemoteCommand(action: string) {
               (총 {{ currentStationInfo.count }}기)
             </span>
           </div>
-
-          <!-- 우측: [프로그레스바 ↔ 히트맵] 스위처 -->
-          <div class="flex items-center gap-1 bg-[var(--bg-surface-2)] p-0.5 rounded-lg border border-[var(--border-glass)] text-[11px]">
-            <button
-              type="button"
-              @click="topViewMode = 'progress'"
-              class="px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1"
-              :class="topViewMode === 'progress' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-700'"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-              <span>상태 바</span>
-            </button>
-            <button
-              type="button"
-              @click="topViewMode = 'heatmap'"
-              class="px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1"
-              :class="topViewMode === 'heatmap' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-700'"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-              <span>히트맵</span>
-            </button>
-          </div>
         </div>
 
-        <!-- MODE A: 슬림 스택트 바 + 파스텔 필터 칩 -->
-        <div v-if="topViewMode === 'progress'" class="space-y-2">
-          <!-- 10px 슬림 스택트 프로그레스바 -->
-          <div class="h-2.5 w-full bg-[var(--bg-surface-2)] rounded-full overflow-hidden flex border border-[var(--border-glass)]">
-            <div
-              v-for="(conf, stName) in STATUS_MAP"
-              :key="stName"
-              :style="{ width: `${(statusCounts[stName] / Math.max(1, currentStationChargers.length)) * 100}%`, backgroundColor: conf.color }"
-              class="h-full transition-all cursor-pointer"
-              :title="`${stName}: ${statusCounts[stName]}대`"
-              @click="store.setStatusFilter(stName)"
-            ></div>
-          </div>
+        <!-- 상태 칩 바 (클릭 시 즉시 해당 상태 필터링) -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <button
+            @click="store.setStatusFilter('ALL')"
+            class="px-2.5 py-1 rounded-lg border text-xs font-bold transition-all cursor-pointer"
+            :class="store.curStatusFilter === 'ALL' ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+          >
+            전체 ({{ currentStationChargers.length }})
+          </button>
 
-          <!-- 상태별 인터랙티브 필터 칩 (10대 상태) -->
-          <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <button
-              type="button"
-              @click="store.setStatusFilter('ALL')"
-              class="status-chip"
-              :class="store.curStatusFilter === 'ALL' ? 'status-chip-active' : ''"
-            >
-              <span>전체</span>
-              <span class="text-[10px] px-1.5 py-0.1 rounded-full bg-slate-200 dark:bg-slate-700 font-mono">{{ currentStationChargers.length }}</span>
-            </button>
-            <button
-              v-for="(conf, stName) in STATUS_MAP"
-              :key="stName"
-              type="button"
-              @click="store.setStatusFilter(stName)"
-              class="status-chip"
-              :class="store.curStatusFilter === stName ? 'status-chip-active' : ''"
-            >
-              <span class="w-2 h-2 rounded-full inline-block" :style="{ backgroundColor: conf.color }"></span>
-              <span>{{ stName }}</span>
-              <span class="text-[10px] px-1.5 py-0.1 rounded-full bg-slate-200 dark:bg-slate-700 font-mono">{{ statusCounts[stName] }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- MODE B: 히트맵 매트릭스 범례 및 타일 그리드 (프로토타입 규격 100% 동일) -->
-        <div v-else class="space-y-2">
-          <!-- 10대 상태 범례 툴바 (도트 + 상태명 + 건수/점유율) -->
-          <div class="flex flex-wrap items-center gap-1 overflow-x-auto pb-0.5">
-            <button
-              v-for="(conf, stName) in STATUS_MAP"
-              :key="stName"
-              type="button"
-              @click="store.setStatusFilter(stName)"
-              class="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] cursor-pointer transition-all border shadow-2xs"
-              :class="store.curStatusFilter === stName ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/50 font-black' : 'bg-[var(--bg-surface-2)] border-[var(--border-glass)] text-slate-600 dark:text-slate-400'"
-            >
-              <span class="w-2 h-2 rounded-full inline-block flex-shrink-0" :style="{ backgroundColor: conf.color }"></span>
-              <span class="font-bold text-[var(--text-bright)]">{{ stName }}</span>
-              <span class="text-slate-400 font-mono text-[9px]">
-                ({{ statusCounts[stName] }}/{{ Math.round((statusCounts[stName] / Math.max(1, currentStationChargers.length)) * 100) }}%)
-              </span>
-            </button>
-          </div>
-
-          <!-- 반응형 26px x 15px 매트릭스 타일 그리드 -->
-          <div class="matrix-responsive-grid">
-            <div
-              v-for="chg in currentStationChargers"
-              :key="chg.id"
-              @click="onSelectCharger(chg)"
-              class="matrix-cell"
-              :class="[
-                STATUS_MAP[chg.status]?.cellClass || 'cell-unknown',
-                store.selectedCharger?.id === chg.id ? 'matrix-active-ring' : '',
-                store.curStatusFilter !== 'ALL' && chg.status !== store.curStatusFilter ? 'opacity-25' : ''
-              ]"
-              :title="`[충전기 ${chg.cpId}호기] 상태: ${chg.status} | 출력: ${chg.powerKw.toFixed(1)}kW | SoC: ${chg.socPercent}%`"
-            >
-              {{ chg.cpId }}
-            </div>
-
-            <!-- 200개 포트 대비 빈 슬롯 채우기 -->
-            <div
-              v-for="i in Math.max(0, 100 - currentStationChargers.length)"
-              :key="`empty-${i}`"
-              class="matrix-cell-empty"
-            ></div>
-          </div>
+          <button
+            v-for="(info, key) in STATUS_MAP"
+            :key="key"
+            @click="store.setStatusFilter(key)"
+            class="px-2.5 py-1 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+            :class="store.curStatusFilter === key ? 'ring-2 ring-sky-500 font-bold ' + info.badgeClass : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+          >
+            <span class="w-1.5 h-1.5 rounded-full" :class="info.dotClass"></span>
+            <span>{{ key }}</span>
+            <span class="font-mono font-bold text-[11px]">{{ statusCounts[key] || 0 }}</span>
+          </button>
         </div>
       </section>
 
-      <!-- 2. 중앙 하단 충전기 데이터 그리드 -->
-      <section class="bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex-1 flex flex-col overflow-hidden shadow-xs">
+      <!-- 2. 중앙 하단 데이터 그리드 (단일 모던 테이블) -->
+      <section class="flex-1 bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex flex-col overflow-hidden shadow-xs">
         
-        <!-- 툴바: 건수 뱃지, 검색창, 리스트/카드 모드 스위처 -->
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border-glass)] flex-shrink-0">
+        <!-- 검색 및 건수 요약 바 -->
+        <div class="flex items-center justify-between pb-2 border-b border-[var(--border-glass)] gap-2 flex-shrink-0">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-[var(--text-bright)]">충전 단말 목록</span>
-            <span class="text-[11px] text-slate-500 font-bold bg-[var(--bg-surface-2)] px-1.5 py-0.2 rounded border border-[var(--border-glass)]">
-              {{ filteredChargers.length }}건
+            <span class="text-xs font-bold text-[var(--text-bright)]">충전기 목록</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+              {{ filteredChargers.length }}기
             </span>
           </div>
 
           <div class="flex items-center gap-2">
-            <!-- 검색창 -->
-            <div class="relative w-48 sm:w-60">
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="충전기 ID, 차종, 충전소..."
-                class="w-full bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg pl-7 pr-2 py-1 text-xs outline-none focus:border-sky-500 text-[var(--text-bright)]"
-              />
-              <svg class="w-3.5 h-3.5 absolute left-2 top-2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
-
-            <!-- 리스트/카드 스위처 -->
-            <div class="flex items-center bg-[var(--bg-surface-2)] p-0.5 rounded-lg border border-[var(--border-glass)] text-xs">
-              <button
-                type="button"
-                @click="gridViewMode = 'list'"
-                class="px-2 py-1 rounded-md font-bold transition-all flex items-center justify-center"
-                :class="gridViewMode === 'list' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-800'"
-                title="리스트 뷰"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-              </button>
-              <button
-                type="button"
-                @click="gridViewMode = 'card'"
-                class="px-2 py-1 rounded-md font-bold transition-all flex items-center justify-center"
-                :class="gridViewMode === 'card' ? 'bg-white dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 shadow-xs border border-slate-200 dark:border-sky-800' : 'text-slate-500 hover:text-slate-800'"
-                title="카드 그리드 뷰"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-              </button>
-            </div>
+            <input
+              v-model="searchQuery"
+              placeholder="단말ID, 충전소명 검색..."
+              class="w-48 bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg px-2.5 py-1 text-xs outline-hidden focus:border-sky-500 placeholder:text-slate-400"
+            />
           </div>
         </div>
 
-        <!-- MODE 1: 리스트 테이블 뷰 (창 축소 시 가로 스크롤 & 텍스트 줄바꿈 방지) -->
-        <div v-if="gridViewMode === 'list'" class="flex-1 overflow-x-auto overflow-y-auto mt-2 min-w-0">
-          <table class="table-theme w-full text-xs min-w-[680px]">
-            <thead>
-              <tr class="text-left text-slate-500 border-b border-[var(--border-glass)] pb-1">
-                <th class="py-1.5 px-2 whitespace-nowrap">충전기 ID</th>
-                <th class="py-1.5 px-2 whitespace-nowrap">충전소명</th>
-                <th class="py-1.5 px-2 whitespace-nowrap">연결 차종</th>
-                <th class="py-1.5 px-2 whitespace-nowrap">상태</th>
-                <th class="py-1.5 px-2 whitespace-nowrap">출력(kW)</th>
-                <th class="py-1.5 px-2 whitespace-nowrap">전압/전류</th>
-                <th class="py-1.5 px-2 whitespace-nowrap">배터리 SoC</th>
-                <th class="py-1.5 px-2 whitespace-nowrap">최종 통신</th>
-                <th class="py-1.5 px-2 text-right whitespace-nowrap">원격 제어</th>
+        <!-- 단일 고성능 데이터 테이블 -->
+        <div class="flex-1 overflow-y-auto mt-2 pr-0.5">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 bg-[var(--bg-surface-1)] border-b border-slate-200 text-slate-500 font-semibold text-[11px] z-10">
+              <tr>
+                <th class="py-2 px-2.5">충전기 ID</th>
+                <th class="py-2 px-2">소속 충전소</th>
+                <th class="py-2 px-2">제조사 / 모델</th>
+                <th class="py-2 px-2">실시간 상태</th>
+                <th class="py-2 px-2">현재 출력</th>
+                <th class="py-2 px-2">전압 / 전류</th>
+                <th class="py-2 px-2">SoC</th>
+                <th class="py-2 px-2">최종 수신 일시</th>
+                <th class="py-2 px-2.5 text-right">제어</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-slate-100 font-mono text-[11px]">
               <tr v-if="filteredChargers.length === 0">
-                <td colspan="9" class="py-12 text-center text-slate-400">
+                <td colspan="9" class="py-16 text-center text-slate-400">
                   <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                  <div class="font-bold text-xs text-[var(--text-bright)]">조회된 충전기 단말이 없습니다</div>
-                  <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있는 초기 상태이거나 필터 조건에 부합하는 충전기가 없습니다.</div>
+                  <div class="font-bold text-xs text-[var(--text-bright)]">조회된 충전기가 없습니다</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 검색 조건에 맞는 충전기가 없습니다.</div>
                 </td>
               </tr>
               <tr
                 v-for="chg in filteredChargers"
                 :key="chg.id"
                 @click="onSelectCharger(chg)"
-                class="border-b border-[var(--border-glass)] hover:bg-[var(--bg-surface-2)] cursor-pointer transition-colors"
-                :class="store.selectedCharger?.id === chg.id ? 'bg-sky-500/10 dark:bg-sky-900/30' : ''"
+                class="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                :class="store.selectedCharger?.id === chg.id ? 'bg-sky-50/60 font-semibold' : ''"
               >
-                <td class="py-2 px-2 font-bold text-sky-600 dark:text-sky-400 whitespace-nowrap">{{ chg.chargeBoxId }}</td>
-                <td class="py-2 px-2 font-medium truncate max-w-[130px] whitespace-nowrap">{{ chg.stationName }}</td>
-                <td class="py-2 px-2 text-slate-600 dark:text-slate-400 truncate max-w-[110px] whitespace-nowrap">{{ chg.carModel }}</td>
-                <td class="py-2 px-2 whitespace-nowrap">
-                  <span :class="STATUS_MAP[chg.status]?.badgeClass" class="px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap inline-flex items-center">
-                    {{ chg.status }}
+                <td class="py-2.5 px-2.5 font-bold text-sky-700 whitespace-nowrap">{{ chg.chargeBoxId }}</td>
+                <td class="py-2.5 px-2 font-medium truncate max-w-[140px] whitespace-nowrap">{{ chg.stationName }}</td>
+                <td class="py-2.5 px-2 text-slate-600 truncate max-w-[130px] whitespace-nowrap">{{ chg.vendor }} {{ chg.model }}</td>
+                <td class="py-2.5 px-2 whitespace-nowrap">
+                  <span :class="STATUS_MAP[chg.status]?.badgeClass" class="px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap inline-flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="STATUS_MAP[chg.status]?.dotClass"></span>
+                    <span>{{ chg.status }}</span>
                   </span>
                 </td>
-                <td class="py-2 px-2 font-bold whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.powerKw.toFixed(1)} kW` : '-' }}</td>
-                <td class="py-2 px-2 text-slate-500 whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.voltageV.toFixed(0)}V / ${chg.currentA.toFixed(0)}A` : '-' }}</td>
-                <td class="py-2 px-2 whitespace-nowrap">
+                <td class="py-2.5 px-2 font-bold whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.powerKw.toFixed(1)} kW` : '-' }}</td>
+                <td class="py-2.5 px-2 text-slate-500 whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.voltageV.toFixed(0)}V / ${chg.currentA.toFixed(0)}A` : '-' }}</td>
+                <td class="py-2.5 px-2 whitespace-nowrap">
                   <div v-if="chg.status === '충전중'" class="w-20">
-                    <div class="flex justify-between text-[10px] mb-0.5">
+                    <div class="flex justify-between text-[10px] mb-0.5 font-bold text-emerald-600">
                       <span>{{ chg.socPercent }}%</span>
                     </div>
-                    <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div class="h-full bg-sky-500" :style="{ width: `${chg.socPercent}%` }"></div>
+                    <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-emerald-500" :style="{ width: `${chg.socPercent}%` }"></div>
                     </div>
                   </div>
                   <span v-else class="text-slate-400">-</span>
                 </td>
-                <td class="py-2 px-2 text-[11px] text-slate-500 whitespace-nowrap">{{ chg.lastHeartbeat }}</td>
-                <td class="py-2 px-2 text-right whitespace-nowrap">
+                <td class="py-2.5 px-2 text-[10px] text-slate-500 whitespace-nowrap">{{ chg.lastHeartbeat }}</td>
+                <td class="py-2.5 px-2.5 text-right whitespace-nowrap">
                   <button
                     @click.stop="onSelectCharger(chg)"
-                    class="px-2 py-1 rounded bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 text-[10px] font-bold hover:bg-sky-100 whitespace-nowrap"
+                    class="px-2.5 py-1 rounded bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold hover:bg-sky-100 transition-colors shadow-2xs cursor-pointer"
                   >
-                    제어반
+                    제어반 ➔
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-
-        <!-- MODE 2: 카드 그리드 뷰 -->
-        <div v-else class="flex-1 overflow-y-auto mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 pr-1">
-          <div v-if="filteredChargers.length === 0" class="col-span-full py-12 text-center text-slate-400">
-            <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-            <div class="font-bold text-xs text-[var(--text-bright)]">표시할 충전기 카드가 없습니다</div>
-            <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 등록된 단말이 없습니다.</div>
-          </div>
-          <div
-            v-for="chg in filteredChargers"
-            :key="chg.id"
-            @click="onSelectCharger(chg)"
-            class="station-mini-card p-2.5 flex flex-col justify-between"
-            :class="store.selectedCharger?.id === chg.id ? 'border-sky-500 shadow-md ring-1 ring-sky-500' : ''"
-          >
-            <div>
-              <div class="flex items-center justify-between">
-                <span class="font-mono font-bold text-sky-600 dark:text-sky-400 text-xs">{{ chg.chargeBoxId }}</span>
-                <span :class="STATUS_MAP[chg.status]?.badgeClass" class="px-1.5 py-0.2 rounded text-[10px] font-bold border">
-                  {{ chg.status }}
-                </span>
-              </div>
-              <div class="text-xs font-bold text-[var(--text-bright)] truncate mt-1">{{ chg.stationName }}</div>
-              <div class="text-[10px] text-slate-500 truncate">{{ chg.carModel }} ({{ chg.userTag }})</div>
-              
-              <div class="mt-2 p-2 rounded bg-[var(--bg-surface-2)] font-mono text-[11px] space-y-1">
-                <div class="flex justify-between">
-                  <span class="text-slate-500">출력:</span>
-                  <span class="font-bold text-sky-600 dark:text-sky-400">{{ chg.powerKw > 0 ? `${chg.powerKw.toFixed(1)} kW` : '-' }}</span>
-                </div>
-                <div v-if="chg.status === '충전중'" class="pt-0.5">
-                  <div class="flex justify-between text-[10px] mb-0.5">
-                    <span class="text-slate-500">SoC / 배터리온도:</span>
-                    <span class="font-bold text-emerald-600">{{ chg.socPercent }}% ({{ chg.batteryTempC }}°C)</span>
-                  </div>
-                  <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div class="h-full bg-emerald-500" :style="{ width: `${chg.socPercent}%` }"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-2 pt-1.5 border-t border-[var(--border-glass)] flex items-center justify-between text-[10px] font-mono text-slate-500">
-              <span>{{ chg.lastHeartbeat }}</span>
-              <button class="text-sky-600 font-bold hover:underline">상세 제어 ➔</button>
-            </div>
-          </div>
-        </div>
       </section>
     </main>
 
-    <!-- ========================================================================= -->
-    <!-- RIGHT: [프로토타입 ControlDrawer.js 100% 동일 규격] 실시간 제어반 드로어  -->
-    <!-- (1280px 미만: 우측 슬라이드 드로어, 1280px 이상: 우측 고정 3단 칼럼)      -->
-    <!-- ========================================================================= -->
+    <!-- RIGHT: 단말 계측치 및 원격 제어반 드로어 (260px) -->
     <aside
       id="controlDrawer"
-      class="fixed inset-y-0 right-0 z-50 w-80 bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex flex-col justify-between overflow-y-auto select-none transition-transform duration-300 ease-in-out shadow-2xl
-             xl:static xl:translate-x-0 xl:w-56 2xl:w-64 xl:min-w-[180px] xl:max-w-xs xl:flex-shrink xl:shadow-none"
+      class="fixed inset-y-0 right-0 z-50 w-80 bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex flex-col justify-between overflow-y-auto select-none transition-transform duration-200 ease-in-out shadow-2xl
+             xl:static xl:translate-x-0 xl:w-60 2xl:w-68 xl:min-w-[200px] xl:max-w-xs xl:flex-shrink xl:shadow-none"
       :class="store.isControlDrawerOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'"
     >
-      <div class="space-y-2.5">
+      <div class="space-y-3">
         <!-- 헤더 영역 -->
         <div class="flex items-center justify-between pb-2 border-b border-[var(--border-glass)]">
           <div class="flex items-center gap-1.5 truncate">
             <svg class="w-4 h-4 text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-            <h2 class="text-xs font-bold text-[var(--text-bright)] truncate">단말 계측치 · 원격제어</h2>
+            <h2 class="text-xs font-bold text-[var(--text-bright)] truncate">단말 계측 · 원격제어</h2>
           </div>
           <div class="flex items-center gap-1.5">
             <span v-if="store.selectedCharger" :class="STATUS_MAP[store.selectedCharger.status]?.badgeClass" class="text-[10px] px-1.5 py-0.2 rounded border font-bold">
               {{ store.selectedCharger.status }}
             </span>
-            <!-- 닫기 버튼 (xl: 1280px 미만 소형 창에서 노출) -->
             <button
               @click="store.toggleControlDrawer(false)"
-              class="xl:hidden p-1 rounded-md text-slate-400 hover:text-slate-800 font-bold text-base leading-none"
+              class="xl:hidden p-1 rounded-md text-slate-400 hover:text-slate-800 font-bold text-base leading-none cursor-pointer"
               title="제어반 닫기"
             >✕</button>
           </div>
         </div>
 
         <div v-if="store.selectedCharger" class="space-y-2.5 text-xs">
-          <!-- 단말 기본 정보 (충전소명, ID, 법인, 규격) -->
+          <!-- 단말 기본 정보 -->
           <div class="p-2.5 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-glass)] space-y-1">
             <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-sky-600 dark:text-sky-400 font-mono">{{ store.selectedCharger.chargeBoxId }}</span>
+              <span class="font-bold text-sky-700 font-mono">{{ store.selectedCharger.chargeBoxId }}</span>
               <span class="text-[10px] font-bold text-slate-500">{{ store.selectedCharger.spec }}</span>
             </div>
             <div class="text-[11px] font-bold text-[var(--text-bright)] truncate">{{ store.selectedCharger.stationName }}</div>
@@ -539,25 +365,22 @@ function sendRemoteCommand(action: string) {
               <span>{{ store.selectedCharger.vendor }}</span>
               <span>{{ store.selectedCharger.protocol }}</span>
             </div>
-            <div class="text-[10px] text-sky-700 dark:text-sky-300 font-bold pt-0.5 flex justify-between">
-              <span>연결: {{ store.selectedCharger.carModel }}</span>
-            </div>
           </div>
 
-          <!-- 실시간 텔레메트리 계측치 (OPER_RECHGNG_HIST) -->
+          <!-- 실시간 텔레메트리 계측치 -->
           <div class="p-2.5 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-glass)] space-y-2">
             <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
               <span>실시간 충전 계측치</span>
               <span class="text-emerald-600 font-mono text-[10px]">1초 스트리밍</span>
             </div>
 
-            <!-- 순시 전력 & 게이지 -->
+            <!-- 순시 출력 -->
             <div class="space-y-1">
               <div class="flex items-baseline justify-between">
                 <span class="text-[11px] text-slate-500">순시 출력</span>
-                <span class="text-sm font-black font-mono text-sky-600 dark:text-sky-400">{{ store.selectedCharger.powerKw.toFixed(1) }} kW</span>
+                <span class="text-sm font-black font-mono text-sky-700">{{ store.selectedCharger.powerKw.toFixed(1) }} kW</span>
               </div>
-              <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+              <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                 <div class="bg-sky-500 h-full rounded-full" :style="{ width: `${Math.min(100, (store.selectedCharger.powerKw / 350) * 100)}%` }"></div>
               </div>
             </div>
@@ -581,26 +404,26 @@ function sendRemoteCommand(action: string) {
               </div>
             </div>
 
-            <!-- 배터리 SoC 바 -->
+            <!-- 배터리 SoC -->
             <div class="space-y-1 pt-1">
               <div class="flex items-baseline justify-between text-[11px]">
                 <span class="text-slate-500">배터리 SoC</span>
-                <span class="font-bold font-mono text-emerald-600 dark:text-emerald-400">{{ store.selectedCharger.socPercent }}%</span>
+                <span class="font-bold font-mono text-emerald-600">{{ store.selectedCharger.socPercent }}%</span>
               </div>
-              <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+              <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                 <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${store.selectedCharger.socPercent}%` }"></div>
               </div>
             </div>
           </div>
 
-          <!-- OCPP 원격 제어 커맨드 4종 버튼 -->
+          <!-- OCPP 원격 제어 커맨드 -->
           <div class="space-y-1.5 pt-1">
             <div class="text-[11px] font-bold text-slate-500">OCPP 원격 제어</div>
             <div class="grid grid-cols-2 gap-1.5 font-bold text-[11px]">
               <button
                 type="button"
                 @click="sendRemoteCommand('RemoteReset')"
-                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 dark:hover:bg-slate-800 text-[var(--text-bright)] border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 text-slate-800 border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 <span>단말 리셋</span>
@@ -608,7 +431,7 @@ function sendRemoteCommand(action: string) {
               <button
                 type="button"
                 @click="sendRemoteCommand('UnlockConnector')"
-                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 dark:hover:bg-slate-800 text-[var(--text-bright)] border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 text-slate-800 border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
                 <span>잠금 해제</span>
@@ -633,18 +456,14 @@ function sendRemoteCommand(action: string) {
           </div>
         </div>
 
-        <!-- 미선택 / 빈 데이터 상태 -->
+        <!-- 미선택 상태 -->
         <div v-else class="py-16 text-center text-slate-400 space-y-2">
           <svg class="w-10 h-10 mx-auto text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
           <div class="font-bold text-xs text-[var(--text-bright)]">선택된 충전기 없음</div>
           <div class="text-[10px] text-slate-500 leading-relaxed px-3">
-            충전기 목록에서 단말을 선택하면 실시간 텔레메트리 계측치 및 원격 제어반이 활성화됩니다.
+            목록에서 충전기를 선택하면 상세 계측치 및 원격 제어반이 활성화됩니다.
           </div>
         </div>
-      </div>
-
-      <div class="text-[10px] font-mono text-slate-400 border-t border-[var(--border-glass)] pt-2 text-center">
-        Kafka Event Driven Engine Active
       </div>
     </aside>
   </div>

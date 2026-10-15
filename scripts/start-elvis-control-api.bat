@@ -17,7 +17,7 @@ if exist "D:\jdk\windows\jdk-21.0.9+10" (
     set "PATH=d:\project\lselink\ocpp\jdk\jdk-25.0.2+10\bin;%PATH%"
 )
 
-set API_PORT=18088
+set API_PORT=18082
 if exist "%PROJECT_ROOT%\config\paths.env" (
     for /f "usebackq tokens=1,2 delims==" %%A in ("%PROJECT_ROOT%\config\paths.env") do (
         if "%%A"=="ELVIS_API_PORT" set API_PORT=%%B
