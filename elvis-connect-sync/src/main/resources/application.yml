@@ -10,7 +10,7 @@ spring:
 
   # ─── MySQL DataSource (Sprint 18: 실시간 상태 UPDATE) ─────────────────────────
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/${MYSQL_DATABASE:elvis-lite}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/${MYSQL_DATABASE:elvis_lite}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
     username: ${MYSQL_USER:elvis}
     password: ${MYSQL_PASSWORD:elvis1234!}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -48,12 +48,17 @@ spring:
       group-id: elvis-connect-sync-group
       auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
-        spring.json.trusted.packages: "com.lselink.elvis.*"
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.lselink.elvis.connect.sync.dto.OcppRawEventEnvelope
+        spring.json.trusted.packages: "*"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
 
 elvis:
   sync:

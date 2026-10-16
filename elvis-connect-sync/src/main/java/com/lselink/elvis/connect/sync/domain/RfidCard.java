@@ -1,7 +1,6 @@
 package com.lselink.elvis.connect.sync.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -27,11 +26,6 @@ import java.time.LocalDateTime;
                 @Index(name = "IX_RFID_CARD_PARENT", columnList = "PARENT_ID_TAG")
         }
 )
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @DynamicUpdate
 public class RfidCard {
 
@@ -59,7 +53,6 @@ public class RfidCard {
     /** 카드 발급 상태 */
     @Enumerated(EnumType.STRING)
     @Column(name = "CARD_STATUS", nullable = false, length = 32)
-    @Builder.Default
     private CardStatus cardStatus = CardStatus.NORMAL;
 
     /** 카드 만료 일시 */
@@ -68,23 +61,19 @@ public class RfidCard {
 
     /** 선불 잔액 / 결제 한도 (원) */
     @Column(name = "BALANCE", nullable = false, precision = 12, scale = 2)
-    @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
 
     /** 최대 허용 동시 충전 세션 수 (기본 1) */
     @Column(name = "MAX_CONCURRENT_TX", nullable = false)
-    @Builder.Default
     private int maxConcurrentTx = 1;
 
     /** 논리 삭제 여부 */
     @Column(name = "IS_DELETED", nullable = false)
-    @Builder.Default
     private boolean isDeleted = false;
 
     /** 낙관적 락 버전 */
     @Version
     @Column(name = "VERSION", nullable = false)
-    @Builder.Default
     private int version = 0;
 
     /** 등록 일시 */
@@ -96,6 +85,105 @@ public class RfidCard {
     @UpdateTimestamp
     @Column(name = "UPDT_DT", nullable = false)
     private LocalDateTime updtDt;
+
+    protected RfidCard() {
+    }
+
+    public RfidCard(Long id, String idTag, Long memberId, String memberName, String parentIdTag,
+                    CardStatus cardStatus, LocalDateTime expiryDate, BigDecimal balance,
+                    int maxConcurrentTx, boolean isDeleted, int version, LocalDateTime regDt, LocalDateTime updtDt) {
+        this.id = id;
+        this.idTag = idTag;
+        this.memberId = memberId;
+        this.memberName = memberName;
+        this.parentIdTag = parentIdTag;
+        this.cardStatus = cardStatus != null ? cardStatus : CardStatus.NORMAL;
+        this.expiryDate = expiryDate;
+        this.balance = balance != null ? balance : BigDecimal.ZERO;
+        this.maxConcurrentTx = maxConcurrentTx;
+        this.isDeleted = isDeleted;
+        this.version = version;
+        this.regDt = regDt;
+        this.updtDt = updtDt;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getIdTag() { return idTag; }
+    public void setIdTag(String idTag) { this.idTag = idTag; }
+
+    public Long getMemberId() { return memberId; }
+    public void setMemberId(Long memberId) { this.memberId = memberId; }
+
+    public String getMemberName() { return memberName; }
+    public void setMemberName(String memberName) { this.memberName = memberName; }
+
+    public String getParentIdTag() { return parentIdTag; }
+    public void setParentIdTag(String parentIdTag) { this.parentIdTag = parentIdTag; }
+
+    public CardStatus getCardStatus() { return cardStatus; }
+    public void setCardStatus(CardStatus cardStatus) { this.cardStatus = cardStatus; }
+
+    public LocalDateTime getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(LocalDateTime expiryDate) { this.expiryDate = expiryDate; }
+
+    public BigDecimal getBalance() { return balance; }
+    public void setBalance(BigDecimal balance) { this.balance = balance; }
+
+    public int getMaxConcurrentTx() { return maxConcurrentTx; }
+    public void setMaxConcurrentTx(int maxConcurrentTx) { this.maxConcurrentTx = maxConcurrentTx; }
+
+    public boolean isDeleted() { return isDeleted; }
+    public void setDeleted(boolean deleted) { isDeleted = deleted; }
+
+    public int getVersion() { return version; }
+    public void setVersion(int version) { this.version = version; }
+
+    public LocalDateTime getRegDt() { return regDt; }
+    public void setRegDt(LocalDateTime regDt) { this.regDt = regDt; }
+
+    public LocalDateTime getUpdtDt() { return updtDt; }
+    public void setUpdtDt(LocalDateTime updtDt) { this.updtDt = updtDt; }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Long id;
+        private String idTag;
+        private Long memberId;
+        private String memberName;
+        private String parentIdTag;
+        private CardStatus cardStatus = CardStatus.NORMAL;
+        private LocalDateTime expiryDate;
+        private BigDecimal balance = BigDecimal.ZERO;
+        private int maxConcurrentTx = 1;
+        private boolean isDeleted = false;
+        private int version = 0;
+        private LocalDateTime regDt;
+        private LocalDateTime updtDt;
+
+        public Builder id(Long id) { this.id = id; return this; }
+        public Builder idTag(String idTag) { this.idTag = idTag; return this; }
+        public Builder memberId(Long memberId) { this.memberId = memberId; return this; }
+        public Builder memberName(String memberName) { this.memberName = memberName; return this; }
+        public Builder parentIdTag(String parentIdTag) { this.parentIdTag = parentIdTag; return this; }
+        public Builder cardStatus(CardStatus cardStatus) { this.cardStatus = cardStatus; return this; }
+        public Builder expiryDate(LocalDateTime expiryDate) { this.expiryDate = expiryDate; return this; }
+        public Builder balance(BigDecimal balance) { this.balance = balance; return this; }
+        public Builder maxConcurrentTx(int maxConcurrentTx) { this.maxConcurrentTx = maxConcurrentTx; return this; }
+        public Builder isDeleted(boolean isDeleted) { this.isDeleted = isDeleted; return this; }
+        public Builder version(int version) { this.version = version; return this; }
+        public Builder regDt(LocalDateTime regDt) { this.regDt = regDt; return this; }
+        public Builder updtDt(LocalDateTime updtDt) { this.updtDt = updtDt; return this; }
+
+        public RfidCard build() {
+            return new RfidCard(id, idTag, memberId, memberName, parentIdTag, cardStatus,
+                    expiryDate, balance, maxConcurrentTx, isDeleted, version, regDt, updtDt);
+        }
+    }
 
     /**
      * 카드가 유효기간 및 상태 측면에서 정상인지 검사

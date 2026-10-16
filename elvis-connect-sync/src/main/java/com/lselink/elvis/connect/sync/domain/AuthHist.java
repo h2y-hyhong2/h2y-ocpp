@@ -1,7 +1,6 @@
 package com.lselink.elvis.connect.sync.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -23,11 +22,6 @@ import java.time.LocalDateTime;
                 @Index(name = "IX_AUTH_HIST_TIME", columnList = "REG_DT")
         }
 )
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class AuthHist {
 
     @Id
@@ -62,16 +56,93 @@ public class AuthHist {
 
     /** 캐시 적중 계층 (L1_CAFFEINE, L2_REDIS, L3_DB, MISS) */
     @Column(name = "CACHE_TIER", nullable = false, length = 16)
-    @Builder.Default
     private String cacheTier = "L2_REDIS";
 
     /** 판정 소요 시간 (밀리초) */
     @Column(name = "LATENCY_MS", nullable = false, precision = 8, scale = 2)
-    @Builder.Default
     private BigDecimal latencyMs = BigDecimal.ZERO;
 
     /** 인증 요청 수신 일시 */
     @CreationTimestamp
     @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime regDt;
+
+    protected AuthHist() {
+    }
+
+    public AuthHist(Long id, String chargeBoxId, String messageId, String idTag, AuthorizationStatus authStatus,
+                    String parentIdTag, String failReason, String cacheTier, BigDecimal latencyMs, LocalDateTime regDt) {
+        this.id = id;
+        this.chargeBoxId = chargeBoxId;
+        this.messageId = messageId;
+        this.idTag = idTag;
+        this.authStatus = authStatus;
+        this.parentIdTag = parentIdTag;
+        this.failReason = failReason;
+        this.cacheTier = cacheTier != null ? cacheTier : "L2_REDIS";
+        this.latencyMs = latencyMs != null ? latencyMs : BigDecimal.ZERO;
+        this.regDt = regDt;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getChargeBoxId() { return chargeBoxId; }
+    public void setChargeBoxId(String chargeBoxId) { this.chargeBoxId = chargeBoxId; }
+
+    public String getMessageId() { return messageId; }
+    public void setMessageId(String messageId) { this.messageId = messageId; }
+
+    public String getIdTag() { return idTag; }
+    public void setIdTag(String idTag) { this.idTag = idTag; }
+
+    public AuthorizationStatus getAuthStatus() { return authStatus; }
+    public void setAuthStatus(AuthorizationStatus authStatus) { this.authStatus = authStatus; }
+
+    public String getParentIdTag() { return parentIdTag; }
+    public void setParentIdTag(String parentIdTag) { this.parentIdTag = parentIdTag; }
+
+    public String getFailReason() { return failReason; }
+    public void setFailReason(String failReason) { this.failReason = failReason; }
+
+    public String getCacheTier() { return cacheTier; }
+    public void setCacheTier(String cacheTier) { this.cacheTier = cacheTier; }
+
+    public BigDecimal getLatencyMs() { return latencyMs; }
+    public void setLatencyMs(BigDecimal latencyMs) { this.latencyMs = latencyMs; }
+
+    public LocalDateTime getRegDt() { return regDt; }
+    public void setRegDt(LocalDateTime regDt) { this.regDt = regDt; }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Long id;
+        private String chargeBoxId;
+        private String messageId;
+        private String idTag;
+        private AuthorizationStatus authStatus;
+        private String parentIdTag;
+        private String failReason;
+        private String cacheTier = "L2_REDIS";
+        private BigDecimal latencyMs = BigDecimal.ZERO;
+        private LocalDateTime regDt;
+
+        public Builder id(Long id) { this.id = id; return this; }
+        public Builder chargeBoxId(String chargeBoxId) { this.chargeBoxId = chargeBoxId; return this; }
+        public Builder messageId(String messageId) { this.messageId = messageId; return this; }
+        public Builder idTag(String idTag) { this.idTag = idTag; return this; }
+        public Builder authStatus(AuthorizationStatus authStatus) { this.authStatus = authStatus; return this; }
+        public Builder parentIdTag(String parentIdTag) { this.parentIdTag = parentIdTag; return this; }
+        public Builder failReason(String failReason) { this.failReason = failReason; return this; }
+        public Builder cacheTier(String cacheTier) { this.cacheTier = cacheTier; return this; }
+        public Builder latencyMs(BigDecimal latencyMs) { this.latencyMs = latencyMs; return this; }
+        public Builder regDt(LocalDateTime regDt) { this.regDt = regDt; return this; }
+
+        public AuthHist build() {
+            return new AuthHist(id, chargeBoxId, messageId, idTag, authStatus, parentIdTag, failReason, cacheTier, latencyMs, regDt);
+        }
+    }
 }

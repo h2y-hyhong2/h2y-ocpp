@@ -1,8 +1,8 @@
 package com.lselink.elvis.connect.ws.kafka;
 
 import com.lselink.elvis.connect.ws.dto.OcppRawEventEnvelope;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -19,13 +19,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 충전기로부터 수신된 OCPP Raw JSON 패킷을 Kafka ocpp-raw-events 토픽으로 비동기 발행
  * Kafka 브로커 장애 감지 시 단말 로컬 버퍼링 유도를 위한 Failover 서킷 브레이커 제공 (REQ-003, REQ-009)
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class InboundRawEventProducer {
+
+    private static final Logger log = LoggerFactory.getLogger(InboundRawEventProducer.class);
 
     private final KafkaTemplate<String, OcppRawEventEnvelope> kafkaTemplate;
     private final LocalSessionStore sessionStore;
+
+    public InboundRawEventProducer(KafkaTemplate<String, OcppRawEventEnvelope> kafkaTemplate,
+                                  LocalSessionStore sessionStore) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.sessionStore = sessionStore;
+    }
 
     @Value("${elvis.gateway.kafka.inbound-topic:ocpp-raw-events}")
     private String inboundTopic;

@@ -23,7 +23,7 @@ public interface ConnectorStatusRepository extends JpaRepository<ConnectorStatus
     @Modifying
     @Query(value = """
             INSERT INTO tb_connector_status
-                (charge_box_id, connector_id, status, error_code, vendor_id, info, status_at, created_at, updated_at)
+                (charge_box_id, connector_id, status, error_code, vendor_id, info, status_at, reg_dt, updt_dt)
             VALUES
                 (:chargeBoxId, :connectorId, :status, :errorCode, :vendorId, :info, :statusAt, NOW(3), NOW(3))
             ON DUPLICATE KEY UPDATE
@@ -33,7 +33,7 @@ public interface ConnectorStatusRepository extends JpaRepository<ConnectorStatus
                 info       = VALUES(info),
                 status_at  = VALUES(status_at),
                 version    = version + 1,
-                updated_at = NOW(3)
+                updt_dt    = NOW(3)
             """, nativeQuery = true)
     void upsertStatus(
             @Param("chargeBoxId") String chargeBoxId,
@@ -51,13 +51,13 @@ public interface ConnectorStatusRepository extends JpaRepository<ConnectorStatus
     @Modifying
     @Query(value = """
             INSERT INTO tb_connector_status
-                (charge_box_id, connector_id, status, heartbeat_at, created_at, updated_at)
+                (charge_box_id, connector_id, status, heartbeat_at, reg_dt, updt_dt)
             VALUES
                 (:chargeBoxId, 0, 'Available', :heartbeatAt, NOW(3), NOW(3))
             ON DUPLICATE KEY UPDATE
                 heartbeat_at = VALUES(heartbeat_at),
                 version      = version + 1,
-                updated_at   = NOW(3)
+                updt_dt      = NOW(3)
             """, nativeQuery = true)
     void upsertHeartbeat(
             @Param("chargeBoxId") String chargeBoxId,

@@ -1,6 +1,7 @@
 package com.lselink.elvis.connect.ws.handler;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -13,10 +14,10 @@ import java.util.Map;
 /**
  * WebSocket Handshake 시점에 URI 경로에서 chargeBoxId를 추출하여 세션 속성(Attributes)에 바인딩
  */
-@Slf4j
 @Component
 public class OcppHandshakeInterceptor implements HandshakeInterceptor {
 
+    private static final Logger log = LoggerFactory.getLogger(OcppHandshakeInterceptor.class);
     public static final String ATTR_CHARGE_BOX_ID = "chargeBoxId";
 
     @Override

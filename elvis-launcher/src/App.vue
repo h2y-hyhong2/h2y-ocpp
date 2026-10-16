@@ -117,24 +117,15 @@
                     class="text-[9px] font-mono font-medium"
                     :class="pendingAction.mysql ? 'text-amber-600' : (infra.mysql ? 'text-emerald-600' : 'text-slate-400')"
                   >
-                    {{ pendingAction.mysql === 'start' ? 'STARTING...' : pendingAction.mysql === 'stop' ? 'STOPPING...' : (infra.mysql ? 'ONLINE' : 'OFFLINE') }}
+                    {{ pendingAction.mysql === 'start' ? 'STARTING...' : pendingAction.mysql === 'stop' ? 'STOPPING...' : pendingAction.mysql === 'restart' ? 'RESTARTING...' : (infra.mysql ? 'ONLINE' : 'OFFLINE') }}
                   </span>
-                  <!-- DDL 적재 버튼을 타이틀 라인으로 배치 -->
-                  <button
-                    @click="loadSchema"
-                    :disabled="!infra.mysql || isExecuting"
-                    class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 transition-colors cursor-pointer disabled:opacity-40"
-                    title="초기 DDL 스키마 및 시드 데이터 적재"
-                  >
-                    DDL 적재
-                  </button>
                 </div>
                 <p class="text-[11px] text-slate-500">충전 자산, 세션, 단가, 트랜잭션 원장 보관</p>
               </div>
             </div>
 
-            <!-- 통일된 2단 액션 버튼군 (로그 & 시작/종료 동일 규격 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-36 justify-end">
+            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
               <button
                 @click="openLogWindow('mysql')"
                 class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
@@ -160,6 +151,15 @@
                 <svg v-if="pendingAction.mysql === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.mysql === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+              <button
+                @click="restartService('mysql')"
+                :disabled="isExecuting || pendingAction.mysql !== null"
+                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                title="MySQL 재기동"
+              >
+                <svg v-if="pendingAction.mysql === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.mysql === 'restart' ? '재기동중' : '재기동' }}</span>
+              </button>
             </div>
           </div>
 
@@ -178,24 +178,15 @@
                     class="text-[9px] font-mono font-medium"
                     :class="pendingAction.kafka ? 'text-amber-600' : (infra.kafka ? 'text-emerald-600' : 'text-slate-400')"
                   >
-                    {{ pendingAction.kafka === 'start' ? 'STARTING...' : pendingAction.kafka === 'stop' ? 'STOPPING...' : (infra.kafka ? 'ONLINE' : 'OFFLINE') }}
+                    {{ pendingAction.kafka === 'start' ? 'STARTING...' : pendingAction.kafka === 'stop' ? 'STOPPING...' : pendingAction.kafka === 'restart' ? 'RESTARTING...' : (infra.kafka ? 'ONLINE' : 'OFFLINE') }}
                   </span>
-                  <!-- 토픽 생성 버튼을 타이틀 라인으로 배치 -->
-                  <button
-                    @click="createTopics"
-                    :disabled="!infra.kafka || isExecuting"
-                    class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-colors cursor-pointer disabled:opacity-40"
-                    title="4대 핵심 토픽 자동 생성"
-                  >
-                    토픽 생성
-                  </button>
                 </div>
                 <p class="text-[11px] text-slate-500">OCPP 이벤트 스트리밍 및 메시지 버퍼</p>
               </div>
             </div>
 
-            <!-- 통일된 2단 액션 버튼군 (로그 & 시작/종료 동일 규격 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-36 justify-end">
+            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
               <button
                 @click="openLogWindow('kafka')"
                 class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
@@ -220,6 +211,15 @@
               >
                 <svg v-if="pendingAction.kafka === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.kafka === 'stop' ? '종료중' : '종료' }}</span>
+              </button>
+              <button
+                @click="restartService('kafka')"
+                :disabled="isExecuting || pendingAction.kafka !== null"
+                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                title="Kafka 재기동"
+              >
+                <svg v-if="pendingAction.kafka === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.kafka === 'restart' ? '재기동중' : '재기동' }}</span>
               </button>
             </div>
           </div>
@@ -294,15 +294,15 @@
                     class="text-[9px] font-mono font-medium"
                     :class="pendingAction.ws ? 'text-amber-600' : (infra.connectWs ? 'text-emerald-600' : 'text-slate-400')"
                   >
-                    {{ pendingAction.ws === 'start' ? 'STARTING...' : pendingAction.ws === 'stop' ? 'STOPPING...' : (infra.connectWs ? 'ONLINE' : 'OFFLINE') }}
+                    {{ pendingAction.ws === 'start' ? 'STARTING...' : pendingAction.ws === 'stop' ? 'STOPPING...' : pendingAction.ws === 'restart' ? 'RESTARTING...' : (infra.connectWs ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
                 <p class="text-[11px] text-slate-500">충전기 단말 WebSocket 커넥션 수용 게이트웨이</p>
               </div>
             </div>
 
-            <!-- 통일된 2단 액션 버튼군 (로그 & 시작/종료 동일 규격 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-36 justify-end">
+            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
               <button
                 @click="openLogWindow('ws')"
                 class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
@@ -328,6 +328,15 @@
                 <svg v-if="pendingAction.ws === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.ws === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+              <button
+                @click="restartService('ws')"
+                :disabled="isExecuting || pendingAction.ws !== null"
+                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                title="WS 게이트웨이 재기동"
+              >
+                <svg v-if="pendingAction.ws === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.ws === 'restart' ? '재기동중' : '재기동' }}</span>
+              </button>
             </div>
           </div>
 
@@ -346,15 +355,15 @@
                     class="text-[9px] font-mono font-medium"
                     :class="pendingAction.sync ? 'text-amber-600' : (infra.connectSync ? 'text-emerald-600' : 'text-slate-400')"
                   >
-                    {{ pendingAction.sync === 'start' ? 'STARTING...' : pendingAction.sync === 'stop' ? 'STOPPING...' : (infra.connectSync ? 'ONLINE' : 'OFFLINE') }}
+                    {{ pendingAction.sync === 'start' ? 'STARTING...' : pendingAction.sync === 'stop' ? 'STOPPING...' : pendingAction.sync === 'restart' ? 'RESTARTING...' : (infra.connectSync ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
                 <p class="text-[11px] text-slate-500">Kafka 이벤트 컨슘, 상태 UPDATE 및 원장 DB 적재</p>
               </div>
             </div>
 
-            <!-- 통일된 2단 액션 버튼군 (로그 & 시작/종료 동일 규격 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-36 justify-end">
+            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
               <button
                 @click="openLogWindow('sync')"
                 class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
@@ -380,6 +389,15 @@
                 <svg v-if="pendingAction.sync === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.sync === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+              <button
+                @click="restartService('sync')"
+                :disabled="isExecuting || pendingAction.sync !== null"
+                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                title="Sync 엔진 재기동"
+              >
+                <svg v-if="pendingAction.sync === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.sync === 'restart' ? '재기동중' : '재기동' }}</span>
+              </button>
             </div>
           </div>
 
@@ -398,15 +416,15 @@
                     class="text-[9px] font-mono font-medium"
                     :class="pendingAction.api ? 'text-amber-600' : (infra.controlApi ? 'text-emerald-600' : 'text-slate-400')"
                   >
-                    {{ pendingAction.api === 'start' ? 'STARTING...' : pendingAction.api === 'stop' ? 'STOPPING...' : (infra.controlApi ? 'ONLINE' : 'OFFLINE') }}
+                    {{ pendingAction.api === 'start' ? 'STARTING...' : pendingAction.api === 'stop' ? 'STOPPING...' : pendingAction.api === 'restart' ? 'RESTARTING...' : (infra.controlApi ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
                 <p class="text-[11px] text-slate-500">관제 어드민 REST API 서버 & 실시간 웹소켓 푸시</p>
               </div>
             </div>
 
-            <!-- 통일된 2단 액션 버튼군 (로그 & 시작/종료 동일 규격 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-36 justify-end">
+            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
               <button
                 @click="openLogWindow('api')"
                 class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
@@ -431,6 +449,15 @@
               >
                 <svg v-if="pendingAction.api === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.api === 'stop' ? '종료중' : '종료' }}</span>
+              </button>
+              <button
+                @click="restartService('api')"
+                :disabled="isExecuting || pendingAction.api !== null"
+                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                title="Control API 재기동"
+              >
+                <svg v-if="pendingAction.api === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.api === 'restart' ? '재기동중' : '재기동' }}</span>
               </button>
             </div>
           </div>
@@ -475,6 +502,7 @@ interface Toast {
   message: string
   type: 'success' | 'error' | 'info'
 }
+
 
 const toasts = ref<Toast[]>([])
 let toastSeq = 0
@@ -772,6 +800,56 @@ async function restartInfra() {
     pendingAction.infra = null
     pendingAction.mysql = null
     pendingAction.kafka = null
+    isExecuting.value = false
+    await checkStatus()
+  }
+}
+
+// 3-3. 개별 단일 서비스 재기동 (MySQL, Kafka, WS, Sync, API)
+async function restartService(service: string) {
+  isExecuting.value = true
+  pendingAction[service] = 'restart'
+  const serviceNames: Record<string, string> = {
+    mysql: 'MySQL',
+    kafka: 'Kafka',
+    ws: 'WS 게이트웨이',
+    sync: 'Sync 엔진',
+    api: 'Control API'
+  }
+  const svcName = serviceNames[service] || service.toUpperCase()
+
+  try {
+    const isCurrentlyRunning = getServiceStatus(service)
+
+    // 만약 서비스가 현재 꺼져 있다면 바로 단독 기동 처리
+    if (!isCurrentlyRunning) {
+      addToast(`${svcName} 기동`, `${svcName} 서비스가 현재 중지 상태이므로 즉시 기동합니다.`, 'info')
+      await control('start', service, true)
+      return
+    }
+
+    // 서비스가 켜져 있는 경우 안전 재기동 API 호출
+    addToast(`${svcName} 재기동`, `${svcName} 서비스 종료 후 재기동 중입니다...`, 'info')
+    const res = await fetch(`/api/infra/restart?service=${service}&background=true`, { method: 'POST' })
+    const data = await res.json()
+    if (data.success) {
+      // 1) 기존 프로세스 포트가 닫힐 때까지 대기 (최대 10초)
+      await waitForCondition(() => !getServiceStatus(service), 10000, 500)
+
+      // 2) 다시 프로세스가 가동되어 포트가 열릴 때까지 대기 (최대 45초)
+      const ok = await waitForCondition(() => getServiceStatus(service), 45000, 700)
+      if (ok) {
+        addToast(`${svcName} 재기동 완료`, `${svcName} 서비스가 정상적으로 재기동되었습니다.`, 'success')
+      } else {
+        addToast(`${svcName} 기동 대기 중`, `${svcName} 서비스가 백그라운드에서 진행 중입니다.`, 'info')
+      }
+    } else {
+      addToast('재기동 실패', data.message, 'error')
+    }
+  } catch (err: any) {
+    addToast('재기동 오류', err.message, 'error')
+  } finally {
+    pendingAction[service] = null
     isExecuting.value = false
     await checkStatus()
   }

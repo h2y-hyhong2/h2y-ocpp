@@ -2,8 +2,8 @@ package com.lselink.elvis.connect.sync.service;
 
 import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
 import com.lselink.elvis.connect.sync.repository.ConnectorStatusRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +21,16 @@ import java.time.LocalDateTime;
  *   <li>Heartbeat → heartbeat_at 갱신 (커넥터 0번 레코드)</li>
  * </ul>
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ConnectorStatusService {
 
+    private static final Logger log = LoggerFactory.getLogger(ConnectorStatusService.class);
+
     private final ConnectorStatusRepository repository;
+
+    public ConnectorStatusService(ConnectorStatusRepository repository) {
+        this.repository = repository;
+    }
 
     /**
      * OCPP StatusNotification 처리

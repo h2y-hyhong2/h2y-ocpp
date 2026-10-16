@@ -3,7 +3,6 @@ package com.lselink.elvis.control.service;
 import com.lselink.elvis.control.dto.ChargerResponseDto;
 import com.lselink.elvis.control.entity.*;
 import com.lselink.elvis.control.repository.*;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +12,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ChargerService {
 
@@ -21,6 +19,16 @@ public class ChargerService {
     private final ConnectorStatusRepository connectorStatusRepository;
     private final StationRepository stationRepository;
     private final CorpRepository corpRepository;
+
+    public ChargerService(ChargerRepository chargerRepository,
+                          ConnectorStatusRepository connectorStatusRepository,
+                          StationRepository stationRepository,
+                          CorpRepository corpRepository) {
+        this.chargerRepository = chargerRepository;
+        this.connectorStatusRepository = connectorStatusRepository;
+        this.stationRepository = stationRepository;
+        this.corpRepository = corpRepository;
+    }
 
     public List<ChargerResponseDto> getChargers(String stId, String status) {
         List<ChargerEntity> chargers = (stId != null && !stId.equalsIgnoreCase("ALL"))
@@ -34,7 +42,7 @@ public class ChargerService {
                 .collect(Collectors.toMap(CorpEntity::getCorpId, c -> c, (c1, c2) -> c1));
 
         Map<String, ConnectorStatusEntity> statusMap = connectorStatusRepository.findAll().stream()
-                .collect(Collectors.toMap(cs -> cs.getId().getChargeBoxId(), cs -> cs, (c1, c2) -> c1));
+                .collect(Collectors.toMap(ConnectorStatusEntity::getChargeBoxId, cs -> cs, (c1, c2) -> c1));
 
         return chargers.stream()
                 .map(chg -> {
@@ -42,7 +50,7 @@ public class ChargerService {
                     CorpEntity corp = (st != null) ? corpMap.get(st.getCorpId()) : null;
                     ConnectorStatusEntity conn = statusMap.get(chg.getChargeBoxId());
 
-                    String curStatus = (conn != null) ? conn.getStatus() : "충전대기";
+                    String curStatus = (conn != null) ? conn.getStatus() : "연결안됨";
 
                     return ChargerResponseDto.builder()
                             .id(chg.getChargeBoxId() + "-1")
@@ -77,18 +85,18 @@ public class ChargerService {
 
     @Transactional
     public boolean executeRemoteAction(String chargeBoxId, String action) {
-        // 실제 하향 제어 또는 커넥터 상태 갱신
-        List<ConnectorStatusEntity> conns = connectorStatusRepository.findByIdChargeBoxId(chargeBoxId);
+        List<ConnectorStatusEntity> conns = connectorStatusRepository.findByChargeBoxId(chargeBoxId);
         if (!conns.isEmpty()) {
-            ConnectorStatusEntity conn = conns.get(0);
-            if ("RemoteStartTransaction".equalsIgnoreCase(action)) {
-                conn.setStatus("충전중");
-            } else if ("RemoteStopTransaction".equalsIgnoreCase(action)) {
-                conn.setStatus("충전완료");
-            } else if ("Reset".equalsIgnoreCase(action)) {
-                conn.setStatus("충전대기");
+            for (ConnectorStatusEntity conn : conns) {
+                if ("RemoteStartTransaction".equalsIgnoreCase(action)) {
+                    conn.setStatus("충전중");
+                } else if ("RemoteStopTransaction".equalsIgnoreCase(action)) {
+                    conn.setStatus("충전완료");
+                } else if ("Reset".equalsIgnoreCase(action) || "UnlockConnector".equalsIgnoreCase(action)) {
+                    conn.setStatus("충전대기");
+                }
+                connectorStatusRepository.save(conn);
             }
-            connectorStatusRepository.save(conn);
         }
         return true;
     }

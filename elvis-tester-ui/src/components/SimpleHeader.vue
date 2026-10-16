@@ -1,23 +1,41 @@
 <script setup lang="ts">
-import type { VirtualChargerState } from '../types/ocpp'
+import { useVirtualCharger } from '../composables/useVirtualCharger'
 
 defineProps<{
-  state: VirtualChargerState
-  currentTab: 'single' | 'fleet'
   isTerminalOpen: boolean
-  packetCount: number
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:currentTab', tab: 'single' | 'fleet'): void
   (e: 'toggleTerminal'): void
 }>()
+
+const store = useVirtualCharger()
+
+async function handleToggleMaximize() {
+  try {
+    // Tauri 환경일 때 윈도우 최대화/복원 시도
+    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      const appWindow = getCurrentWindow()
+      await appWindow.toggleMaximize()
+    } else {
+      // 일반 브라우저에서는 F11 전체화면 토글
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      } else {
+        document.exitFullscreen().catch(() => {})
+      }
+    }
+  } catch (e) {
+    console.warn('Window maximize API not available:', e)
+  }
+}
 </script>
 
 <template>
-  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-3 md:px-4 h-12 flex items-center justify-between shadow-2xs select-none">
-    <!-- 좌측 로고 및 시스템 타이틀 -->
-    <div class="flex items-center gap-3">
+  <header class="bg-white border-b border-slate-200 px-3 md:px-4 h-12 flex items-center justify-between shadow-2xs select-none flex-shrink-0 z-30 font-sans">
+    <!-- 좌측 브랜드 및 요약 정보 -->
+    <div class="flex items-center gap-4">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-sky-600 flex items-center justify-center text-white shadow-2xs">
           <!-- Lightning bolt SVG -->
@@ -27,9 +45,9 @@ const emit = defineEmits<{
         </div>
         <div class="flex items-center gap-1.5">
           <span class="text-sm font-black text-slate-900 tracking-tight whitespace-nowrap">
-            <span>ELVIS</span>
+            <span>LSELink</span>
             <span class="text-sky-600 mx-0.5">•</span>
-            <span class="text-slate-500 font-semibold">TESTER</span>
+            <span class="text-slate-500 font-semibold">OCPP Tester</span>
           </span>
           <span class="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
             OCPP 1.6-J
@@ -37,62 +55,73 @@ const emit = defineEmits<{
         </div>
       </div>
 
-      <div class="hidden md:flex items-center pl-3 border-l border-slate-200 text-xs text-slate-500">
-        가상 충전기(Virtual EVSE) & 실시간 WireTap 시뮬레이터
+      <!-- 요약 상태 뱃지군 -->
+      <div class="hidden sm:flex items-center gap-1.5 font-mono text-[11px]">
+        <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+          충전기 <b class="text-slate-900">{{ store.totalCount.value }}</b>대
+        </span>
+        <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+          연결됨 <b class="text-emerald-800">{{ store.connectedCount.value }}</b>대
+        </span>
+        <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+          패킷 <b class="text-slate-900">{{ store.logs.value.length }}</b>건
+        </span>
       </div>
     </div>
 
-    <!-- 우측 상태 정보 및 제어 도구 -->
-    <div class="flex items-center gap-2">
-      <!-- 모드 탭 (단일 단말 모드 / 플릿 부하 모드) -->
-      <div class="flex items-center bg-slate-100 p-0.5 rounded-lg text-xs border border-slate-200">
+    <!-- 우측 일괄 제어 및 유틸리티 버튼군 -->
+    <div class="flex items-center gap-2 font-mono text-xs">
+      <!-- 빠른 일괄 제어 버튼 -->
+      <div class="hidden md:flex items-center gap-1.5">
         <button
-          @click="emit('update:currentTab', 'single')"
-          class="px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1"
-          :class="currentTab === 'single' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+          @click="store.connectAll"
+          class="px-2.5 py-1 rounded-md font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-600 hover:text-white transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+          title="모든 가상 충전기 일괄 연결"
         >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-          </svg>
-          <span>단일 단말 모드</span>
+          <span>⚡ 전체 연결</span>
         </button>
         <button
-          @click="emit('update:currentTab', 'fleet')"
-          class="px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1"
-          :class="currentTab === 'fleet' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+          @click="store.disconnectAll"
+          class="px-2.5 py-1 rounded-md font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+          title="모든 가상 충전기 일괄 연결 해제"
         >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          <span>플릿 부하 모드</span>
+          <span>🔌 전체 해제</span>
+        </button>
+        <button
+          @click="store.clearLogs"
+          class="px-2 py-1 rounded-md font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-all cursor-pointer flex items-center gap-1"
+          title="패킷 로그 비우기"
+        >
+          <span>🧹 로그 비우기</span>
         </button>
       </div>
 
-      <!-- 연결 상태 배지 -->
-      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono bg-white border-slate-200">
-        <span
-          class="w-2 h-2 rounded-full"
-          :class="state.connected ? 'bg-emerald-500 ring-2 ring-emerald-100 animate-pulse' : state.connecting ? 'bg-amber-400 animate-ping' : 'bg-slate-300'"
-        ></span>
-        <span class="font-bold tracking-tight text-[11px]" :class="state.connected ? 'text-emerald-700' : 'text-slate-500'">
-          {{ state.connected ? 'ONLINE' : state.connecting ? 'CONNECTING...' : 'OFFLINE' }}
-        </span>
-      </div>
+      <div class="hidden md:block w-px h-4 bg-slate-200 mx-1"></div>
 
-      <!-- 실시간 WireTap 패킷 터미널 토글 버튼 -->
+      <!-- 우측 패킷 터미널 토글 -->
       <button
         @click="emit('toggleTerminal')"
-        class="px-2.5 py-1 text-xs rounded-lg border transition-all cursor-pointer flex items-center gap-1.5"
-        :class="isTerminalOpen ? 'bg-sky-50 text-sky-700 border-sky-300 font-bold shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
-        title="실시간 패킷 WireTap 터미널 토글"
+        class="px-2.5 py-1 rounded-lg border font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+        :class="isTerminalOpen ? 'bg-sky-50 text-sky-700 border-sky-300 shadow-2xs font-bold' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
+        :title="isTerminalOpen ? '우측 터미널 패널 접기' : '우측 터미널 패널 펼치기'"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        <span>터미널</span>
-        <span class="text-[10px] px-1 rounded-full bg-slate-200/80 text-slate-700 font-mono">
-          {{ packetCount }}
+        <span>📟</span>
+        <span>패킷 터미널</span>
+        <span
+          class="text-[10px] px-1 rounded-sm font-mono"
+          :class="isTerminalOpen ? 'bg-sky-200/80 text-sky-900' : 'bg-slate-200 text-slate-600'"
+        >
+          {{ isTerminalOpen ? 'ON' : 'OFF' }}
         </span>
+      </button>
+
+      <!-- 전체 창 최대화/복원 버튼 -->
+      <button
+        @click="handleToggleMaximize"
+        class="px-2 py-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all cursor-pointer text-xs"
+        title="전체 창 화면 가득 최대화 / 원래 크기 복원"
+      >
+        🗖 최대화
       </button>
     </div>
   </header>

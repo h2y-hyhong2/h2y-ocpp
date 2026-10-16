@@ -122,12 +122,12 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            #[cfg(debug_assertions)]
-            {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.open_devtools();
-                }
-            }
+            // #[cfg(debug_assertions)]
+            // {
+            //     if let Some(window) = app.get_webview_window("main") {
+            //         let _ = window.open_devtools();
+            //     }
+            // }
 
             // 시스템 트레이 메뉴 생성
             let quit_i = MenuItem::with_id(app, "quit", "관제 센터 완전히 종료", true, None::<&str>)?;

@@ -1,20 +1,42 @@
-/* Pretendard Variable은 index.html CDN에서 로드 */
+/* ==========================================================================
+   로컬 가변 폰트 시스템 (Pretendard & Inconsolata)
+   ========================================================================== */
+@font-face {
+  font-family: 'Inconsolata';
+  src: url('/fonts/Inconsolata-VariableFont_wdth,wght.ttf') format('truetype-variations'),
+       url('/fonts/Inconsolata-VariableFont_wdth,wght.ttf') format('truetype');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/PretendardVariable.ttf') format('truetype-variations'),
+       url('/fonts/PretendardVariable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ==========================================================================
-   전역 폰트: 전체 Pretendard Variable 단일 폰트로 100% 통일
+   전역 폰트: 한글 Pretendard + 영문/숫자/모노 Inconsolata
    ========================================================================== */
 *, *::before, *::after,
 html, body, #app,
 button, input, select, textarea, optgroup, option,
-table, th, td, div, span, p, h1, h2, h3, h4, h5, h6, a, label,
-code, kbd, samp, pre, .font-mono, .matrix-cell {
-  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+table, th, td, div, span, p, h1, h2, h3, h4, h5, h6, a, label {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+code, kbd, samp, pre, .font-mono, .matrix-cell {
+  font-family: 'Inconsolata', 'Pretendard', 'D2Coding', Consolas, monospace !important;
 }
 
 /* 5대 멀티 테마 디자인 토큰 시스템 */
@@ -376,8 +398,8 @@ body {
 .badge-reserved, .cell-reserved { background: #f4f8ed; border-color: #dbeac7; color: #3f6212; }
 [data-theme="cyber"] .badge-reserved, [data-theme="cyber"] .cell-reserved { background: rgba(101, 163, 13, 0.08); border-color: rgba(255, 255, 255, 0.08); color: #bef264; }
 
-.badge-unknown, .cell-unknown, .badge-unavailable { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
-[data-theme="cyber"] .badge-unknown, [data-theme="cyber"] .cell-unknown, [data-theme="cyber"] .badge-unavailable { background: rgba(100, 116, 139, 0.08); border-color: rgba(255, 255, 255, 0.08); color: #94a3b8; }
+.badge-unknown, .cell-unknown, .badge-unavailable, .badge-disconnected, .cell-disconnected { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+[data-theme="cyber"] .badge-unknown, [data-theme="cyber"] .cell-unknown, [data-theme="cyber"] .badge-unavailable, [data-theme="cyber"] .badge-disconnected, [data-theme="cyber"] .cell-disconnected { background: rgba(100, 116, 139, 0.08); border-color: rgba(255, 255, 255, 0.08); color: #94a3b8; }
 
 /* 미니 카드 및 인터랙티브 칩 */
 .station-mini-card {

@@ -9,8 +9,8 @@ import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
 import com.lselink.elvis.connect.sync.service.AuthAuditLogService;
 import com.lselink.elvis.connect.sync.service.AuthorizeService;
 import com.lselink.elvis.connect.sync.service.MemberAuthCacheService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -24,10 +24,10 @@ import java.time.format.DateTimeFormatter;
  * 감사 이력 적재는 비동기로 분리 수행합니다.
  * </p>
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthorizeServiceImpl implements AuthorizeService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthorizeServiceImpl.class);
 
     private static final int MSG_TYPE_CALLRESULT = 3;
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -36,6 +36,16 @@ public class AuthorizeServiceImpl implements AuthorizeService {
     private final AuthAuditLogService authAuditLogService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
+
+    public AuthorizeServiceImpl(MemberAuthCacheService memberAuthCacheService,
+                                AuthAuditLogService authAuditLogService,
+                                KafkaTemplate<String, Object> kafkaTemplate,
+                                ObjectMapper objectMapper) {
+        this.memberAuthCacheService = memberAuthCacheService;
+        this.authAuditLogService = authAuditLogService;
+        this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
+    }
 
     @Value("${elvis.sync.kafka.outbound-topic:ocpp-outbound-commands}")
     private String outboundTopic;

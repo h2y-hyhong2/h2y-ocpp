@@ -270,13 +270,12 @@ function sendRemoteCommand(action: string) {
                 <th class="py-2 px-2">현재 출력</th>
                 <th class="py-2 px-2">전압 / 전류</th>
                 <th class="py-2 px-2">SoC</th>
-                <th class="py-2 px-2">최종 수신 일시</th>
-                <th class="py-2 px-2.5 text-right">제어</th>
+                <th class="py-2 px-2.5 text-right">최종 수신 일시</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-mono text-[11px]">
               <tr v-if="filteredChargers.length === 0">
-                <td colspan="9" class="py-16 text-center text-slate-400">
+                <td colspan="8" class="py-16 text-center text-slate-400">
                   <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   <div class="font-bold text-xs text-[var(--text-bright)]">조회된 충전기가 없습니다</div>
                   <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 검색 조건에 맞는 충전기가 없습니다.</div>
@@ -311,15 +310,7 @@ function sendRemoteCommand(action: string) {
                   </div>
                   <span v-else class="text-slate-400">-</span>
                 </td>
-                <td class="py-2.5 px-2 text-[10px] text-slate-500 whitespace-nowrap">{{ chg.lastHeartbeat }}</td>
-                <td class="py-2.5 px-2.5 text-right whitespace-nowrap">
-                  <button
-                    @click.stop="onSelectCharger(chg)"
-                    class="px-2.5 py-1 rounded bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold hover:bg-sky-100 transition-colors shadow-2xs cursor-pointer"
-                  >
-                    제어반 ➔
-                  </button>
-                </td>
+                <td class="py-2.5 px-2.5 text-right text-[10px] text-slate-500 whitespace-nowrap">{{ chg.lastHeartbeat }}</td>
               </tr>
             </tbody>
           </table>

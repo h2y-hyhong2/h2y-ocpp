@@ -1,17 +1,18 @@
 import { defineStore } from 'pinia'
 
-// 1. 커넥터 10대 상태 매핑 상수 (UI 색상 및 배지 스타일)
+// 1. 커넥터 상태 매핑 상수 (UI 색상 및 배지 스타일)
 export const STATUS_MAP = {
-  '충전대기':   { key: 'standby',    name: '충전대기',   color: '#d97706', darkHex: '#9a3412', cellClass: 'cell-standby',    badgeClass: 'badge-standby' },
-  '알수없음':   { key: 'unknown',    name: '알수없음',   color: '#64748b', darkHex: '#475569', cellClass: 'cell-unknown',    badgeClass: 'badge-unknown' },
-  '충전준비중': { key: 'preparing',  name: '충전준비중', color: '#0d9488', darkHex: '#115e59', cellClass: 'cell-preparing',  badgeClass: 'badge-preparing' },
-  '통신이상':   { key: 'commerr',    name: '통신이상',   color: '#dc2626', darkHex: '#991b1b', cellClass: 'cell-commerr',    badgeClass: 'badge-commerr' },
-  '충전중':     { key: 'charging',   name: '충전중',     color: '#3b82f6', darkHex: '#1e40af', cellClass: 'cell-charging',   badgeClass: 'badge-charging' },
-  '운영중지':   { key: 'suspended',  name: '운영중지',   color: '#7c3aed', darkHex: '#6b21a8', cellClass: 'cell-suspended',  badgeClass: 'badge-suspended' },
-  '예약중':     { key: 'reserved',   name: '예약중',     color: '#4d7c0f', darkHex: '#3f6212', cellClass: 'cell-reserved',   badgeClass: 'badge-reserved' },
-  '점검중':     { key: 'inspecting', name: '점검중',     color: '#b45309', darkHex: '#854d0e', cellClass: 'cell-inspecting', badgeClass: 'badge-inspecting' },
-  '충전완료':   { key: 'finished',   name: '충전완료',   color: '#059669', darkHex: '#166534', cellClass: 'cell-finished',   badgeClass: 'badge-finished' },
-  '일시중지':   { key: 'paused',     name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',     badgeClass: 'badge-paused' }
+  '연결안됨':   { key: 'disconnected', name: '연결안됨',   color: '#64748b', darkHex: '#475569', cellClass: 'cell-disconnected', badgeClass: 'badge-disconnected', dotClass: 'bg-slate-400' },
+  '충전대기':   { key: 'standby',      name: '충전대기',   color: '#d97706', darkHex: '#9a3412', cellClass: 'cell-standby',      badgeClass: 'badge-standby',      dotClass: 'bg-amber-500' },
+  '충전준비중': { key: 'preparing',    name: '충전준비중', color: '#0d9488', darkHex: '#115e59', cellClass: 'cell-preparing',    badgeClass: 'badge-preparing',    dotClass: 'bg-teal-500' },
+  '충전중':     { key: 'charging',     name: '충전중',     color: '#3b82f6', darkHex: '#1e40af', cellClass: 'cell-charging',     badgeClass: 'badge-charging',     dotClass: 'bg-blue-500' },
+  '충전완료':   { key: 'finished',     name: '충전완료',   color: '#059669', darkHex: '#166534', cellClass: 'cell-finished',     badgeClass: 'badge-finished',     dotClass: 'bg-emerald-500' },
+  '통신이상':   { key: 'commerr',      name: '통신이상',   color: '#dc2626', darkHex: '#991b1b', cellClass: 'cell-commerr',      badgeClass: 'badge-commerr',      dotClass: 'bg-rose-500' },
+  '점검중':     { key: 'inspecting',   name: '점검중',     color: '#b45309', darkHex: '#854d0e', cellClass: 'cell-inspecting',   badgeClass: 'badge-inspecting',   dotClass: 'bg-yellow-600' },
+  '운영중지':   { key: 'suspended',    name: '운영중지',   color: '#7c3aed', darkHex: '#6b21a8', cellClass: 'cell-suspended',    badgeClass: 'badge-suspended',    dotClass: 'bg-purple-500' },
+  '예약중':     { key: 'reserved',     name: '예약중',     color: '#4d7c0f', darkHex: '#3f6212', cellClass: 'cell-reserved',     badgeClass: 'badge-reserved',     dotClass: 'bg-lime-600' },
+  '일시중지':   { key: 'paused',       name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',       badgeClass: 'badge-paused',       dotClass: 'bg-rose-600' },
+  '알수없음':   { key: 'unknown',      name: '알수없음',   color: '#64748b', darkHex: '#475569', cellClass: 'cell-unknown',      badgeClass: 'badge-unknown',      dotClass: 'bg-slate-400' }
 }
 
 export type StatusKey = keyof typeof STATUS_MAP
@@ -155,7 +156,7 @@ export const useCsmsStore = defineStore('csms', {
     },
 
     // 📡 중앙 REST API (/api/v1) MySQL 9.71 실데이터 연동 액션
-    async fetchInitialData() {
+    async fetchInitialData(silent = false) {
       try {
         const [corpRes, stRes, chgRes, cdrRes] = await Promise.all([
           fetch('/api/v1/corps'),
@@ -227,13 +228,15 @@ export const useCsmsStore = defineStore('csms', {
 
           const isCleared = this.stations.length === 0 && this.chargers.length === 0
           this.isDbConnected = true
-          this.addToast(
-            isCleared ? 'info' : 'success',
-            isCleared ? 'MySQL 초기화 상태 (0건)' : 'MySQL 실데이터 동기화',
-            isCleared
-              ? '데이터베이스가 완전히 비어 있는 초기 상태입니다 (충전소 0개소, 충전기 0기).'
-              : `MySQL(elvis-lite) 연동 완료: 충전소 ${this.stations.length}개소, 충전기 ${this.chargers.length}기`
-          )
+          if (!silent) {
+            this.addToast(
+              isCleared ? 'info' : 'success',
+              isCleared ? 'MySQL 초기화 상태 (0건)' : 'MySQL 실데이터 동기화',
+              isCleared
+                ? '데이터베이스가 완전히 비어 있는 초기 상태입니다 (충전소 0개소, 충전기 0기).'
+                : `MySQL(elvis-lite) 연동 완료: 충전소 ${this.stations.length}개소, 충전기 ${this.chargers.length}기`
+            )
+          }
         } else {
           this.isDbConnected = false
         }

@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ChargersView from '@/views/ChargersView.vue'
 import BillingCdrView from '@/views/BillingCdrView.vue'
-import LiveLogsView from '@/views/LiveLogsView.vue'
 
 const routes = [
   {
@@ -15,12 +14,6 @@ const routes = [
     name: 'BillingCdr',
     component: BillingCdrView,
     meta: { title: '충전 세션 & 과금 원장' }
-  },
-  {
-    path: '/logs',
-    name: 'LiveLogs',
-    component: LiveLogsView,
-    meta: { title: 'OCPP 실시간 패킷 로그' }
   },
   {
     path: '/:pathMatch(.*)*',

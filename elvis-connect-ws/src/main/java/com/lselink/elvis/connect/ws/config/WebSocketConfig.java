@@ -2,7 +2,6 @@ package com.lselink.elvis.connect.ws.config;
 
 import com.lselink.elvis.connect.ws.handler.OcppHandshakeInterceptor;
 import com.lselink.elvis.connect.ws.handler.OcppWebSocketHandler;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,11 +15,15 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
  */
 @Configuration
 @EnableWebSocket
-@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final OcppWebSocketHandler ocppWebSocketHandler;
     private final OcppHandshakeInterceptor ocppHandshakeInterceptor;
+
+    public WebSocketConfig(OcppWebSocketHandler ocppWebSocketHandler, OcppHandshakeInterceptor ocppHandshakeInterceptor) {
+        this.ocppWebSocketHandler = ocppWebSocketHandler;
+        this.ocppHandshakeInterceptor = ocppHandshakeInterceptor;
+    }
 
     @Value("${elvis.gateway.websocket.path:/ocpp/{chargeBoxId}}")
     private String websocketPath;

@@ -5,7 +5,6 @@ import com.lselink.elvis.control.entity.CorpEntity;
 import com.lselink.elvis.control.entity.StationEntity;
 import com.lselink.elvis.control.repository.CorpRepository;
 import com.lselink.elvis.control.repository.StationRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,15 +14,28 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StationService {
 
     private final StationRepository stationRepository;
     private final CorpRepository corpRepository;
 
-    public List<CorpEntity> getAllCorps() {
-        return corpRepository.findByUseYnOrderByCorpIdAsc("Y");
+    public StationService(StationRepository stationRepository, CorpRepository corpRepository) {
+        this.stationRepository = stationRepository;
+        this.corpRepository = corpRepository;
+    }
+
+    public List<com.lselink.elvis.control.dto.CorpResponseDto> getAllCorps() {
+        return corpRepository.findByUseYnOrderByCorpIdAsc("Y").stream()
+                .map(c -> new com.lselink.elvis.control.dto.CorpResponseDto(
+                        c.getCorpId(),
+                        c.getCorpName(),
+                        c.getShortName(),
+                        c.getTag(),
+                        c.getColorClass(),
+                        c.getBadge()
+                ))
+                .collect(Collectors.toList());
     }
 
     public List<StationResponseDto> getAllStations(String corpId) {

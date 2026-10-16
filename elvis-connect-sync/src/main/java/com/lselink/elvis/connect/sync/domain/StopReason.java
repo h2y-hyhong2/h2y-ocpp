@@ -1,11 +1,8 @@
 package com.lselink.elvis.connect.sync.domain;
 
-import lombok.Getter;
-
 /**
  * OCPP 1.6-J 표준 충전 종료 사유 (Reason 11종) (Sprint 19: S19-SYNC-0040-CO)
  */
-@Getter
 public enum StopReason {
 
     EmergencyStop("비상 정지 버튼 동작"),
@@ -24,6 +21,10 @@ public enum StopReason {
 
     StopReason(String description) {
         this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     /**

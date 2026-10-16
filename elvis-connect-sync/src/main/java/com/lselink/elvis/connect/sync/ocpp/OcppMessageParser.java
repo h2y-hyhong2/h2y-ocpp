@@ -2,8 +2,8 @@ package com.lselink.elvis.connect.sync.ocpp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -22,14 +22,17 @@ import java.util.Optional;
  *   CALLERROR   : [4, "uniqueId", "errorCode", "errorDescription", {details}]
  * </pre>
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class OcppMessageParser {
 
+    private static final Logger log = LoggerFactory.getLogger(OcppMessageParser.class);
     private static final int MSG_TYPE_CALL = 2;
 
     private final ObjectMapper objectMapper;
+
+    public OcppMessageParser(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * rawPayload를 파싱하여 OcppParsedMessage를 반환한다.

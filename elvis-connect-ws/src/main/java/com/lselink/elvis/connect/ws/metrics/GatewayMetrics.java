@@ -6,21 +6,26 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
  * 게이트웨이 WebSocket 세션 및 인바운드/아웃바운드 TPS 실시간 모니터링 메트릭 (Micrometer & Prometheus 연동)
  * 요구사항: REQ-004, REQ-005
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class GatewayMetrics {
+
+    private static final Logger log = LoggerFactory.getLogger(GatewayMetrics.class);
 
     private final MeterRegistry meterRegistry;
     private final LocalSessionStore sessionStore;
+
+    public GatewayMetrics(MeterRegistry meterRegistry, LocalSessionStore sessionStore) {
+        this.meterRegistry = meterRegistry;
+        this.sessionStore = sessionStore;
+    }
 
     private Counter inboundPacketCounter;
     private Counter outboundCommandCounter;

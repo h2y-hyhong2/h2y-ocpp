@@ -67,9 +67,8 @@ rustup --version
 elvis-control-ui/
 ├── src/                          # Vue 3 프론트엔드 소스
 │   ├── views/                    # 주요 관제 화면 컴포넌트
-│   │   ├── DashboardView.vue     # 실시간 관제 대시보드 (KPI 카드, ECharts 시계열/도넛 차트)
-│   │   ├── ChargersView.vue      # 충전기 자산 그리드 및 원격 제어반 (시작/중지/리셋)
-│   │   └── LiveLogsView.vue      # OCPP 실시간 패킷 스트림 (WireTap)
+│   │   ├── ChargersView.vue      # 실시간 충전기 통합 관제 그리드 및 원격 제어반
+│   │   └── BillingCdrView.vue    # 충전 거래 세션 및 과금 원장 관리
 │   ├── stores/                   # Pinia 전역 상태 관리
 │   │   └── csmsStore.ts          # 실시간 텔레메트리, 충전기 상태, 로그 큐
 │   ├── router/                   # Vue Router 네비게이션 설정

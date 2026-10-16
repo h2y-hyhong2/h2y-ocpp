@@ -40,7 +40,7 @@ echo [2/2] 초기 시드 데이터 적재 (config/mysql/02_seed_data.sql)...
 if %ERRORLEVEL% equ 0 (
     echo [OK] 02_seed_data.sql 적용 완료!
     echo ========================================================
-    echo  elvis-lite 데이터베이스 스키마 및 시드 데이터 적재 성공!
+    echo  elvis_lite 데이터베이스 스키마 및 시드 데이터 적재 성공!
     echo ========================================================
 ) else (
     echo [ERROR] 시드 데이터 적재 중 오류 발생

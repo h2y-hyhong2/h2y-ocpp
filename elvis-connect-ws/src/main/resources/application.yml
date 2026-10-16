@@ -17,12 +17,15 @@ spring:
       retries: 3
       batch-size: 16384
       buffer-memory: 33554432
+      properties:
+        spring.json.add.type.headers: false
     consumer:
       group-id: elvis-connect-ws-group
       auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
+        spring.json.use.type.headers: false
         spring.json.trusted.packages: "com.lselink.elvis.*"
 
 elvis:

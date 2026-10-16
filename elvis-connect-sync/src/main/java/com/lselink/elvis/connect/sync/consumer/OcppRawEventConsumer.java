@@ -6,8 +6,8 @@ import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
 import com.lselink.elvis.connect.sync.service.AuthorizeService;
 import com.lselink.elvis.connect.sync.service.ConnectorStatusService;
 import com.lselink.elvis.connect.sync.service.TransactionSessionService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -21,16 +21,28 @@ import java.util.concurrent.Executor;
  * <p>Sprint 19: StartTransaction / StopTransaction → 세션 생성 및 마감 연계</p>
  * <p>Sprint 20: Authorize → DB/Redis 회원 유효성 체크 및 즉시 응답 하향 (S20-SYNC-0070-CO)</p>
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class OcppRawEventConsumer {
+
+    private static final Logger log = LoggerFactory.getLogger(OcppRawEventConsumer.class);
 
     private final Executor virtualThreadExecutor;
     private final OcppMessageParser ocppMessageParser;
     private final ConnectorStatusService connectorStatusService;
     private final TransactionSessionService transactionSessionService;
     private final AuthorizeService authorizeService;
+
+    public OcppRawEventConsumer(Executor virtualThreadExecutor,
+                               OcppMessageParser ocppMessageParser,
+                               ConnectorStatusService connectorStatusService,
+                               TransactionSessionService transactionSessionService,
+                               AuthorizeService authorizeService) {
+        this.virtualThreadExecutor = virtualThreadExecutor;
+        this.ocppMessageParser = ocppMessageParser;
+        this.connectorStatusService = connectorStatusService;
+        this.transactionSessionService = transactionSessionService;
+        this.authorizeService = authorizeService;
+    }
 
     @KafkaListener(
             topics = "${elvis.sync.kafka.inbound-topic:ocpp-raw-events}",

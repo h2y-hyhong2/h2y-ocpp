@@ -2,17 +2,19 @@
 $Host.UI.RawUI.WindowTitle = "ELVIS-CSMS 관제 UI 실행기"
 
 Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host "   🚀 ELVIS-CSMS 관제 UI & 미들웨어 콘솔 실행기" -ForegroundColor Yellow
+Write-Host "   🚀 ELVIS-CSMS 관제 UI & 테스터 & 미들웨어 콘솔 실행기" -ForegroundColor Yellow
 Write-Host "===============================================================================" -ForegroundColor Cyan
 Write-Host "  [0] 🚀 ELVIS Launcher 실행 (인프라 & 미들웨어 백그라운드 관리 센터: http://127.0.0.1:1420)" -ForegroundColor Yellow
 Write-Host "  [1] 단독 프로토타입 브라우저 실행 (서버 구동 불필요, 즉시 열림)" -ForegroundColor Green
 Write-Host "  [2] Vite 관제 웹 UI 실행 (http://127.0.0.1:1421)" -ForegroundColor Green
 Write-Host "  [3] Tauri 데스크톱 관제 앱 실행" -ForegroundColor Green
 Write-Host "  [4] 미들웨어 콘솔만 단독 실행 (MySQL 9.71 & Kafka KRaft 콘솔 창)" -ForegroundColor Green
+Write-Host "  [5] 🔌 가상 충전기 테스터 웹 UI 실행 (http://127.0.0.1:1422)" -ForegroundColor Cyan
+Write-Host "  [6] 🔌 가상 충전기 테스터 Tauri 데스크톱 앱 실행" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "===============================================================================" -ForegroundColor Cyan
 
-$choice = Read-Host "실행할 모드를 선택하세요 (0, 1, 2, 3, 4) [기본값: 2]"
+$choice = Read-Host "실행할 모드를 선택하세요 (0, 1, 2, 3, 4, 5, 6) [기본값: 2]"
 if ([string]::IsNullOrWhiteSpace($choice)) {
     $choice = "2"
 } else {
@@ -21,6 +23,7 @@ if ([string]::IsNullOrWhiteSpace($choice)) {
 
 $h2yDir = Split-Path -Parent $PSScriptRoot
 $controlUiDir = Join-Path $h2yDir "elvis-control-ui"
+$testerUiDir = Join-Path $h2yDir "elvis-tester-ui"
 $scriptsDir = $PSScriptRoot
 $prototypePath = "d:\project\lselink\lselink-work\2026\과제\[3368]2026-07-02-002-CSMS Lite 버전(POC)\prototype\index.html"
 
@@ -67,7 +70,7 @@ switch ($choice) {
 
         # 2. Vite 웹 UI 기동
         Write-Host ""
-        Write-Host "🌐 Vite 개발 서버를 기동하고 브라우저(http://127.0.0.1:1421)를 엽니다..." -ForegroundColor Cyan
+        Write-Host "🌐 Vite 관제 웹 개발 서버를 기동하고 브라우저(http://127.0.0.1:1421)를 엽니다..." -ForegroundColor Cyan
         Set-Location $controlUiDir
         Start-Process "http://127.0.0.1:1421"
         pnpm dev
@@ -78,7 +81,7 @@ switch ($choice) {
 
         # 2. Tauri 데스크톱 애플리케이션 기동
         Write-Host ""
-        Write-Host "🖥️ Tauri 데스크톱 애플리케이션을 개발 모드로 실행합니다..." -ForegroundColor Cyan
+        Write-Host "🖥️ Tauri 관제 데스크톱 애플리케이션을 개발 모드로 실행합니다..." -ForegroundColor Cyan
         Set-Location $controlUiDir
         pnpm tauri dev
     }
@@ -86,6 +89,31 @@ switch ($choice) {
         # 미들웨어 콘솔만 단독 실행
         Start-MiddlewareConsoles
         Write-Host "✅ 미들웨어 콘솔 윈도우가 화면에 실행되었습니다." -ForegroundColor Green
+    }
+    "5" {
+        # 가상 충전기 테스터 웹 UI 기동
+        Write-Host ""
+        Write-Host "🔌 Vite 가상 충전기 테스터 UI를 기동하고 브라우저(http://127.0.0.1:1422)를 엽니다..." -ForegroundColor Cyan
+        $testerBat = Join-Path $scriptsDir "start-elvis-tester-ui.bat"
+        if (Test-Path -LiteralPath $testerBat) {
+            Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$testerBat`"" -WorkingDirectory $scriptsDir
+        } else {
+            Set-Location $testerUiDir
+            Start-Process "http://127.0.0.1:1422"
+            npm run dev -- --open
+        }
+    }
+    "6" {
+        # 가상 충전기 테스터 Tauri 데스크톱 앱 기동
+        Write-Host ""
+        Write-Host "🔌 가상 충전기 테스터 Tauri 데스크톱 애플리케이션을 실행합니다..." -ForegroundColor Cyan
+        $testerTauriBat = Join-Path $scriptsDir "start-elvis-tester-ui-tauri.bat"
+        if (Test-Path -LiteralPath $testerTauriBat) {
+            Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$testerTauriBat`"" -WorkingDirectory $scriptsDir
+        } else {
+            Set-Location $testerUiDir
+            pnpm tauri:dev
+        }
     }
     default {
         Write-Host "잘못된 입력입니다: $choice" -ForegroundColor Red

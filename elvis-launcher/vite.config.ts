@@ -435,6 +435,58 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
+        // 8-3. 개별 단일 서비스 재기동 (POST /api/infra/restart?service=mysql|kafka|ws|sync|api&background=true|false)
+        if (pathname === '/api/infra/restart') {
+          const currentEnv = readEnv()
+          const service = url.searchParams.get('service')
+          const isBackground = url.searchParams.get('background') !== 'false'
+          console.log(`[ELVIS-Launcher] 개별 서비스 재기동 요청 -> service: ${service}, isBackground: ${isBackground}`)
+
+          const executeStop = (svc: string, onStopped: () => void) => {
+            if (svc === 'kafka') {
+              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache Kafka*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`, onStopped)
+            } else if (svc === 'mysql') {
+              exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.mysqlPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null"`, onStopped)
+            } else if (svc === 'ws') {
+              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.wsPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect WS*\\" 2>$null"`, onStopped)
+            } else if (svc === 'sync') {
+              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.syncPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect Sync*\\" 2>$null"`, onStopped)
+            } else if (svc === 'api') {
+              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control API*\\" 2>$null"`, onStopped)
+            } else {
+              onStopped()
+            }
+          }
+
+          const executeStart = (svc: string) => {
+            if (svc === 'kafka') {
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', isBackground)
+            } else if (svc === 'mysql') {
+              runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', isBackground)
+            } else if (svc === 'ws') {
+              runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', isBackground)
+            } else if (svc === 'sync') {
+              runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
+            } else if (svc === 'api') {
+              runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
+            }
+          }
+
+          if (service) {
+            executeStop(service, () => {
+              setTimeout(() => {
+                executeStart(service)
+              }, 1200)
+            })
+          }
+
+          res.end(JSON.stringify({
+            success: true,
+            message: `${service} 재기동 명령이 전송되었습니다.`
+          }))
+          return
+        }
+
         // 9. 미들웨어 콘솔 가시화/재기동 (POST /api/infra/open-console)
         if (pathname === '/api/infra/open-console') {
           const currentEnv = readEnv()

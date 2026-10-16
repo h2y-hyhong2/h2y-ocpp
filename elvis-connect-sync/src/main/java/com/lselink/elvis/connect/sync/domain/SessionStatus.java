@@ -1,11 +1,8 @@
 package com.lselink.elvis.connect.sync.domain;
 
-import lombok.Getter;
-
 /**
  * 충전 거래 세션 생명주기 상태 열거형 (Sprint 19: S19-SYNC-0040-CO)
  */
-@Getter
 public enum SessionStatus {
 
     STARTED("충전 시작 수신"),
@@ -19,6 +16,10 @@ public enum SessionStatus {
 
     SessionStatus(String description) {
         this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     /**

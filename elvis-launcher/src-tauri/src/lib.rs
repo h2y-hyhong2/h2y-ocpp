@@ -644,12 +644,12 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            #[cfg(debug_assertions)]
-            {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.open_devtools();
-                }
-            }
+            // #[cfg(debug_assertions)]
+            // {
+            //     if let Some(window) = app.get_webview_window("main") {
+            //         let _ = window.open_devtools();
+            //     }
+            // }
 
             // 시스템 트레이 메뉴 아이템 정의
             let summary_i = MenuItem::with_id(app, "status_summary", "● [ STATUS: 점검 중... ]", false, None::<&str>)?;

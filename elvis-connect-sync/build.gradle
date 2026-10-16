@@ -3,9 +3,6 @@ plugins {
 }
 
 dependencies {
-    // OCPP Core (외부 독립 저장소 - Composite Build)
-    implementation 'com.lselink.ocpp:ocpp_core'
-
     // Spring Boot Starter
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'

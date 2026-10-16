@@ -4,32 +4,43 @@
 -- 설명: 충전소/충전기 자산 마스터, 실시간 상태, 충전 세션 및 과금 원장 (CDR)
 -- ==============================================================================
 
-CREATE DATABASE IF NOT EXISTS `elvis-lite`
+CREATE DATABASE IF NOT EXISTS `elvis_lite`
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE `elvis-lite`;
+USE `elvis_lite`;
 
 -- ==============================================================================
 -- 전용 애플리케이션 계정 생성 및 권한 부여
 -- ==============================================================================
 CREATE USER IF NOT EXISTS 'elvis'@'%' IDENTIFIED BY 'elvis1234!';
 CREATE USER IF NOT EXISTS 'elvis'@'localhost' IDENTIFIED BY 'elvis1234!';
-GRANT ALL PRIVILEGES ON `elvis-lite`.* TO 'elvis'@'%';
-GRANT ALL PRIVILEGES ON `elvis-lite`.* TO 'elvis'@'localhost';
+GRANT ALL PRIVILEGES ON `elvis_lite`.* TO 'elvis'@'%';
+GRANT ALL PRIVILEGES ON `elvis_lite`.* TO 'elvis'@'localhost';
 FLUSH PRIVILEGES;
 
 -- ==============================================================================
--- 1. 법인/운영사 마스터 (tb_corp)
+-- 기존 뷰 및 테이블 정리
 -- ==============================================================================
-DROP TABLE IF EXISTS tb_transaction_session;
-DROP TABLE IF EXISTS tb_connector_status;
-DROP TABLE IF EXISTS tb_transaction_cdr;
-DROP TABLE IF EXISTS tb_charger;
-DROP TABLE IF EXISTS tb_station;
-DROP TABLE IF EXISTS tb_corp;
+SET FOREIGN_KEY_CHECKS = 0;
+DROP VIEW IF EXISTS tb_transaction_cdr;
+-- DROP VIEW IF EXISTS tb_connector_status; (Sprint 18 실시간 물리 테이블로 분리)
+DROP VIEW IF EXISTS tb_charger;
+DROP VIEW IF EXISTS tb_station;
+DROP VIEW IF EXISTS tb_corp;
 
-CREATE TABLE tb_corp (
+DROP TABLE IF EXISTS tbl_transaction_cdr;
+DROP TABLE IF EXISTS tbl_transaction_session;
+DROP TABLE IF EXISTS tbl_connector_status;
+DROP TABLE IF EXISTS tbl_charger;
+DROP TABLE IF EXISTS tbl_station;
+DROP TABLE IF EXISTS tbl_corp;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ==============================================================================
+-- 1. 법인/운영사 마스터 (tbl_corp)
+-- ==============================================================================
+CREATE TABLE tbl_corp (
     CORP_ID         VARCHAR(20)     NOT NULL COMMENT '법인 식별코드 (예: CORP_001)',
     CORP_NAME       VARCHAR(100)    NOT NULL COMMENT '정식 법인명',
     SHORT_NAME      VARCHAR(50)     NOT NULL COMMENT '축약 법인명 (배지/태그용)',
@@ -43,9 +54,9 @@ CREATE TABLE tb_corp (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='법인 및 운영사 마스터';
 
 -- ==============================================================================
--- 2. 충전소 마스터 (tb_station)
+-- 2. 충전소 마스터 (tbl_station)
 -- ==============================================================================
-CREATE TABLE tb_station (
+CREATE TABLE tbl_station (
     ST_ID           VARCHAR(20)     NOT NULL COMMENT '충전소 고유 ID (6자리: 000000~999999, 예: 000000)',
     NAME            VARCHAR(150)    NOT NULL COMMENT '충전소 명칭',
     CORP_ID         VARCHAR(20)     NOT NULL COMMENT '소속 법인 ID (FK)',
@@ -58,13 +69,13 @@ CREATE TABLE tb_station (
     UPDT_DT         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (ST_ID),
     KEY IX_STATION_CORP_ID (CORP_ID),
-    CONSTRAINT FK_STATION_CORP FOREIGN KEY (CORP_ID) REFERENCES tb_corp (CORP_ID)
+    CONSTRAINT FK_STATION_CORP FOREIGN KEY (CORP_ID) REFERENCES tbl_corp (CORP_ID)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전소 마스터';
 
 -- ==============================================================================
--- 3. 충전기 마스터 (tb_charger)
+-- 3. 충전기 마스터 (tbl_charger)
 -- ==============================================================================
-CREATE TABLE tb_charger (
+CREATE TABLE tbl_charger (
     CHARGE_BOX_ID   VARCHAR(50)     NOT NULL COMMENT 'OCPP ChargeBoxIdentity ({ST_ID}{CP_ID} 8자리, 예: 00000001)',
     ST_ID           VARCHAR(20)     NOT NULL COMMENT '소속 충전소 ID (FK, 6자리)',
     CP_ID           VARCHAR(10)     NOT NULL COMMENT '충전소 내 충전기 번호 2자리 (01~99, 예: 01)',
@@ -78,20 +89,16 @@ CREATE TABLE tb_charger (
     UPDT_DT         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (CHARGE_BOX_ID),
     KEY IX_CHARGER_ST_ID (ST_ID),
-    CONSTRAINT FK_CHARGER_STATION FOREIGN KEY (ST_ID) REFERENCES tb_station (ST_ID)
+    CONSTRAINT FK_CHARGER_STATION FOREIGN KEY (ST_ID) REFERENCES tbl_station (ST_ID)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전기 마스터';
 
 -- ==============================================================================
--- 4. 커넥터 실시간 관제 및 상태 원장 (tb_connector_status)
+-- 4. 커넥터 실시간 관제 및 상태 원장 (tbl_connector_status)
 -- ==============================================================================
-CREATE TABLE tb_connector_status (
-    ID              BIGINT          NOT NULL AUTO_INCREMENT COMMENT 'PK - 내부 고유 일련번호',
+CREATE TABLE tbl_connector_status (
     CHARGE_BOX_ID   VARCHAR(50)     NOT NULL COMMENT '충전기 식별자 (ChargeBoxIdentity)',
     CONNECTOR_ID    INT             NOT NULL DEFAULT 1 COMMENT '커넥터/건 번호 (0=전체기, 1~N=커넥터)',
-    STATUS          VARCHAR(32)     NOT NULL DEFAULT 'Available' COMMENT 'OCPP 상태 (Available, Occupied, Faulted 등)',
-    ERROR_CODE      VARCHAR(32)     NULL DEFAULT NULL COMMENT 'OCPP 에러코드 (NoError, OtherError 등)',
-    VENDOR_ID       VARCHAR(128)    NULL DEFAULT NULL COMMENT '제조사 에러/상태 코드 (vendorId)',
-    INFO            VARCHAR(255)    NULL DEFAULT NULL COMMENT '상태 부가 정보 (info 메시지)',
+    STATUS          VARCHAR(32)     NOT NULL DEFAULT '연결안됨' COMMENT '상태 (Available, Charging, 연결안됨 등)',
     POWER_KW        DECIMAL(8, 2)   NOT NULL DEFAULT 0.0 COMMENT '현재 출력 전력 (kW)',
     VOLTAGE_V       DECIMAL(8, 2)   NOT NULL DEFAULT 0.0 COMMENT '현재 출력 전압 (V)',
     CURRENT_A       DECIMAL(8, 2)   NOT NULL DEFAULT 0.0 COMMENT '현재 출력 전류 (A)',
@@ -101,52 +108,17 @@ CREATE TABLE tb_connector_status (
     USER_TAG        VARCHAR(50)     NULL COMMENT '사용자 인증 RFID/IdTag',
     ACCUMULATED_KWH DECIMAL(10, 2)  NOT NULL DEFAULT 0.0 COMMENT '세션 누적 충전량 (kWh)',
     CHARGING_MINUTES INT            NOT NULL DEFAULT 0 COMMENT '충전 경과 시간 (분)',
-    HEARTBEAT_AT    DATETIME(3)     NULL DEFAULT NULL COMMENT '최근 Heartbeat 수신 일시 (3ms 정밀도)',
-    STATUS_AT       DATETIME(3)     NULL DEFAULT NULL COMMENT '최근 StatusNotification 수신 일시',
     LAST_HEARTBEAT  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '최종 수신 일시 (관제 화면용)',
-    VERSION         INT             NOT NULL DEFAULT 0 COMMENT 'JPA 낙관적 락 버전 컬럼',
-    REG_DT          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '최초 등록일시',
-    UPDT_DT         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '최종 갱신일시',
-    PRIMARY KEY (ID),
-    UNIQUE KEY UK_CONN_CHARGE_BOX_CONNECTOR (CHARGE_BOX_ID, CONNECTOR_ID),
+    UPDT_DT         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 갱신 일시',
+    PRIMARY KEY (CHARGE_BOX_ID, CONNECTOR_ID),
     KEY IX_CONN_STATUS (STATUS),
-    KEY IX_CONN_HEARTBEAT_AT (HEARTBEAT_AT),
-    CONSTRAINT FK_CONN_CHARGER FOREIGN KEY (CHARGE_BOX_ID) REFERENCES tb_charger (CHARGE_BOX_ID)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전기 커넥터 실시간 상태 원장 (StatusNotification / Heartbeat 기반 Upsert)';
+    CONSTRAINT FK_CONN_CHARGER FOREIGN KEY (CHARGE_BOX_ID) REFERENCES tbl_charger (CHARGE_BOX_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전기 커넥터 실시간 상태 원장';
 
 -- ==============================================================================
--- 5. 충전 거래 세션 관리 원장 (tb_transaction_session)
+-- 5. 충전 세션 및 과금 원장 (tbl_transaction_cdr)
 -- ==============================================================================
-CREATE TABLE tb_transaction_session (
-    ID                  BIGINT          NOT NULL AUTO_INCREMENT COMMENT 'PK - 세션 내부 고유 일련번호',
-    CHARGE_BOX_ID       VARCHAR(50)     NOT NULL COMMENT '충전기 식별자 (ChargeBoxIdentity)',
-    CONNECTOR_ID        INT             NOT NULL DEFAULT 1 COMMENT '충전 건/커넥터 번호 (1~N)',
-    TRANSACTION_ID      BIGINT          NOT NULL COMMENT 'OCPP 거래 번호 (단말 채번 TransactionId)',
-    ID_TAG              VARCHAR(64)     NOT NULL COMMENT '회원 인증 식별자 (RFID / IdTag)',
-    PARENT_ID_TAG       VARCHAR(64)     NULL DEFAULT NULL COMMENT '상위/법인 회원 식별자 (ParentIdTag)',
-    STATUS              VARCHAR(32)     NOT NULL DEFAULT 'STARTED' COMMENT '세션 상태 (STARTED, CHARGING, STOPPED, COMPLETED, ABORTED, FORCE_CLOSED)',
-    METER_START         BIGINT          NOT NULL DEFAULT 0 COMMENT '충전 시작 미터값 (Wh)',
-    METER_STOP          BIGINT          NULL DEFAULT NULL COMMENT '충전 종료 미터값 (Wh)',
-    TOTAL_ENERGY_KWH    DECIMAL(10, 3)  NOT NULL DEFAULT 0.000 COMMENT '최종 충전 전력량 (kWh, (meterStop-meterStart)/1000)',
-    START_TIME          DATETIME(3)     NOT NULL COMMENT '충전 시작 일시 (단말 타임스탬프 기준)',
-    STOP_TIME           DATETIME(3)     NULL DEFAULT NULL COMMENT '충전 종료 일시 (단말 타임스탬프 기준)',
-    CHARGING_MINUTES    INT             NOT NULL DEFAULT 0 COMMENT '총 충전 경과 시간 (분 단위)',
-    STOP_REASON         VARCHAR(64)     NULL DEFAULT NULL COMMENT 'OCPP 종료 사유 (EmergencyStop, EVDisconnected 등 11종)',
-    VERSION             INT             NOT NULL DEFAULT 0 COMMENT 'JPA 낙관적 락(Optimistic Locking) 버전 컬럼',
-    REG_DT              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '최초 세션 생성 일시',
-    UPDT_DT             DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '최종 세션 갱신 일시',
-    PRIMARY KEY (ID),
-    UNIQUE KEY UK_SESSION_CHARGE_BOX_TRN (CHARGE_BOX_ID, TRANSACTION_ID),
-    KEY IX_SESSION_CHARGER_CONN_STATUS (CHARGE_BOX_ID, CONNECTOR_ID, STATUS),
-    KEY IX_SESSION_START_TIME (START_TIME),
-    KEY IX_SESSION_ID_TAG (ID_TAG),
-    CONSTRAINT FK_SESSION_CHARGER FOREIGN KEY (CHARGE_BOX_ID) REFERENCES tb_charger (CHARGE_BOX_ID)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전 거래 세션 관리 원장 (StartTransaction / StopTransaction 연동)';
-
--- ==============================================================================
--- 6. 충전 세션 및 과금 원장 (tb_transaction_cdr)
--- ==============================================================================
-CREATE TABLE tb_transaction_cdr (
+CREATE TABLE tbl_transaction_cdr (
     TRANSACTION_ID  BIGINT AUTO_INCREMENT NOT NULL COMMENT '정산 트랜잭션 고유번호 (PK)',
     CHARGE_BOX_ID   VARCHAR(50)     NOT NULL COMMENT '충전기 ID',
     CONNECTOR_ID    INT             NOT NULL DEFAULT 1 COMMENT '커넥터 번호',
@@ -164,5 +136,14 @@ CREATE TABLE tb_transaction_cdr (
     PRIMARY KEY (TRANSACTION_ID),
     KEY IX_CDR_START_TIME (START_TIME),
     KEY IX_CDR_USER_TAG (USER_TAG),
-    CONSTRAINT FK_CDR_CHARGER FOREIGN KEY (CHARGE_BOX_ID) REFERENCES tb_charger (CHARGE_BOX_ID)
+    CONSTRAINT FK_CDR_CHARGER FOREIGN KEY (CHARGE_BOX_ID) REFERENCES tbl_charger (CHARGE_BOX_ID)
 ) ENGINE=InnoDB AUTO_INCREMENT=98120 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전 과금 원장 (CDR)';
+
+-- ==============================================================================
+-- 6. 레거시 호환 뷰 (tb_*) 생성
+-- ==============================================================================
+CREATE OR REPLACE VIEW tb_corp AS SELECT * FROM tbl_corp;
+CREATE OR REPLACE VIEW tb_station AS SELECT * FROM tbl_station;
+CREATE OR REPLACE VIEW tb_charger AS SELECT * FROM tbl_charger;
+-- CREATE OR REPLACE VIEW tb_connector_status AS SELECT * FROM tbl_connector_status; (Sprint 18 실시간 물리 테이블로 분리)
+CREATE OR REPLACE VIEW tb_transaction_cdr AS SELECT * FROM tbl_transaction_cdr;

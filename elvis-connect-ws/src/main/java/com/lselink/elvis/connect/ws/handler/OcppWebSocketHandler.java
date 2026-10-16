@@ -3,8 +3,8 @@ package com.lselink.elvis.connect.ws.handler;
 import com.lselink.elvis.connect.ws.dto.OcppRawEventEnvelope;
 import com.lselink.elvis.connect.ws.kafka.InboundRawEventProducer;
 import com.lselink.elvis.connect.ws.session.LocalSessionStore;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -16,14 +16,22 @@ import java.time.Instant;
 /**
  * 충전기 WebSocket 통신을 처리하는 인그레스 핸들러
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class OcppWebSocketHandler extends TextWebSocketHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(OcppWebSocketHandler.class);
 
     private final LocalSessionStore sessionStore;
     private final InboundRawEventProducer inboundProducer;
     private final com.lselink.elvis.connect.ws.metrics.GatewayMetrics gatewayMetrics;
+
+    public OcppWebSocketHandler(LocalSessionStore sessionStore,
+                               InboundRawEventProducer inboundProducer,
+                               com.lselink.elvis.connect.ws.metrics.GatewayMetrics gatewayMetrics) {
+        this.sessionStore = sessionStore;
+        this.inboundProducer = inboundProducer;
+        this.gatewayMetrics = gatewayMetrics;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {

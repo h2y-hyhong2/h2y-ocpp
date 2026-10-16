@@ -2,9 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   로컬 가변 폰트 시스템 (Pretendard & Inconsolata)
+   ========================================================================== */
+@font-face {
+  font-family: 'Inconsolata';
+  src: url('/fonts/Inconsolata-VariableFont_wdth,wght.ttf') format('truetype-variations'),
+       url('/fonts/Inconsolata-VariableFont_wdth,wght.ttf') format('truetype');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/PretendardVariable.ttf') format('truetype-variations'),
+       url('/fonts/PretendardVariable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Noto Sans KR', sans-serif;
+  color-scheme: light;
+}
+
+.font-mono, code, pre {
+  font-family: 'Inconsolata', 'Pretendard', 'D2Coding', Consolas, monospace !important;
+}
+
 body {
   margin: 0;
   overflow-x: hidden;
+  font-family: inherit;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom Scrollbar */

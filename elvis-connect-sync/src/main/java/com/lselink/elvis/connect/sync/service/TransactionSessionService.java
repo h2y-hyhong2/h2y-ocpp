@@ -7,8 +7,8 @@ import com.lselink.elvis.connect.sync.domain.TransactionSession;
 import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
 import com.lselink.elvis.connect.sync.repository.ConnectorStatusRepository;
 import com.lselink.elvis.connect.sync.repository.TransactionSessionRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -27,13 +27,19 @@ import java.time.format.DateTimeFormatter;
  * 멱등성 및 원자적 상태 전이, 커넥터 실시간 상태 연계를 수행합니다.
  * </p>
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class TransactionSessionService {
+
+    private static final Logger log = LoggerFactory.getLogger(TransactionSessionService.class);
 
     private final TransactionSessionRepository sessionRepository;
     private final ConnectorStatusRepository connectorStatusRepository;
+
+    public TransactionSessionService(TransactionSessionRepository sessionRepository,
+                                     ConnectorStatusRepository connectorStatusRepository) {
+        this.sessionRepository = sessionRepository;
+        this.connectorStatusRepository = connectorStatusRepository;
+    }
 
     /**
      * StartTransaction 이벤트 처리

@@ -7,7 +7,7 @@
     <!-- GNB 컴팩트 상단 헤더 (48px) -->
     <header class="window-titlebar flex items-center justify-between px-3 md:px-4 h-12 min-h-[48px] bg-white/95 backdrop-blur-md border-b border-slate-200/90 z-30 flex-shrink-0 shadow-2xs gap-3">
       
-      <!-- Left: 로고 및 타이틀 & 3대 핵심 관제 메뉴 네비게이션 -->
+      <!-- Left: 로고 및 타이틀 & 관제 메뉴 네비게이션 -->
       <div class="flex items-center gap-3 flex-shrink-0">
         <!-- 모바일/태블릿용 사이드바 토글 버튼 (1024px 미만에서 노출) -->
         <button
@@ -47,7 +47,7 @@
 
         <div class="h-4 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
-        <!-- 3대 핵심 관제 메뉴 탭 -->
+        <!-- 관제 메뉴 탭 -->
         <nav class="hidden sm:flex items-center gap-1 text-xs">
           <router-link
             to="/"
@@ -67,16 +67,6 @@
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <span>과금 원장</span>
-          </router-link>
-
-          <router-link
-            to="/logs"
-            active-class="bg-sky-50 text-sky-700 font-bold border-sky-200/90 shadow-2xs"
-            class="px-2.5 py-1 rounded-lg border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all flex items-center gap-1.5 cursor-pointer"
-            title="OCPP 실시간 패킷 로그"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            <span>패킷 로그</span>
           </router-link>
         </nav>
       </div>
@@ -240,11 +230,18 @@ function handleClose() {
   }
 }
 
+let syncTimer: number | null = null
+
 onMounted(() => {
   updateTime()
   timer = window.setInterval(updateTime, 1000)
   document.documentElement.setAttribute('data-theme', store.currentTheme)
   store.fetchInitialData()
+
+  // 3초 주기 실시간 DB 데이터 자동 동기화 (Polling)
+  syncTimer = window.setInterval(() => {
+    store.fetchInitialData(true)
+  }, 3000)
 
   // 단축키 Ctrl+K 글로벌 검색 포커스
   window.addEventListener('keydown', (e) => {
@@ -267,6 +264,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
+  if (syncTimer) clearInterval(syncTimer)
 })
 </script>
 

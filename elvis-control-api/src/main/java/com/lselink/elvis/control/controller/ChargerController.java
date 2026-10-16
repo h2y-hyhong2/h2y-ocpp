@@ -2,7 +2,6 @@ package com.lselink.elvis.control.controller;
 
 import com.lselink.elvis.control.dto.ChargerResponseDto;
 import com.lselink.elvis.control.service.ChargerService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,11 +10,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/chargers")
-@RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ChargerController {
 
     private final ChargerService chargerService;
+
+    public ChargerController(ChargerService chargerService) {
+        this.chargerService = chargerService;
+    }
 
     @GetMapping
     public ResponseEntity<List<ChargerResponseDto>> getChargers(

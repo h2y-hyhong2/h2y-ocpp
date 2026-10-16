@@ -6,8 +6,8 @@ import com.lselink.elvis.connect.sync.domain.RfidCard;
 import com.lselink.elvis.connect.sync.dto.IdTagInfo;
 import com.lselink.elvis.connect.sync.repository.RfidCardRepository;
 import com.lselink.elvis.connect.sync.service.MemberAuthCacheService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
  * 3계층 초저지연 Cache-Aside 및 자동 장애 복원(Failover)을 수행합니다.
  * </p>
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class MemberAuthCacheServiceImpl implements MemberAuthCacheService {
+
+    private static final Logger log = LoggerFactory.getLogger(MemberAuthCacheServiceImpl.class);
 
     private static final String REDIS_KEY_PREFIX = "elvis:rfid:tag:";
     private static final long REDIS_TTL_SECONDS = 3600L;          // 정상 태그 TTL 1시간
@@ -34,6 +34,14 @@ public class MemberAuthCacheServiceImpl implements MemberAuthCacheService {
     private final Cache<String, IdTagInfo> caffeineTagCache;
     private final RedisTemplate<String, Object> redisCacheTemplate;
     private final RfidCardRepository rfidCardRepository;
+
+    public MemberAuthCacheServiceImpl(Cache<String, IdTagInfo> caffeineTagCache,
+                                     RedisTemplate<String, Object> redisCacheTemplate,
+                                     RfidCardRepository rfidCardRepository) {
+        this.caffeineTagCache = caffeineTagCache;
+        this.redisCacheTemplate = redisCacheTemplate;
+        this.rfidCardRepository = rfidCardRepository;
+    }
 
     @Override
     public IdTagInfo validateIdTag(String rawIdTag) {

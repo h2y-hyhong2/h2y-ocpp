@@ -4,8 +4,8 @@ import com.lselink.elvis.connect.sync.domain.AuthHist;
 import com.lselink.elvis.connect.sync.dto.IdTagInfo;
 import com.lselink.elvis.connect.sync.repository.AuthHistRepository;
 import com.lselink.elvis.connect.sync.service.AuthAuditLogService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,13 +19,18 @@ import java.util.concurrent.Executor;
  * Virtual Thread를 통해 완전히 분리된 Fire-and-Forget 방식으로 DB에 영속화합니다.
  * </p>
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthAuditLogServiceImpl implements AuthAuditLogService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthAuditLogServiceImpl.class);
 
     private final Executor virtualThreadExecutor;
     private final AuthHistRepository authHistRepository;
+
+    public AuthAuditLogServiceImpl(Executor virtualThreadExecutor, AuthHistRepository authHistRepository) {
+        this.virtualThreadExecutor = virtualThreadExecutor;
+        this.authHistRepository = authHistRepository;
+    }
 
     @Override
     public void logAuthAsync(String chargeBoxId, String messageId, String idTag, IdTagInfo idTagInfo, long elapsedNano) {

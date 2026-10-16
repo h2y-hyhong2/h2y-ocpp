@@ -1,7 +1,6 @@
 package com.lselink.elvis.connect.sync.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -30,11 +29,6 @@ import java.time.LocalDateTime;
                 @Index(name = "IX_SESSION_ID_TAG", columnList = "ID_TAG")
         }
 )
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @DynamicUpdate
 public class TransactionSession {
 
@@ -107,10 +101,135 @@ public class TransactionSession {
     @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
-    /** 최종 세션 갱신 일시 */
     @UpdateTimestamp
     @Column(name = "UPDT_DT", nullable = false)
     private LocalDateTime updtDt;
+
+    protected TransactionSession() {
+    }
+
+    public TransactionSession(Long id, String chargeBoxId, int connectorId, Long transactionId, String idTag,
+                              String parentIdTag, SessionStatus status, Long meterStart, Long meterStop,
+                              BigDecimal totalEnergyKwh, LocalDateTime startTime, LocalDateTime stopTime,
+                              int chargingMinutes, StopReason stopReason, int version, LocalDateTime regDt,
+                              LocalDateTime updtDt) {
+        this.id = id;
+        this.chargeBoxId = chargeBoxId;
+        this.connectorId = connectorId;
+        this.transactionId = transactionId;
+        this.idTag = idTag;
+        this.parentIdTag = parentIdTag;
+        this.status = status;
+        this.meterStart = meterStart;
+        this.meterStop = meterStop;
+        this.totalEnergyKwh = totalEnergyKwh;
+        this.startTime = startTime;
+        this.stopTime = stopTime;
+        this.chargingMinutes = chargingMinutes;
+        this.stopReason = stopReason;
+        this.version = version;
+        this.regDt = regDt;
+        this.updtDt = updtDt;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getChargeBoxId() { return chargeBoxId; }
+    public void setChargeBoxId(String chargeBoxId) { this.chargeBoxId = chargeBoxId; }
+
+    public int getConnectorId() { return connectorId; }
+    public void setConnectorId(int connectorId) { this.connectorId = connectorId; }
+
+    public Long getTransactionId() { return transactionId; }
+    public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
+
+    public String getIdTag() { return idTag; }
+    public void setIdTag(String idTag) { this.idTag = idTag; }
+
+    public String getParentIdTag() { return parentIdTag; }
+    public void setParentIdTag(String parentIdTag) { this.parentIdTag = parentIdTag; }
+
+    public SessionStatus getStatus() { return status; }
+    public void setStatus(SessionStatus status) { this.status = status; }
+
+    public Long getMeterStart() { return meterStart; }
+    public void setMeterStart(Long meterStart) { this.meterStart = meterStart; }
+
+    public Long getMeterStop() { return meterStop; }
+    public void setMeterStop(Long meterStop) { this.meterStop = meterStop; }
+
+    public BigDecimal getTotalEnergyKwh() { return totalEnergyKwh; }
+    public void setTotalEnergyKwh(BigDecimal totalEnergyKwh) { this.totalEnergyKwh = totalEnergyKwh; }
+
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getStopTime() { return stopTime; }
+    public void setStopTime(LocalDateTime stopTime) { this.stopTime = stopTime; }
+
+    public int getChargingMinutes() { return chargingMinutes; }
+    public void setChargingMinutes(int chargingMinutes) { this.chargingMinutes = chargingMinutes; }
+
+    public StopReason getStopReason() { return stopReason; }
+    public void setStopReason(StopReason stopReason) { this.stopReason = stopReason; }
+
+    public int getVersion() { return version; }
+    public void setVersion(int version) { this.version = version; }
+
+    public LocalDateTime getRegDt() { return regDt; }
+    public void setRegDt(LocalDateTime regDt) { this.regDt = regDt; }
+
+    public LocalDateTime getUpdtDt() { return updtDt; }
+    public void setUpdtDt(LocalDateTime updtDt) { this.updtDt = updtDt; }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Long id;
+        private String chargeBoxId;
+        private int connectorId;
+        private Long transactionId;
+        private String idTag;
+        private String parentIdTag;
+        private SessionStatus status;
+        private Long meterStart;
+        private Long meterStop;
+        private BigDecimal totalEnergyKwh;
+        private LocalDateTime startTime;
+        private LocalDateTime stopTime;
+        private int chargingMinutes;
+        private StopReason stopReason;
+        private int version;
+        private LocalDateTime regDt;
+        private LocalDateTime updtDt;
+
+        public Builder id(Long id) { this.id = id; return this; }
+        public Builder chargeBoxId(String chargeBoxId) { this.chargeBoxId = chargeBoxId; return this; }
+        public Builder connectorId(int connectorId) { this.connectorId = connectorId; return this; }
+        public Builder transactionId(Long transactionId) { this.transactionId = transactionId; return this; }
+        public Builder idTag(String idTag) { this.idTag = idTag; return this; }
+        public Builder parentIdTag(String parentIdTag) { this.parentIdTag = parentIdTag; return this; }
+        public Builder status(SessionStatus status) { this.status = status; return this; }
+        public Builder meterStart(Long meterStart) { this.meterStart = meterStart; return this; }
+        public Builder meterStop(Long meterStop) { this.meterStop = meterStop; return this; }
+        public Builder totalEnergyKwh(BigDecimal totalEnergyKwh) { this.totalEnergyKwh = totalEnergyKwh; return this; }
+        public Builder startTime(LocalDateTime startTime) { this.startTime = startTime; return this; }
+        public Builder stopTime(LocalDateTime stopTime) { this.stopTime = stopTime; return this; }
+        public Builder chargingMinutes(int chargingMinutes) { this.chargingMinutes = chargingMinutes; return this; }
+        public Builder stopReason(StopReason stopReason) { this.stopReason = stopReason; return this; }
+        public Builder version(int version) { this.version = version; return this; }
+        public Builder regDt(LocalDateTime regDt) { this.regDt = regDt; return this; }
+        public Builder updtDt(LocalDateTime updtDt) { this.updtDt = updtDt; return this; }
+
+        public TransactionSession build() {
+            return new TransactionSession(id, chargeBoxId, connectorId, transactionId, idTag, parentIdTag,
+                    status, meterStart, meterStop, totalEnergyKwh, startTime, stopTime, chargingMinutes,
+                    stopReason, version, regDt, updtDt);
+        }
+    }
 
     /**
      * 세션 종료 비즈니스 로직
