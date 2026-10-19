@@ -217,6 +217,130 @@ function handleDelete(e: Event, id: string) {
     store.deleteCharger(id)
   }
 }
+
+// 4. 커넥터 상태 시각화 헬퍼 (기본 2개 커넥터 지원)
+function getConnectors(c: ChargerInstance) {
+  if (c.connectors && c.connectors.length >= 2) {
+    return c.connectors
+  }
+  return [
+    { connectorId: 1, status: c.connectors?.[0]?.status || c.status || 'Available' },
+    { connectorId: 2, status: 'Available' }
+  ]
+}
+
+function getConnectorBadgeClass(charger: ChargerInstance, status: string) {
+  if (!charger.connected || status === 'Unavailable') {
+    return 'bg-slate-100 text-slate-400 border-slate-200/80'
+  }
+  switch (status) {
+    case 'Charging':
+      return 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold animate-pulse'
+    case 'Preparing':
+      return 'bg-amber-50 text-amber-700 border-amber-200 font-medium'
+    case 'SuspendedEVSE':
+    case 'SuspendedEV':
+      return 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
+    case 'Finishing':
+      return 'bg-purple-50 text-purple-700 border-purple-200 font-medium'
+    case 'Faulted':
+      return 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
+    case 'Available':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold'
+    default:
+      return 'bg-slate-100 text-slate-400 border-slate-200/80'
+  }
+}
+
+function getConnectorStatusText(charger: ChargerInstance, status: string) {
+  if (!charger.connected || status === 'Unavailable') return '오프'
+  switch (status) {
+    case 'Charging': return '충전'
+    case 'Preparing': return '준비'
+    case 'SuspendedEVSE':
+    case 'SuspendedEV': return '일시'
+    case 'Finishing': return '종료'
+    case 'Faulted': return '고장'
+    case 'Available': return '대기'
+    default: return '오프'
+  }
+}
+
+// 5. 충전기 연결 및 가동 상태별 배경/테두리 클래스 헬퍼
+function getChargerTileClass(c: ChargerInstance) {
+  const isSelected = selectedId.value === c.id
+
+  // 1. 에러 상태
+  if (c.lastError) {
+    return isSelected
+      ? 'bg-rose-50/90 border-rose-500 ring-2 ring-rose-300 font-bold shadow-2xs'
+      : 'bg-rose-50/60 border-rose-300 hover:bg-rose-50 hover:border-rose-400'
+  }
+
+  // 2. 현재 선택된 충전기
+  if (isSelected) {
+    if (c.connected) {
+      const isCharging = c.connectors?.some(conn => conn.status === 'Charging')
+      if (isCharging) {
+        return 'bg-indigo-50/90 border-indigo-500 ring-2 ring-indigo-200 font-bold shadow-2xs'
+      }
+      return 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-200 font-bold shadow-2xs'
+    }
+    if (c.connecting) {
+      return 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-200 font-bold animate-pulse shadow-2xs'
+    }
+    return 'bg-sky-50/90 border-sky-500 ring-2 ring-sky-200 font-bold shadow-2xs'
+  }
+
+  // 3. 미선택 - 연결 진행 중 (Connecting)
+  if (c.connecting) {
+    return 'bg-amber-50/70 border-amber-300 hover:bg-amber-50/90 hover:border-amber-400 animate-pulse'
+  }
+
+  // 4. 미선택 - 연결 완료 (Connected / Online)
+  if (c.connected) {
+    const isCharging = c.connectors?.some(conn => conn.status === 'Charging')
+    if (isCharging) {
+      return 'bg-indigo-50/60 border-indigo-200 hover:bg-indigo-50/80 hover:border-indigo-300 shadow-2xs'
+    }
+    return 'bg-emerald-50/50 border-emerald-200/90 hover:bg-emerald-50/80 hover:border-emerald-300 shadow-2xs'
+  }
+
+  // 5. 미선택 - 미연결 (Offline)
+  return 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 shadow-2xs'
+}
+
+function getChargerListCardClass(c: ChargerInstance) {
+  const isSelected = selectedId.value === c.id
+
+  if (c.lastError) {
+    return isSelected
+      ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-200 shadow-2xs'
+      : 'bg-rose-50/60 border-rose-200 hover:bg-rose-50'
+  }
+
+  if (isSelected) {
+    if (c.connected) {
+      const isCharging = c.connectors?.some(conn => conn.status === 'Charging')
+      if (isCharging) return 'bg-indigo-50 border-indigo-400 ring-2 ring-indigo-200 shadow-2xs'
+      return 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200 shadow-2xs'
+    }
+    if (c.connecting) return 'bg-amber-50 border-amber-400 ring-2 ring-amber-200 shadow-2xs animate-pulse'
+    return 'bg-sky-50 border-sky-400 ring-2 ring-sky-200 shadow-2xs'
+  }
+
+  if (c.connecting) {
+    return 'bg-amber-50/60 border-amber-300 hover:bg-amber-50 animate-pulse'
+  }
+
+  if (c.connected) {
+    const isCharging = c.connectors?.some(conn => conn.status === 'Charging')
+    if (isCharging) return 'bg-indigo-50/50 border-indigo-200 hover:bg-indigo-50/80'
+    return 'bg-emerald-50/40 border-emerald-200 hover:bg-emerald-50/70'
+  }
+
+  return 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+}
 </script>
 
 <template>
@@ -323,51 +447,51 @@ function handleDelete(e: Event, id: string) {
           <span class="text-[10px] text-slate-500 font-mono">{{ grp.chargers.length }}기</span>
         </div>
 
-        <!-- 바둑판 충전기 타일 그리드 -->
-        <div class="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+        <!-- 바둑판 충전기 타일 그리드 (시안 A: 컴팩트 4열 네모 + 하단 커넥터 미니 슬롯) -->
+        <div class="grid grid-cols-4 gap-1.5">
           <div
             v-for="c in grp.chargers"
             :key="c.id"
             @click="handleSelect(c.id)"
             @contextmenu.prevent="openContextMenu($event, c)"
-            class="relative rounded-md border p-1.5 flex flex-col items-center justify-between transition-all cursor-pointer group"
-            :class="[
-              selectedId === c.id
-                ? 'bg-sky-50 border-sky-400 ring-2 ring-sky-200 shadow-2xs font-bold'
-                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80',
-              c.lastError ? 'border-rose-300 bg-rose-50/40' : ''
-            ]"
-            :title="`[${c.id}] ${c.name}\n상태: ${c.status} (${c.connected ? '연결됨' : '미연결'})\n(좌클릭: 선택 / 우클릭: 빠른 전문 발송)`"
+            class="relative rounded-md border p-1.5 flex flex-col justify-between transition-all cursor-pointer group shadow-2xs hover:shadow-xs min-h-[52px]"
+            :class="getChargerTileClass(c)"
+            :title="`[${c.id}] ${c.name}\n네트워크: ${c.connected ? '연결됨 (ONLINE)' : '미연결 (OFFLINE)'}\n커넥터: ${getConnectors(c).map(k => `#${k.connectorId}(${k.status})`).join(', ')}\n(좌클릭: 선택 / 우클릭: 빠른 전문 발송)`"
           >
-            <!-- 연결 상태 도트 -->
-            <div class="w-full flex items-center justify-between">
-              <span
-                class="w-2 h-2 rounded-full"
-                :class="c.connected ? 'bg-emerald-500 animate-pulse ring-2 ring-emerald-100' : c.connecting ? 'bg-amber-400 animate-ping' : 'bg-slate-300'"
-              ></span>
-              <span class="text-[9px] font-mono text-slate-400 group-hover:text-slate-600">
+            <!-- 1. 상단: 연결 도트 + 충전기 #번호 + 용량 kW -->
+            <div class="w-full flex items-center justify-between gap-1 leading-none mb-1">
+              <div class="flex items-center gap-1 min-w-0">
+                <span
+                  class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  :class="c.connected ? 'bg-emerald-500 ring-1 ring-emerald-200 animate-pulse' : c.connecting ? 'bg-amber-400 animate-ping' : 'bg-slate-300'"
+                ></span>
+                <span
+                  class="text-[11px] font-mono font-bold truncate"
+                  :class="selectedId === c.id ? (c.connected ? 'text-emerald-950 font-black' : 'text-sky-800 font-black') : 'text-slate-800'"
+                >
+                  #{{ c.chargerId }}
+                </span>
+              </div>
+              <span class="text-[9px] font-mono text-slate-400 group-hover:text-slate-600 flex-shrink-0">
                 {{ c.powerKw }}k
               </span>
             </div>
 
-            <!-- 충전기 번호 (2자리) -->
-            <div class="my-0.5 text-center">
-              <span class="text-xs font-mono font-black" :class="selectedId === c.id ? 'text-sky-700' : 'text-slate-800'">
-                #{{ c.chargerId }}
-              </span>
+            <!-- 2. 하단: 커넥터 슬롯 (기본 2구 듀얼 C1, C2) -->
+            <div class="w-full flex items-center gap-1">
+              <div
+                v-for="conn in getConnectors(c)"
+                :key="conn.connectorId"
+                class="flex-1 flex items-center justify-center gap-0.5 py-0.5 px-0.5 rounded text-[8px] font-mono border transition-colors truncate min-w-0"
+                :class="getConnectorBadgeClass(c, conn.status)"
+                :title="`커넥터 #${conn.connectorId}: ${conn.status}`"
+              >
+                <span class="text-[7.5px] opacity-75 font-sans">C{{ conn.connectorId }}</span>
+                <span class="font-bold text-[8px] truncate">
+                  {{ getConnectorStatusText(c, conn.status) }}
+                </span>
+              </div>
             </div>
-
-            <!-- 상태 라벨 -->
-            <span
-              class="text-[9px] px-1 rounded-sm font-medium truncate max-w-full"
-              :class="[
-                c.status === 'Charging' ? 'bg-indigo-100 text-indigo-700 font-bold' :
-                c.status === 'Preparing' ? 'bg-amber-100 text-amber-700' :
-                c.connected ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
-              ]"
-            >
-              {{ c.status === 'Charging' ? '충전중' : c.status === 'Preparing' ? '준비중' : c.connected ? '대기' : '오프' }}
-            </span>
           </div>
         </div>
       </div>
@@ -384,8 +508,8 @@ function handleDelete(e: Event, id: string) {
         :key="c.id"
         @click="handleSelect(c.id)"
         @contextmenu.prevent="openContextMenu($event, c)"
-        class="p-2.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-1.5"
-        :class="selectedId === c.id ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-100 shadow-2xs' : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'"
+        class="p-2.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-1.5 shadow-2xs"
+        :class="getChargerListCardClass(c)"
         :title="`[${c.id}] ${c.name}\n(좌클릭: 선택 / 우클릭: 빠른 전문 발송)`"
       >
         <div class="flex items-center justify-between">

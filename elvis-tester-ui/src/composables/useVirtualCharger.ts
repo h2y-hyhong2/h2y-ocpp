@@ -7,7 +7,7 @@ import {
   type VirtualChargerState
 } from '../types/ocpp'
 
-const STORAGE_KEY = 'elvis_tester_chargers_v1'
+const STORAGE_KEY = 'elvis_tester_chargers_v3'
 
 const DEFAULT_PRESETS: ChargerInstance[] = [
   {
@@ -19,12 +19,12 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-HPC-350K',
     powerKw: 350,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
     connectors: [
-      { connectorId: 1, status: 'Available' },
-      { connectorId: 2, status: 'Available' }
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
     ],
     activeConnectorId: 1,
     transactionId: null,
@@ -47,12 +47,12 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-HPC-350K',
     powerKw: 350,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
     connectors: [
-      { connectorId: 1, status: 'Available' },
-      { connectorId: 2, status: 'Available' }
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
     ],
     activeConnectorId: 1,
     transactionId: null,
@@ -75,10 +75,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-QC-200K',
     powerKw: 200,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 80500,
@@ -100,10 +103,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-QC-200K',
     powerKw: 200,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 95000,
@@ -125,10 +131,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-QC-100K',
     powerKw: 100,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 60000,
@@ -150,10 +159,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-QC-100K',
     powerKw: 100,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 72000,
@@ -175,10 +187,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-QC-100K',
     powerKw: 100,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 54000,
@@ -200,10 +215,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-MC-50K',
     powerKw: 50,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 43000,
@@ -225,10 +243,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-MC-50K',
     powerKw: 50,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 38000,
@@ -250,10 +271,13 @@ const DEFAULT_PRESETS: ChargerInstance[] = [
     vendor: 'LS E-Link',
     model: 'ELVIS-MC-50K',
     powerKw: 50,
-    status: 'Available',
+    status: 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [{ connectorId: 1, status: 'Available' }],
+    connectors: [
+      { connectorId: 1, status: 'Unavailable' },
+      { connectorId: 2, status: 'Unavailable' }
+    ],
     activeConnectorId: 1,
     transactionId: null,
     meterValueWh: 29000,
@@ -279,6 +303,11 @@ function initChargers(): ChargerInstance[] {
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map((item: any) => ({
           ...item,
+          status: 'Unavailable',
+          connectors: [
+            { connectorId: 1, status: 'Unavailable' },
+            { connectorId: 2, status: 'Unavailable' }
+          ],
           connected: false,
           connecting: false,
           scenarioRunning: false,
@@ -339,6 +368,21 @@ function addLog(entry: Omit<OcppLogEntry, 'id' | 'timestamp'>) {
   if (logs.value.length > 1000) {
     logs.value.pop()
   }
+
+  // 브라우저 DevTools 콘솔에도 OCPP 방향 배지와 함께 클릭하여 탐색 가능한 JSON 객체로 출력
+  let parsedJson: any = entry.payload
+  if (entry.raw && typeof entry.raw === 'string' && (entry.raw.startsWith('[') || entry.raw.startsWith('{'))) {
+    try {
+      parsedJson = JSON.parse(entry.raw)
+    } catch {
+      parsedJson = entry.raw
+    }
+  }
+
+  const badge = entry.direction === 'SEND' ? '📤 [SEND]' : entry.direction === 'RECV' ? '📥 [RECV]' : '⚙️ [SYS]'
+  const cid = entry.chargerId ? `[${entry.chargerId}]` : ''
+  const act = entry.action ? `[${entry.action}]` : ''
+  console.log(`${badge} ${cid} ${act}`, parsedJson)
 }
 
 export function useVirtualCharger() {
@@ -402,7 +446,12 @@ export function useVirtualCharger() {
       status: 'Available',
       connected: false,
       connecting: false,
-      connectors: item.connectors || [{ connectorId: 1, status: 'Available' }],
+      connectors: (item.connectors && item.connectors.length >= 2)
+        ? item.connectors
+        : [
+            { connectorId: 1, status: 'Available' },
+            { connectorId: 2, status: 'Available' }
+          ],
       activeConnectorId: 1,
       transactionId: null,
       meterValueWh: 100000,
@@ -558,6 +607,10 @@ export function useVirtualCharger() {
     if (c) {
       c.connected = false
       c.connecting = false
+      c.status = 'Unavailable'
+      if (c.connectors) {
+        c.connectors.forEach(conn => { conn.status = 'Unavailable' })
+      }
     }
   }
 
@@ -579,6 +632,7 @@ export function useVirtualCharger() {
 
   function sendCall(action: string, payload: any, targetId?: string): string | null {
     const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
     const ws = socketMap.get(cid)
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -604,6 +658,14 @@ export function useVirtualCharger() {
     })
 
     ws.send(rawPacket)
+
+    // StatusNotification 발송 시 충전기 및 커넥터 상태 즉시 동기화
+    if (c && action === 'StatusNotification' && payload?.status) {
+      c.status = payload.status
+      const connId = payload.connectorId ?? c.activeConnectorId ?? 1
+      const conn = c.connectors?.find(g => g.connectorId === connId)
+      if (conn) conn.status = payload.status
+    }
 
     addLog({
       chargerId: cid,

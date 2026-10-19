@@ -67,6 +67,7 @@ public class OcppMessageParser {
                     .uniqueId(uniqueId)
                     .action(action)
                     .payload(payload)
+                    .raw(rawPayload)
                     .build());
 
         } catch (Exception e) {

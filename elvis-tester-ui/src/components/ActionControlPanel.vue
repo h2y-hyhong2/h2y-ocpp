@@ -180,7 +180,10 @@ function handleAbortScenario() {
 <template>
   <div class="h-full flex flex-col overflow-y-auto space-y-3 select-none p-1 font-sans">
     <!-- 1. 선택된 충전기 상태 및 빠른 제어 바 -->
-    <div class="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs flex-shrink-0">
+    <div
+      class="rounded-xl border p-3.5 shadow-2xs flex-shrink-0 transition-colors"
+      :class="targetCharger.connected ? 'bg-emerald-50/30 border-emerald-200' : targetCharger.connecting ? 'bg-amber-50/40 border-amber-200 animate-pulse' : 'bg-white border-slate-200'"
+    >
       <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
         <!-- 충전기 식별자 및 타이틀 -->
         <div class="flex items-center gap-3">

@@ -15,11 +15,19 @@ public class OcppParsedMessage {
     /** OCPP payload JSON 노드 */
     private final JsonNode payload;
 
+    /** OCPP 원문 JSON 전문 문자열 */
+    private final String raw;
+
     public OcppParsedMessage(String chargeBoxId, String uniqueId, String action, JsonNode payload) {
+        this(chargeBoxId, uniqueId, action, payload, null);
+    }
+
+    public OcppParsedMessage(String chargeBoxId, String uniqueId, String action, JsonNode payload, String raw) {
         this.chargeBoxId = chargeBoxId;
         this.uniqueId = uniqueId;
         this.action = action;
         this.payload = payload;
+        this.raw = raw;
     }
 
     public String getChargeBoxId() {
@@ -38,6 +46,10 @@ public class OcppParsedMessage {
         return payload;
     }
 
+    public String getRaw() {
+        return raw != null ? raw : (payload != null ? payload.toString() : "");
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -47,6 +59,7 @@ public class OcppParsedMessage {
         private String uniqueId;
         private String action;
         private JsonNode payload;
+        private String raw;
 
         public Builder chargeBoxId(String chargeBoxId) {
             this.chargeBoxId = chargeBoxId;
@@ -68,8 +81,13 @@ public class OcppParsedMessage {
             return this;
         }
 
+        public Builder raw(String raw) {
+            this.raw = raw;
+            return this;
+        }
+
         public OcppParsedMessage build() {
-            return new OcppParsedMessage(chargeBoxId, uniqueId, action, payload);
+            return new OcppParsedMessage(chargeBoxId, uniqueId, action, payload, raw);
         }
     }
 }

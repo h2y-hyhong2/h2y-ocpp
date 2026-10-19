@@ -45,8 +45,7 @@ public class OutboundCommandConsumer {
                 try {
                     session.sendMessage(new TextMessage(command.getPayload()));
                     gatewayMetrics.recordOutboundCommand();
-                    log.info("[OutboundConsumer] 하향 명령 소켓 전송 완료: chargeBoxId={}, messageId={}",
-                            chargeBoxId, command.getMessageId());
+                    log.info("[WS-SEND] [{}] 하향 전문 전송: {}", chargeBoxId, command.getPayload());
                 } catch (IOException e) {
                     log.error("[OutboundConsumer] 하향 명령 소켓 전송 실패: chargeBoxId={}, error={}",
                             chargeBoxId, e.getMessage(), e);

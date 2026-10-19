@@ -61,7 +61,7 @@ public class OcppWebSocketHandler extends TextWebSocketHandler {
         // 실시간 인바운드 TPS 모니터링 메트릭 카운팅 (REQ-004)
         gatewayMetrics.recordInboundPacket();
 
-        log.debug("[WS-Handler] 패킷 수신: chargeBoxId={}, length={}", chargeBoxId, payload.length());
+        log.info("[WS-RECV] [{}] 수신 전문: {}", chargeBoxId, payload);
 
         OcppRawEventEnvelope envelope = OcppRawEventEnvelope.builder()
                 .chargeBoxId(chargeBoxId)

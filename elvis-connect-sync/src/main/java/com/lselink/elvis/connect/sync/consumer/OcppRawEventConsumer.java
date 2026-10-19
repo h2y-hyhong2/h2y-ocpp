@@ -78,7 +78,7 @@ public class OcppRawEventConsumer {
     private void dispatchAction(OcppParsedMessage msg) {
         String action = msg.getAction();
 
-        log.info("[SyncConsumer] OCPP Action 수신: chargeBoxId={}, action={}", msg.getChargeBoxId(), action);
+        log.info("[SYNC-RECV] [{}] [{}] 수신 전문: {}", msg.getChargeBoxId(), action, msg.getRaw());
 
         switch (action) {
             // ─── Sprint 18: 실시간 상태 UPDATE ──────────────────────────────────
