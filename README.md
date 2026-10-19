@@ -28,6 +28,23 @@
 
 ---
 
+## 💻 로컬 개발 환경 및 미들웨어 바이너리 (Local Middleware Binaries)
+
+CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하기 위해 `binaries/` 디렉토리에 주요 미들웨어 바이너리를 내장/관리합니다.
+
+| 미들웨어 | 버전 | 실행 환경 | 전용 포트 | 설치 및 실행 상세 가이드 |
+| :--- | :--- | :--- | :--- | :--- |
+| **ClickHouse** | `v26.7.34.3-stable` (amd64) | WSL2 (Ubuntu 24.04 LTS) | HTTP `8123` / Native `9000` | [ClickHouse 설치 가이드](binaries/clickhouse-v26.7.34.3-stable/README.md) |
+| **Apache Kafka** | `2.13-4.3.1` (KRaft) | Windows / JVM | `19092` | `binaries/kafka_2.13-4.3.1/` |
+| **MySQL** | `9.7.1-winx64` | Windows x64 | `13306` | `binaries/mysql-9.7.1-winx64/` |
+
+### 주요 마이크로서비스 모듈
+- **`elvis-core`**: OCPP 1.6J WebSocket 수신 및 핵심 비즈니스 로직 처리
+- **`elvis-data-clickhouse`**: Kafka 계측 데이터를 ClickHouse로 고속 벌크 적재하는 OLAP 전용 엔진 ([모듈 가이드](elvis-data-clickhouse/README.md))
+- **`elvis-tester-ui`**: 가상 충전기(EVSE) 에뮬레이터 및 관제 프로토타입 UI (Tauri/Vue 3)
+
+---
+
 ## 🚀 프로젝트 로드맵
 
 1. **Phase 1 (Standalone 단독 배포 모드 - 6개월)**

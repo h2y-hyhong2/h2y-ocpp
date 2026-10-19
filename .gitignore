@@ -24,7 +24,10 @@
 hs_err_pid*
 replay_pid*
 
-binaries
+binaries/*
+!binaries/clickhouse-v26.7.34.3-stable/
+binaries/clickhouse-v26.7.34.3-stable/*
+!binaries/clickhouse-v26.7.34.3-stable/README.md
 
 # Node / Frontend dependencies & build artifacts
 node_modules/
