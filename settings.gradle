@@ -9,4 +9,5 @@ rootProject.name = 'h2y-ocpp'
 
 include 'elvis-connect-ws'
 include 'elvis-connect-sync'
+include 'elvis-data-clickhouse'
 include 'elvis-control-api'

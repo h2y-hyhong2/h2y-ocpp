@@ -1,0 +1,26 @@
+server:
+  port: 18083
+
+spring:
+  application:
+    name: elvis-data-clickhouse
+  threads:
+    virtual:
+      enabled: true
+
+elvis:
+  clickhouse:
+    enabled: true
+    url: jdbc:ch://localhost:8123/elvis_poc
+    user: default
+    password: ""
+    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+    batch:
+      size: 1000
+      timeout-ms: 1000
+
+logging:
+  level:
+    com.lselink.elvis: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
