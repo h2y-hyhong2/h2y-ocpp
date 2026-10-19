@@ -34,11 +34,14 @@ public class TransactionSessionService {
 
     private final TransactionSessionRepository sessionRepository;
     private final ConnectorStatusRepository connectorStatusRepository;
+    private final TouRatingService touRatingService;
 
     public TransactionSessionService(TransactionSessionRepository sessionRepository,
-                                     ConnectorStatusRepository connectorStatusRepository) {
+                                     ConnectorStatusRepository connectorStatusRepository,
+                                     TouRatingService touRatingService) {
         this.sessionRepository = sessionRepository;
         this.connectorStatusRepository = connectorStatusRepository;
+        this.touRatingService = touRatingService;
     }
 
     /**
@@ -179,6 +182,13 @@ public class TransactionSessionService {
                         .build();
 
                 sessionRepository.save(session);
+                
+                // 고아 세션 CDR 원장 생성
+                try {
+                    touRatingService.calculateAndSaveCdr(session, meterStop, stopTime);
+                } catch (Exception e) {
+                    log.error("[SessionSvc] 고아 세션 CDR 생성 실패: txId={}, error={}", transactionId, e.getMessage());
+                }
                 return;
             }
 
@@ -208,6 +218,14 @@ public class TransactionSessionService {
             );
             log.info("[SessionSvc] 커넥터 상태 복구 완료: chargeBoxId={}, connId={}, status=Available",
                     chargeBoxId, session.getConnectorId());
+
+            // 5. TOU 시간대별 차등 요금 계산 및 독립 CDR 과금 원장(tb_charge_detail_record) 영속화 (S21-SYNC-0080-CO)
+            try {
+                touRatingService.calculateAndSaveCdr(session, meterStop, stopTime);
+            } catch (Exception e) {
+                log.error("[SessionSvc] CDR 과금 원장 생성 중 예외 발생 (세션 마감은 유지): txId={}, error={}",
+                        transactionId, e.getMessage(), e);
+            }
 
         } catch (Exception e) {
             log.error("[SessionSvc] StopTransaction 처리 실패: chargeBoxId={}, error={}",
