@@ -268,7 +268,7 @@ function getConnectorStatusText(charger: ChargerInstance, status: string) {
 
 // 5. 충전기 연결 및 가동 상태별 배경/테두리 클래스 헬퍼
 function getChargerTileClass(c: ChargerInstance) {
-  const isSelected = selectedId.value === c.id
+  const isSelected = (props.selectedId || store.selectedChargerId.value) === c.id
 
   // 1. 에러 상태
   if (c.lastError) {
@@ -311,7 +311,7 @@ function getChargerTileClass(c: ChargerInstance) {
 }
 
 function getChargerListCardClass(c: ChargerInstance) {
-  const isSelected = selectedId.value === c.id
+  const isSelected = (props.selectedId || store.selectedChargerId.value) === c.id
 
   if (c.lastError) {
     return isSelected
