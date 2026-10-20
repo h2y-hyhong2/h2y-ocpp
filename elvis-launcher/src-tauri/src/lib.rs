@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Emitter, Manager, WindowEvent,
+    Manager, WindowEvent,
 };
 
 // 서비스별 비동기 작업 진행 상태 추적 (0: Idle, 1: Starting, 2: Stopping)

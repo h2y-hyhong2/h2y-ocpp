@@ -10,7 +10,7 @@ spring:
 
   # ─── MySQL DataSource (Sprint 18: 실시간 상태 UPDATE) ─────────────────────────
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/${MYSQL_DATABASE:elvis_lite}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/${MYSQL_DATABASE:elvis_lite}?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
     username: ${MYSQL_USER:elvis}
     password: ${MYSQL_PASSWORD:elvis1234!}
     driver-class-name: com.mysql.cj.jdbc.Driver

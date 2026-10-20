@@ -13,9 +13,19 @@ if exist "%SCRIPT_DIR%..\config\paths.env" (
 )
 set BOOTSTRAP=localhost:%KAFKA_PORT%
 
-if exist "d:\project\lselink\ocpp\jdk\jdk-25.0.2+10" (
-    set "JAVA_HOME=d:\project\lselink\ocpp\jdk\jdk-25.0.2+10"
-    set "PATH=d:\project\lselink\ocpp\jdk\jdk-25.0.2+10\bin;%PATH%"
+rem 1순위: JDK 21 LTS 우선 강제 지정
+if exist "D:\jdk\windows\jdk-21.0.12.1+1" (
+    set "JAVA_HOME=D:\jdk\windows\jdk-21.0.12.1+1"
+    set "PATH=D:\jdk\windows\jdk-21.0.12.1+1\bin;%PATH%"
+) else if exist "D:\jdk\windows\jdk-25.0.4.1+1" (
+    set "JAVA_HOME=D:\jdk\windows\jdk-25.0.4.1+1"
+    set "PATH=D:\jdk\windows\jdk-25.0.4.1+1\bin;%PATH%"
+) else if exist "D:\jdk\windows\jdk-17.0.20.1+1" (
+    set "JAVA_HOME=D:\jdk\windows\jdk-17.0.20.1+1"
+    set "PATH=D:\jdk\windows\jdk-17.0.20.1+1\bin;%PATH%"
+) else if exist "d:\project\lselink\ocpp\jdk\jdk-17.0.20.1+1" (
+    set "JAVA_HOME=d:\project\lselink\ocpp\jdk\jdk-17.0.20.1+1"
+    set "PATH=d:\project\lselink\ocpp\jdk\jdk-17.0.20.1+1\bin;%PATH%"
 )
 
 echo ========================================================
