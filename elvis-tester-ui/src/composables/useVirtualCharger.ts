@@ -304,12 +304,20 @@ function initChargers(): ChargerInstance[] {
         return parsed.map((item: any) => ({
           ...item,
           status: 'Unavailable',
-          connectors: [
-            { connectorId: 1, status: 'Unavailable' },
-            { connectorId: 2, status: 'Unavailable' }
-          ],
+          connectors: (item.connectors && item.connectors.length >= 2)
+            ? item.connectors
+            : [
+                { connectorId: 1, status: 'Unavailable' },
+                { connectorId: 2, status: 'Unavailable' }
+              ],
           connected: false,
           connecting: false,
+          heartbeatIntervalSec: Number(item.heartbeatIntervalSec) || 60,
+          autoHeartbeat: item.autoHeartbeat !== undefined ? Boolean(item.autoHeartbeat) : true,
+          autoBootOnConnect: item.autoBootOnConnect !== undefined ? Boolean(item.autoBootOnConnect) : true,
+          autoReply: item.autoReply !== undefined ? Boolean(item.autoReply) : true,
+          autoMeterValues: item.autoMeterValues !== undefined ? Boolean(item.autoMeterValues) : true,
+          autoMeterIntervalSec: Number(item.autoMeterIntervalSec) || 10,
           scenarioRunning: false,
           scenarioStep: '',
           scenarioProgress: 0
@@ -319,7 +327,15 @@ function initChargers(): ChargerInstance[] {
   } catch (e) {
     console.warn('Failed to parse cached chargers, falling back to defaults:', e)
   }
-  return JSON.parse(JSON.stringify(DEFAULT_PRESETS))
+  return DEFAULT_PRESETS.map(item => ({
+    ...item,
+    heartbeatIntervalSec: 60,
+    autoHeartbeat: true,
+    autoBootOnConnect: true,
+    autoReply: true,
+    autoMeterValues: true,
+    autoMeterIntervalSec: 10
+  }))
 }
 
 const chargers = reactive<ChargerInstance[]>(initChargers())
@@ -406,10 +422,12 @@ export function useVirtualCharger() {
       voltage: c.voltage,
       current: c.current,
       powerKw: c.powerKw,
-      heartbeatIntervalSec: 60,
+      heartbeatIntervalSec: c.heartbeatIntervalSec || 60,
       autoHeartbeat: c.autoHeartbeat,
+      autoBootOnConnect: c.autoBootOnConnect,
+      autoReply: c.autoReply,
       autoMeterValues: c.autoMeterValues,
-      autoMeterIntervalSec: 5,
+      autoMeterIntervalSec: c.autoMeterIntervalSec || 10,
       scenarioRunning: c.scenarioRunning,
       scenarioStep: c.scenarioStep,
       scenarioProgress: c.scenarioProgress
@@ -458,8 +476,12 @@ export function useVirtualCharger() {
       soc: 20,
       voltage: 380.0,
       current: 125.0,
-      autoHeartbeat: false,
-      autoMeterValues: false,
+      heartbeatIntervalSec: Number(item.heartbeatIntervalSec) || 60,
+      autoHeartbeat: item.autoHeartbeat !== undefined ? Boolean(item.autoHeartbeat) : true,
+      autoBootOnConnect: item.autoBootOnConnect !== undefined ? Boolean(item.autoBootOnConnect) : true,
+      autoReply: item.autoReply !== undefined ? Boolean(item.autoReply) : true,
+      autoMeterValues: item.autoMeterValues !== undefined ? Boolean(item.autoMeterValues) : true,
+      autoMeterIntervalSec: Number(item.autoMeterIntervalSec) || 10,
       scenarioRunning: false,
       scenarioStep: '',
       scenarioProgress: 0
@@ -527,6 +549,14 @@ export function useVirtualCharger() {
           payload: { url: fullUrl, chargeBoxId: cid },
           raw: `[CONNECTED] [${cid}] WebSocket 연결 수립: ${fullUrl}`
         })
+        if (c.autoBootOnConnect) {
+          setTimeout(() => {
+            const current = chargers.find(item => item.id === cid)
+            if (current && current.connected) {
+              runBootSequence(cid)
+            }
+          }, 350)
+        }
         if (c.autoHeartbeat) {
           startHeartbeatTimer(cid)
         }
@@ -786,6 +816,14 @@ export function useVirtualCharger() {
         if (payload.status === 'Accepted') {
           c.lastError = undefined
         }
+        // 관제 서버에서 회신한 heartbeat interval 동기화
+        const hbInterval = payload.interval || payload.heartbeatInterval
+        if (hbInterval && Number(hbInterval) > 0) {
+          c.heartbeatIntervalSec = Number(hbInterval)
+          if (c.autoHeartbeat && c.connected) {
+            startHeartbeatTimer(cid)
+          }
+        }
         break
       case 'StartTransaction':
         if (payload.transactionId) {
@@ -793,6 +831,10 @@ export function useVirtualCharger() {
           c.status = 'Charging'
           const conn = c.connectors.find(g => g.connectorId === c.activeConnectorId)
           if (conn) conn.status = 'Charging'
+          // 충전 시작 시 autoMeterValues가 켜져 있으면 자동 계측치 발송 시작
+          if (c.autoMeterValues) {
+            startAutoMeterTimer(cid)
+          }
         }
         break
       case 'StopTransaction':
@@ -809,6 +851,21 @@ export function useVirtualCharger() {
 
   function handleServerCall(cid: string, messageId: string, action: string, payload: any) {
     const c = chargers.find(item => item.id === cid)
+
+    // autoReply가 false인 경우: 서버의 CALL에 자동 응답하지 않고 대기 (수동 검증 or 타임아웃 테스트용)
+    if (c && c.autoReply === false) {
+      addLog({
+        chargerId: cid,
+        direction: 'SYS',
+        messageType: 0,
+        messageId,
+        action: `${action}.req`,
+        payload: { autoReply: false, reason: 'AutoReply 비활성화로 자동응답(CALLRESULT) 생략됨' },
+        raw: `[AUTO-REPLY OFF] [${cid}] 관제 CALL [${action}] 수신: autoReply 설정이 꺼져 있어 자동 ACK를 전송하지 않았습니다.`
+      })
+      return
+    }
+
     switch (action) {
       case 'Reset':
         sendCallResult(cid, messageId, { status: 'Accepted' })
@@ -843,12 +900,38 @@ export function useVirtualCharger() {
       case 'ChangeAvailability':
         sendCallResult(cid, messageId, { status: 'Accepted' })
         break
+      case 'ChangeConfiguration':
+        // 관제에서 HeartbeatInterval 등 설정 변경 지시 시 실시간 반영
+        if (payload && payload.key === 'HeartbeatInterval' && c) {
+          const newInt = parseInt(payload.value, 10)
+          if (!isNaN(newInt) && newInt > 0) {
+            c.heartbeatIntervalSec = newInt
+            if (c.autoHeartbeat && c.connected) {
+              startHeartbeatTimer(cid)
+            }
+          }
+        }
+        sendCallResult(cid, messageId, { status: 'Accepted' })
+        break
+      case 'GetConfiguration':
+        sendCallResult(cid, messageId, {
+          configurationKey: [
+            { key: 'HeartbeatInterval', readonly: false, value: String(c?.heartbeatIntervalSec || 60) },
+            { key: 'MeterValueSampleInterval', readonly: false, value: String(c?.autoMeterIntervalSec || 10) }
+          ],
+          unknownKey: []
+        })
+        break
       case 'TriggerMessage':
         sendCallResult(cid, messageId, { status: 'Accepted' })
         if (payload.requestedMessage === 'StatusNotification') {
           sendStatusNotification(c ? c.status : 'Available', 'NoError', cid)
         } else if (payload.requestedMessage === 'Heartbeat') {
           sendHeartbeat(cid)
+        } else if (payload.requestedMessage === 'BootNotification') {
+          sendBootNotification(c?.vendor, c?.model, '1.0.0', cid)
+        } else if (payload.requestedMessage === 'MeterValues') {
+          sendMeterValues(500, cid)
         }
         break
       default:
@@ -1021,23 +1104,50 @@ export function useVirtualCharger() {
     const c = chargers.find(item => item.id === cid)
     if (!c) return
     c.autoHeartbeat = !c.autoHeartbeat
-    if (c.autoHeartbeat) {
+    saveChargersToStorage()
+    if (c.autoHeartbeat && c.connected) {
       startHeartbeatTimer(cid)
     } else {
       stopHeartbeatTimer(cid)
     }
   }
 
+  function setAutoHeartbeat(enabled: boolean, targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (!c) return
+    c.autoHeartbeat = enabled
+    saveChargersToStorage()
+    if (c.autoHeartbeat && c.connected) {
+      startHeartbeatTimer(cid)
+    } else {
+      stopHeartbeatTimer(cid)
+    }
+  }
+
+  function setHeartbeatInterval(intervalSec: number, targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (!c) return
+    c.heartbeatIntervalSec = Math.max(5, Number(intervalSec) || 60)
+    saveChargersToStorage()
+    if (c.autoHeartbeat && c.connected) {
+      startHeartbeatTimer(cid)
+    }
+  }
+
   function startHeartbeatTimer(cid: string) {
     stopHeartbeatTimer(cid)
+    const c = chargers.find(item => item.id === cid)
+    const intervalMs = ((c?.heartbeatIntervalSec || 60)) * 1000
     const timer = setInterval(() => {
-      const c = chargers.find(item => item.id === cid)
-      if (c && c.connected) {
+      const cur = chargers.find(item => item.id === cid)
+      if (cur && cur.connected) {
         sendHeartbeat(cid)
       } else {
         stopHeartbeatTimer(cid)
       }
-    }, 60000)
+    }, intervalMs)
     heartbeatTimerMap.set(cid, timer)
   }
 
@@ -1047,8 +1157,38 @@ export function useVirtualCharger() {
       clearInterval(timer)
       heartbeatTimerMap.delete(cid)
     }
+  }
+
+  function toggleAutoBootOnConnect(targetId?: string) {
+    const cid = targetId || selectedChargerId.value
     const c = chargers.find(item => item.id === cid)
-    if (c) c.autoHeartbeat = false
+    if (!c) return
+    c.autoBootOnConnect = !c.autoBootOnConnect
+    saveChargersToStorage()
+  }
+
+  function setAutoBootOnConnect(enabled: boolean, targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (!c) return
+    c.autoBootOnConnect = enabled
+    saveChargersToStorage()
+  }
+
+  function toggleAutoReply(targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (!c) return
+    c.autoReply = !c.autoReply
+    saveChargersToStorage()
+  }
+
+  function setAutoReply(enabled: boolean, targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (!c) return
+    c.autoReply = enabled
+    saveChargersToStorage()
   }
 
   function toggleAutoMeterValues(targetId?: string) {
@@ -1056,23 +1196,50 @@ export function useVirtualCharger() {
     const c = chargers.find(item => item.id === cid)
     if (!c) return
     c.autoMeterValues = !c.autoMeterValues
-    if (c.autoMeterValues) {
+    saveChargersToStorage()
+    if (c.autoMeterValues && c.connected && c.status === 'Charging') {
       startAutoMeterTimer(cid)
     } else {
       stopAutoMeterTimer(cid)
     }
   }
 
+  function setAutoMeterValues(enabled: boolean, targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (!c) return
+    c.autoMeterValues = enabled
+    saveChargersToStorage()
+    if (c.autoMeterValues && c.connected && c.status === 'Charging') {
+      startAutoMeterTimer(cid)
+    } else {
+      stopAutoMeterTimer(cid)
+    }
+  }
+
+  function setAutoMeterInterval(intervalSec: number, targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (!c) return
+    c.autoMeterIntervalSec = Math.max(1, Number(intervalSec) || 10)
+    saveChargersToStorage()
+    if (c.autoMeterValues && c.connected && c.status === 'Charging') {
+      startAutoMeterTimer(cid)
+    }
+  }
+
   function startAutoMeterTimer(cid: string) {
     stopAutoMeterTimer(cid)
+    const c = chargers.find(item => item.id === cid)
+    const intervalMs = ((c?.autoMeterIntervalSec || 10)) * 1000
     const timer = setInterval(() => {
-      const c = chargers.find(item => item.id === cid)
-      if (c && c.connected && c.status === 'Charging') {
+      const cur = chargers.find(item => item.id === cid)
+      if (cur && cur.connected && cur.status === 'Charging') {
         sendMeterValues(500, cid)
-      } else if (!c || !c.connected) {
+      } else if (!cur || !cur.connected) {
         stopAutoMeterTimer(cid)
       }
-    }, 5000)
+    }, intervalMs)
     autoMeterTimerMap.set(cid, timer)
   }
 
@@ -1082,8 +1249,58 @@ export function useVirtualCharger() {
       clearInterval(timer)
       autoMeterTimerMap.delete(cid)
     }
-    const c = chargers.find(item => item.id === cid)
-    if (c) c.autoMeterValues = false
+  }
+
+  // ─── 완전 수동 모드 vs 표준 자동화 모드 글로벌 프리셋 ────────────────────
+
+  const isFullManualMode = computed(() => {
+    return chargers.every(c => !c.autoHeartbeat && !c.autoBootOnConnect && !c.autoReply && !c.autoMeterValues)
+  })
+
+  function setFullManualMode() {
+    for (const c of chargers) {
+      c.autoHeartbeat = false
+      c.autoBootOnConnect = false
+      c.autoReply = false
+      c.autoMeterValues = false
+      stopHeartbeatTimer(c.id)
+      stopAutoMeterTimer(c.id)
+    }
+    saveChargersToStorage()
+    addLog({
+      chargerId: 'ALL',
+      direction: 'SYS',
+      messageType: 0,
+      messageId: 'SYS-MANUAL-' + Date.now(),
+      action: 'FULL_MANUAL_MODE',
+      payload: { autoHeartbeat: false, autoBootOnConnect: false, autoReply: false, autoMeterValues: false },
+      raw: '🛑 [완전 수동 모드 활성화] 모든 충전기의 자동 전문(Heartbeat 주기 발송, 접속 시 자동 기동, 서버 CALL 자동응답, 계측치 주기 발송)이 일괄 정지되었습니다. 모든 전문을 수동으로 통제할 수 있습니다.'
+    })
+  }
+
+  function setFullAutoMode() {
+    for (const c of chargers) {
+      c.autoHeartbeat = true
+      c.autoBootOnConnect = true
+      c.autoReply = true
+      c.autoMeterValues = true
+      if (c.connected) {
+        startHeartbeatTimer(c.id)
+        if (c.status === 'Charging') {
+          startAutoMeterTimer(c.id)
+        }
+      }
+    }
+    saveChargersToStorage()
+    addLog({
+      chargerId: 'ALL',
+      direction: 'SYS',
+      messageType: 0,
+      messageId: 'SYS-AUTO-' + Date.now(),
+      action: 'FULL_AUTO_MODE',
+      payload: { autoHeartbeat: true, autoBootOnConnect: true, autoReply: true, autoMeterValues: true },
+      raw: '⚡ [표준 자동화 모드 활성화] 모든 충전기의 자동 Heartbeat(60초), 접속 시 기동 시퀀스, 관제 CALL 자동응답(Accepted), 계측치 자동 전송이 일괄 활성화되었습니다.'
+    })
   }
 
   // ─── 4대 회원 유형별 충전 시나리오 러너 ───────────────────────────────────
@@ -1293,7 +1510,18 @@ export function useVirtualCharger() {
     sendStopTransaction,
     sendDataTransfer,
     toggleAutoHeartbeat,
+    setAutoHeartbeat,
+    setHeartbeatInterval,
+    toggleAutoBootOnConnect,
+    setAutoBootOnConnect,
+    toggleAutoReply,
+    setAutoReply,
     toggleAutoMeterValues,
+    setAutoMeterValues,
+    setAutoMeterInterval,
+    setFullManualMode,
+    setFullAutoMode,
+    isFullManualMode,
     runFullChargeScenario,
     runBootSequence,
     abortScenario,

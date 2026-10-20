@@ -104,6 +104,13 @@ function handleContextSendHeartbeat() {
   store.sendHeartbeat(cid)
 }
 
+function handleContextToggleHeartbeat() {
+  if (!contextCharger.value) return
+  const cid = contextCharger.value.id
+  closeContextMenu()
+  store.toggleAutoHeartbeat(cid)
+}
+
 function handleContextSendMeterValues() {
   if (!contextCharger.value) return
   const cid = contextCharger.value.id
@@ -556,7 +563,23 @@ function getChargerListCardClass(c: ChargerInstance) {
         </div>
 
         <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-100">
-          <span>{{ c.model }}</span>
+          <div class="flex items-center gap-1">
+            <span>{{ c.model }}</span>
+            <span
+              class="px-1 py-0.2 rounded text-[9px] font-semibold border"
+              :class="c.autoHeartbeat ? 'bg-sky-50 text-sky-700 border-sky-200 font-bold' : 'bg-slate-100 text-slate-400 border-slate-200'"
+              :title="`Heartbeat: ${c.autoHeartbeat ? '자동 ' + (c.heartbeatIntervalSec || 60) + '초' : '수동(OFF)'}`"
+            >
+              {{ c.autoHeartbeat ? `HB ${c.heartbeatIntervalSec || 60}s` : 'HB OFF' }}
+            </span>
+            <span
+              v-if="!c.autoReply"
+              class="px-1 py-0.2 rounded text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+              title="관제 CALL 자동응답 비활성화 상태"
+            >
+              NoReply
+            </span>
+          </div>
           <span :class="c.status === 'Charging' ? 'text-indigo-600 font-bold' : ''">{{ c.status }}</span>
         </div>
       </div>
@@ -659,7 +682,23 @@ function getChargerListCardClass(c: ChargerInstance) {
           class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
         >
           <span>💓</span>
-          <span>Heartbeat 즉시 전송</span>
+          <span>Heartbeat 1회 즉시 전송</span>
+        </button>
+
+        <button
+          @click="handleContextToggleHeartbeat"
+          class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center justify-between transition-colors cursor-pointer font-medium"
+        >
+          <div class="flex items-center gap-2">
+            <span>🔄</span>
+            <span>Heartbeat 자동 발송</span>
+          </div>
+          <span
+            class="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold border"
+            :class="contextCharger?.autoHeartbeat ? 'bg-sky-50 text-sky-700 border-sky-300' : 'bg-slate-100 text-slate-500 border-slate-200'"
+          >
+            {{ contextCharger?.autoHeartbeat ? 'ON' : 'OFF' }}
+          </span>
         </button>
 
         <button

@@ -73,6 +73,30 @@ async function handleToggleMaximize() {
     <div class="flex items-center gap-2 font-mono text-xs">
       <!-- 빠른 일괄 제어 버튼 -->
       <div class="hidden md:flex items-center gap-1.5">
+        <!-- 완전 수동 / 표준 자동화 토글 그룹 -->
+        <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+          <button
+            @click="store.setFullManualMode"
+            class="px-2 py-0.5 rounded transition-all cursor-pointer font-bold flex items-center gap-1 text-[11px]"
+            :class="store.isFullManualMode.value ? 'bg-rose-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+            title="모든 충전기의 자동 전문(Heartbeat, Auto-Boot, Auto-Reply, Auto-Meter)을 일괄 OFF하여 수동 제어 모드로 전환"
+          >
+            <span>🛑</span>
+            <span>완전 수동</span>
+          </button>
+          <button
+            @click="store.setFullAutoMode"
+            class="px-2 py-0.5 rounded transition-all cursor-pointer font-bold flex items-center gap-1 text-[11px]"
+            :class="!store.isFullManualMode.value ? 'bg-sky-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+            title="모든 충전기의 표준 자동화(Heartbeat 60s, Auto-Boot, Auto-Reply)를 일괄 활성화"
+          >
+            <span>⚡</span>
+            <span>표준 자동</span>
+          </button>
+        </div>
+
+        <div class="w-px h-3.5 bg-slate-200 mx-0.5"></div>
+
         <button
           @click="store.connectAll"
           class="px-2.5 py-1 rounded-md font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-600 hover:text-white transition-all cursor-pointer flex items-center gap-1 shadow-2xs"

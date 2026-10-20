@@ -55,8 +55,12 @@ export interface ChargerInstance {
   soc: number
   voltage: number
   current: number
+  heartbeatIntervalSec: number
   autoHeartbeat: boolean
+  autoBootOnConnect: boolean
+  autoReply: boolean
   autoMeterValues: boolean
+  autoMeterIntervalSec: number
   scenarioRunning: boolean
   scenarioStep: string
   scenarioProgress: number
@@ -77,6 +81,8 @@ export interface VirtualChargerState {
   powerKw: number
   heartbeatIntervalSec: number
   autoHeartbeat: boolean
+  autoBootOnConnect: boolean
+  autoReply: boolean
   autoMeterValues: boolean
   autoMeterIntervalSec: number
   scenarioRunning: boolean
