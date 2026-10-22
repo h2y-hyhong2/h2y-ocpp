@@ -1,6 +1,8 @@
 package com.lselink.elvis.control.dto;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChargerResponseDto {
     private String id;
@@ -27,6 +29,7 @@ public class ChargerResponseDto {
     private String lastHeartbeat;
     private BigDecimal accumulatedKwh;
     private Integer chargingMinutes;
+    private List<ConnectorDetailDto> connectors = new ArrayList<>();
 
     public ChargerResponseDto() {
     }
@@ -36,7 +39,8 @@ public class ChargerResponseDto {
                               String status, String spec, BigDecimal powerKw, BigDecimal voltageV,
                               BigDecimal currentA, Integer socPercent, Integer batteryTempC, String vendor,
                               String model, String carModel, String userTag, String protocol,
-                              String lastHeartbeat, BigDecimal accumulatedKwh, Integer chargingMinutes) {
+                              String lastHeartbeat, BigDecimal accumulatedKwh, Integer chargingMinutes,
+                              List<ConnectorDetailDto> connectors) {
         this.id = id;
         this.chargeBoxId = chargeBoxId;
         this.stId = stId;
@@ -61,6 +65,7 @@ public class ChargerResponseDto {
         this.lastHeartbeat = lastHeartbeat;
         this.accumulatedKwh = accumulatedKwh;
         this.chargingMinutes = chargingMinutes;
+        this.connectors = (connectors != null) ? connectors : new ArrayList<>();
     }
 
     public String getId() { return id; }
@@ -135,6 +140,9 @@ public class ChargerResponseDto {
     public Integer getChargingMinutes() { return chargingMinutes; }
     public void setChargingMinutes(Integer chargingMinutes) { this.chargingMinutes = chargingMinutes; }
 
+    public List<ConnectorDetailDto> getConnectors() { return connectors; }
+    public void setConnectors(List<ConnectorDetailDto> connectors) { this.connectors = connectors; }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -164,6 +172,7 @@ public class ChargerResponseDto {
         private String lastHeartbeat;
         private BigDecimal accumulatedKwh;
         private Integer chargingMinutes;
+        private List<ConnectorDetailDto> connectors = new ArrayList<>();
 
         public Builder id(String id) { this.id = id; return this; }
         public Builder chargeBoxId(String chargeBoxId) { this.chargeBoxId = chargeBoxId; return this; }
@@ -189,11 +198,12 @@ public class ChargerResponseDto {
         public Builder lastHeartbeat(String lastHeartbeat) { this.lastHeartbeat = lastHeartbeat; return this; }
         public Builder accumulatedKwh(BigDecimal accumulatedKwh) { this.accumulatedKwh = accumulatedKwh; return this; }
         public Builder chargingMinutes(Integer chargingMinutes) { this.chargingMinutes = chargingMinutes; return this; }
+        public Builder connectors(List<ConnectorDetailDto> connectors) { this.connectors = connectors; return this; }
 
         public ChargerResponseDto build() {
             return new ChargerResponseDto(id, chargeBoxId, stId, stationName, corpId, corpName, corpShortName, cpId,
                     connectorId, status, spec, powerKw, voltageV, currentA, socPercent, batteryTempC, vendor, model,
-                    carModel, userTag, protocol, lastHeartbeat, accumulatedKwh, chargingMinutes);
+                    carModel, userTag, protocol, lastHeartbeat, accumulatedKwh, chargingMinutes, connectors);
         }
     }
 }

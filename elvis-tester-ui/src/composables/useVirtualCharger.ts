@@ -340,8 +340,13 @@ function initChargers(): ChargerInstance[] {
 
 const chargers = reactive<ChargerInstance[]>(initChargers())
 const selectedChargerId = ref<string>(chargers[0]?.id || '00000001')
+const selectedIdTag = ref<string>('CARD-CORP-9901')
 const logs = ref<OcppLogEntry[]>([])
 const terminalSearchQuery = ref<string>('')
+
+function setSelectedIdTag(idTag: string) {
+  selectedIdTag.value = idTag
+}
 
 // 활성 소켓 및 타이머 관리 맵
 const socketMap = new Map<string, WebSocket>()
@@ -1522,6 +1527,8 @@ export function useVirtualCharger() {
     setFullManualMode,
     setFullAutoMode,
     isFullManualMode,
+    selectedIdTag,
+    setSelectedIdTag,
     runFullChargeScenario,
     runBootSequence,
     abortScenario,

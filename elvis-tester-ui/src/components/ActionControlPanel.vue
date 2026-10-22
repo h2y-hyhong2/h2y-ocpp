@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useVirtualCharger } from '../composables/useVirtualCharger'
 import type { ChargerInstance } from '../types/ocpp'
 import TaskVerificationSuite from './TaskVerificationSuite.vue'
@@ -55,7 +55,7 @@ const rfidPresets = [
 // ─────────────────────────────────────────────────────────────
 const sendMode = ref<'template' | 'raw'>('template')
 const selectedAction = ref('StatusNotification')
-const manualRfid = ref('CARD-CORP-9901')
+const manualRfid = ref(store.selectedIdTag?.value || 'CARD-CORP-9901')
 const manualMeterWh = ref(100500)
 const manualStatus = ref('Available')
 const manualStopReason = ref('Local')
@@ -178,7 +178,17 @@ function sendManualCall() {
 // 2. 시나리오 러너 설정
 // ─────────────────────────────────────────────────────────────
 const scenarioUserType = ref<'C' | 'M' | 'N' | 'K'>('C')
-const scenarioRfid = ref('CARD-CORP-9901')
+const scenarioRfid = ref(store.selectedIdTag?.value || 'CARD-CORP-9901')
+
+// 하단 마스터 데이터에서 선택된 태그 실시간 동기화
+if (store.selectedIdTag) {
+  watch(store.selectedIdTag, (newTag) => {
+    if (newTag) {
+      manualRfid.value = newTag
+      scenarioRfid.value = newTag
+    }
+  })
+}
 
 function onUserTypeChange() {
   const found = rfidPresets.find(p => p.type === scenarioUserType.value)
@@ -219,15 +229,21 @@ function handleAbortScenario() {
               </span>
               <button
                 @click="emit('open-edit-modal', targetCharger)"
-                class="text-[10px] text-slate-400 hover:text-slate-700 hover:bg-slate-100 px-1 rounded transition-colors"
-                title="충전기 설정 수정"
+                class="text-[11px] font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-md transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                title="충전기 자산 마스터 관리 팝업 열기"
               >
-                ✏️ 수정
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>마스터 관리</span>
               </button>
             </div>
-            <span class="text-[11px] text-slate-500 font-medium truncate max-w-sm">
-              {{ targetCharger.name }}
-            </span>
+            <div class="flex items-center gap-2 text-[11px] text-slate-500 font-medium truncate max-w-sm">
+              <span class="truncate font-semibold text-slate-700">{{ targetCharger.name }}</span>
+              <span v-if="targetCharger.stationName" class="text-slate-400">|</span>
+              <span v-if="targetCharger.stationName" class="truncate text-slate-500">{{ targetCharger.stationName }}</span>
+            </div>
           </div>
         </div>
 

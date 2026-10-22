@@ -264,7 +264,10 @@ function stopDockResize() {
         class="w-full overflow-hidden"
         :style="{ height: `${dockHeight}px` }"
       >
-        <MasterDataManager :charger-id="store.selectedChargerId.value" />
+        <MasterDataManager
+          :charger-id="store.selectedChargerId.value"
+          @apply-idtag="(tag: string) => store.setSelectedIdTag(tag)"
+        />
       </div>
     </div>
 
