@@ -35,4 +35,11 @@ public interface TransactionSessionRepository extends JpaRepository<TransactionS
      * 충전기의 활성 상태 세션 목록 조회 (Reboot 등으로 인한 일괄 마감 처리 시 활용)
      */
     List<TransactionSession> findByChargeBoxIdAndStatusIn(String chargeBoxId, Collection<SessionStatus> statuses);
+
+    /**
+     * 전역 트랜잭션 ID 최대값 조회 (시퀀스 초기값 동기화용)
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(MAX(t.transactionId), 0) FROM TransactionSession t")
+    long findMaxTransactionId();
 }
+

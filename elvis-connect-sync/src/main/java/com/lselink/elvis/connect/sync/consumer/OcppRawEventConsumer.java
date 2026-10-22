@@ -39,19 +39,22 @@ public class OcppRawEventConsumer {
     private final TransactionSessionService transactionSessionService;
     private final AuthorizeService authorizeService;
     private final DltRecoveryService dltRecoveryService;
+    private final com.lselink.elvis.connect.sync.service.OcppResponseSender ocppResponseSender;
 
     public OcppRawEventConsumer(Executor virtualThreadExecutor,
                                OcppMessageParser ocppMessageParser,
                                ConnectorStatusService connectorStatusService,
                                TransactionSessionService transactionSessionService,
                                AuthorizeService authorizeService,
-                               DltRecoveryService dltRecoveryService) {
+                               DltRecoveryService dltRecoveryService,
+                               com.lselink.elvis.connect.sync.service.OcppResponseSender ocppResponseSender) {
         this.virtualThreadExecutor = virtualThreadExecutor;
         this.ocppMessageParser = ocppMessageParser;
         this.connectorStatusService = connectorStatusService;
         this.transactionSessionService = transactionSessionService;
         this.authorizeService = authorizeService;
         this.dltRecoveryService = dltRecoveryService;
+        this.ocppResponseSender = ocppResponseSender;
     }
 
     @KafkaListener(
@@ -194,9 +197,12 @@ public class OcppRawEventConsumer {
             // ─── Sprint 20: Authorize 회원 인증 처리 (S20-SYNC-0070-CO) ───────────
             case "Authorize"          -> authorizeService.handleAuthorize(msg);
 
-            // ─── Sprint 21~22 이후 연계 예정 ─────────────────────────────────────
-            case "MeterValues" ->
-                log.debug("[SyncConsumer] 미구현 Action 수신 (향후 Sprint 처리 예정): action={}", action);
+            // ─── Sprint 21~22 미터값 수신 & CALLRESULT ({}) 하향 응답 ────────────
+            case "MeterValues" -> {
+                log.info("[SyncConsumer] MeterValues 수신 처리 및 하향 CALLRESULT 전송: chargeBoxId={}, uniqueId={}",
+                        msg.getChargeBoxId(), msg.getUniqueId());
+                ocppResponseSender.sendMeterValuesResponse(msg.getChargeBoxId(), msg.getUniqueId());
+            }
 
             default ->
                 log.trace("[SyncConsumer] 무관 Action 무시: chargeBoxId={}, action={}", msg.getChargeBoxId(), action);

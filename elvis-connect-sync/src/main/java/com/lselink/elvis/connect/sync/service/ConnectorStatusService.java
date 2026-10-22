@@ -28,11 +28,14 @@ public class ConnectorStatusService {
 
     private final ConnectorStatusRepository repository;
     private final FaultDetectionService faultDetectionService;
+    private final OcppResponseSender ocppResponseSender;
 
     public ConnectorStatusService(ConnectorStatusRepository repository,
-                                  FaultDetectionService faultDetectionService) {
+                                  FaultDetectionService faultDetectionService,
+                                  OcppResponseSender ocppResponseSender) {
         this.repository = repository;
         this.faultDetectionService = faultDetectionService;
+        this.ocppResponseSender = ocppResponseSender;
     }
 
     /**
@@ -52,6 +55,7 @@ public class ConnectorStatusService {
     @Transactional
     public void handleStatusNotification(OcppParsedMessage msg) {
         String chargeBoxId = msg.getChargeBoxId();
+        String uniqueId = msg.getUniqueId();
 
         try {
             int    connectorId = msg.getPayload().path("connectorId").asInt(0);
@@ -69,6 +73,9 @@ public class ConnectorStatusService {
             // 2. 장애 감지 및 Kafka UI 알림 발행 연계 (Sprint 23: S23-SYNC-0060-CO)
             faultDetectionService.processFaultEvent(msg);
 
+            // 3. OCPP 1.6-J CALLRESULT 하향 응답 전송 ({})
+            ocppResponseSender.sendStatusNotificationResponse(chargeBoxId, uniqueId);
+
         } catch (Exception e) {
             log.error("[StatusSvc] StatusNotification 처리 실패: chargeBoxId={}, error={}", chargeBoxId, e.getMessage(), e);
             throw e;
@@ -82,11 +89,15 @@ public class ConnectorStatusService {
     @Transactional
     public void handleHeartbeat(OcppParsedMessage msg) {
         String chargeBoxId = msg.getChargeBoxId();
+        String uniqueId = msg.getUniqueId();
 
         try {
             repository.upsertHeartbeat(chargeBoxId, LocalDateTime.now());
 
             log.info("[StatusSvc] Heartbeat Upsert 완료: chargeBoxId={}, heartbeatAt={}", chargeBoxId, LocalDateTime.now());
+
+            // OCPP 1.6-J CALLRESULT 하향 응답 전송 ({currentTime})
+            ocppResponseSender.sendHeartbeatResponse(chargeBoxId, uniqueId);
 
         } catch (Exception e) {
             log.error("[StatusSvc] Heartbeat 처리 실패: chargeBoxId={}, error={}", chargeBoxId, e.getMessage(), e);
@@ -108,12 +119,16 @@ public class ConnectorStatusService {
     @Transactional
     public void handleBootNotification(OcppParsedMessage msg) {
         String chargeBoxId = msg.getChargeBoxId();
+        String uniqueId = msg.getUniqueId();
 
         try {
             // BootNotification: 커넥터 0번 상태를 Available로 초기화
             repository.upsertStatus(chargeBoxId, 0, "Available", "NoError", null, "Booted", LocalDateTime.now());
 
             log.info("[StatusSvc] BootNotification 초기화 완료: chargeBoxId={}", chargeBoxId);
+
+            // OCPP 1.6-J CALLRESULT 하향 응답 전송 ({status: "Accepted", currentTime, interval: 60})
+            ocppResponseSender.sendBootNotificationResponse(chargeBoxId, uniqueId, 60);
 
         } catch (Exception e) {
             log.error("[StatusSvc] BootNotification 처리 실패: chargeBoxId={}, error={}", chargeBoxId, e.getMessage(), e);

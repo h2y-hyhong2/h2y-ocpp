@@ -35,13 +35,19 @@ public class TransactionSessionService {
     private final TransactionSessionRepository sessionRepository;
     private final ConnectorStatusRepository connectorStatusRepository;
     private final TouRatingService touRatingService;
+    private final TransactionSequenceService sequenceService;
+    private final OcppResponseSender ocppResponseSender;
 
     public TransactionSessionService(TransactionSessionRepository sessionRepository,
                                      ConnectorStatusRepository connectorStatusRepository,
-                                     TouRatingService touRatingService) {
+                                     TouRatingService touRatingService,
+                                     TransactionSequenceService sequenceService,
+                                     OcppResponseSender ocppResponseSender) {
         this.sessionRepository = sessionRepository;
         this.connectorStatusRepository = connectorStatusRepository;
         this.touRatingService = touRatingService;
+        this.sequenceService = sequenceService;
+        this.ocppResponseSender = ocppResponseSender;
     }
 
     /**
@@ -60,6 +66,7 @@ public class TransactionSessionService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void handleStartTransaction(OcppParsedMessage msg) {
         String chargeBoxId = msg.getChargeBoxId();
+        String uniqueId = msg.getUniqueId();
         JsonNode payload = msg.getPayload();
 
         try {
@@ -68,16 +75,17 @@ public class TransactionSessionService {
             long meterStart = payload.path("meterStart").asLong(0L);
             LocalDateTime startTime = parseTimestamp(payload.path("timestamp").asText(null));
 
-            // transactionId 추출 (단말이 전달하거나 응답용 사전채번 ID 매핑)
-            long transactionId = extractTransactionId(payload, msg.getUniqueId());
+            // transactionId 추출 (단말 전달 또는 CSMS 전역 시퀀스 신규 채번)
+            long transactionId = extractTransactionId(payload);
 
             log.info("[SessionSvc] StartTransaction 수신: chargeBoxId={}, connId={}, txId={}, tag={}, meterStart={}",
                     chargeBoxId, connectorId, transactionId, idTag, meterStart);
 
             // 1. 멱등성 검증: 동일 (chargeBoxId, transactionId) 세션 기등록 여부 확인
             if (sessionRepository.existsByChargeBoxIdAndTransactionId(chargeBoxId, transactionId)) {
-                log.warn("[SessionSvc] 이미 존재하는 세션 (StartTransaction 중복 인입 무시): chargeBoxId={}, txId={}",
+                log.warn("[SessionSvc] 이미 존재하는 세션 (StartTransaction 중복 인입 무시 및 응답 재회신): chargeBoxId={}, txId={}",
                         chargeBoxId, transactionId);
+                ocppResponseSender.sendStartTransactionResponse(chargeBoxId, uniqueId, transactionId, "Accepted");
                 return;
             }
 
@@ -103,6 +111,7 @@ public class TransactionSessionService {
                 // 동시 인입 시 복합 유니크 제약(UK_SESSION_CHARGE_BOX_TRN)으로 중복 방어
                 log.warn("[SessionSvc] DB 유니크 제약 위반으로 중복 세션 인입 안전 방어: chargeBoxId={}, txId={}",
                         chargeBoxId, transactionId);
+                ocppResponseSender.sendStartTransactionResponse(chargeBoxId, uniqueId, transactionId, "Accepted");
                 return;
             }
 
@@ -118,6 +127,9 @@ public class TransactionSessionService {
             );
             log.info("[SessionSvc] 커넥터 상태 연동 완료: chargeBoxId={}, connId={}, status=Charging",
                     chargeBoxId, connectorId);
+
+            // 4. OCPP 1.6-J CALLRESULT 하향 응답 회신 ({idTagInfo: {status: "Accepted"}, transactionId})
+            ocppResponseSender.sendStartTransactionResponse(chargeBoxId, uniqueId, transactionId, "Accepted");
 
         } catch (Exception e) {
             log.error("[SessionSvc] StartTransaction 처리 실패: chargeBoxId={}, error={}",
@@ -142,6 +154,7 @@ public class TransactionSessionService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void handleStopTransaction(OcppParsedMessage msg) {
         String chargeBoxId = msg.getChargeBoxId();
+        String uniqueId = msg.getUniqueId();
         JsonNode payload = msg.getPayload();
 
         try {
@@ -189,13 +202,17 @@ public class TransactionSessionService {
                 } catch (Exception e) {
                     log.error("[SessionSvc] 고아 세션 CDR 생성 실패: txId={}, error={}", transactionId, e.getMessage());
                 }
+
+                // 고아 세션도 단말에 StopTransaction.conf 회신
+                ocppResponseSender.sendStopTransactionResponse(chargeBoxId, uniqueId, "Accepted");
                 return;
             }
 
-            // 2. 멱등성 검증: 이미 종료된 세션에 대한 중복 StopTransaction 패킷 수신 시 안전 반환
+            // 2. 멱등성 검증: 이미 종료된 세션에 대한 중복 StopTransaction 패킷 수신 시 안전 반환 및 응답 재회신
             if (session.getStatus().isTerminated()) {
-                log.warn("[SessionSvc] 이미 종료된 세션 (StopTransaction 중복 인입 무시): chargeBoxId={}, txId={}, status={}",
+                log.warn("[SessionSvc] 이미 종료된 세션 (StopTransaction 중복 인입 무시 및 응답 재회신): chargeBoxId={}, txId={}, status={}",
                         chargeBoxId, transactionId, session.getStatus());
+                ocppResponseSender.sendStopTransactionResponse(chargeBoxId, uniqueId, "Accepted");
                 return;
             }
 
@@ -227,6 +244,9 @@ public class TransactionSessionService {
                         transactionId, e.getMessage(), e);
             }
 
+            // 6. OCPP 1.6-J CALLRESULT 하향 응답 회신 ({idTagInfo: {status: "Accepted"}})
+            ocppResponseSender.sendStopTransactionResponse(chargeBoxId, uniqueId, "Accepted");
+
         } catch (Exception e) {
             log.error("[SessionSvc] StopTransaction 처리 실패: chargeBoxId={}, error={}",
                     chargeBoxId, e.getMessage(), e);
@@ -254,16 +274,15 @@ public class TransactionSessionService {
     }
 
     /**
-     * StartTransaction payload 또는 메시지 컨텍스트로부터 transactionId 채번
+     * StartTransaction payload 또는 CSMS 전역 시퀀스로부터 transactionId 채번
      */
-    private long extractTransactionId(JsonNode payload, String uniqueId) {
+    private long extractTransactionId(JsonNode payload) {
         if (payload.hasNonNull("transactionId")) {
-            return payload.get("transactionId").asLong();
+            long candidate = payload.get("transactionId").asLong();
+            if (candidate > 0L) {
+                return candidate;
+            }
         }
-        // payload에 없을 경우 고유 해시 기반 양의 정수 채번
-        if (uniqueId != null && !uniqueId.isBlank()) {
-            return Math.abs((long) uniqueId.hashCode());
-        }
-        return System.currentTimeMillis();
+        return sequenceService.nextTransactionId();
     }
 }
