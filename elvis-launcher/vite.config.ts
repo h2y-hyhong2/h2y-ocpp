@@ -70,7 +70,9 @@ function infraLauncherPlugin(): Plugin {
             apiPort: 18082,
             wsPort: 18080,
             syncPort: 18081,
-            testerPort: 8085
+            testerPort: 8085,
+            clickhousePort: 8123,
+            clickhouseDataPort: 18083
           }
           if (fs.existsSync(envPath)) {
             const lines = fs.readFileSync(envPath, 'utf-8').split(/\r?\n/)
@@ -86,6 +88,8 @@ function infraLauncherPlugin(): Plugin {
               if (key === 'ELVIS_WS_PORT' && val) env.wsPort = parseInt(val.trim(), 10) || env.wsPort
               if (key === 'ELVIS_SYNC_PORT' && val) env.syncPort = parseInt(val.trim(), 10) || env.syncPort
               if (key === 'ELVIS_TESTER_PORT' && val) env.testerPort = parseInt(val.trim(), 10) || env.testerPort
+              if (key === 'ELVIS_CLICKHOUSE_HTTP_PORT' && val) env.clickhousePort = parseInt(val.trim(), 10) || env.clickhousePort
+              if (key === 'ELVIS_DATA_CH_PORT' && val) env.clickhouseDataPort = parseInt(val.trim(), 10) || env.clickhouseDataPort
             }
           }
           return env
@@ -119,12 +123,14 @@ function infraLauncherPlugin(): Plugin {
         // 1. 미들웨어 및 전체 서비스 헬스체크 (GET /api/infra/status)
         if (pathname === '/api/infra/status') {
           const currentEnv = readEnv()
-          const [isKafka, isMysql, isControlApi, isConnectWs, isConnectSync] = await Promise.all([
+          const [isKafka, isMysql, isControlApi, isConnectWs, isConnectSync, isClickhouse, isClickhouseData] = await Promise.all([
             checkPort(currentEnv.kafkaPort),
             checkPort(currentEnv.mysqlPort),
             checkPort(currentEnv.apiPort),
             checkPort(currentEnv.wsPort),
-            checkPort(currentEnv.syncPort)
+            checkPort(currentEnv.syncPort),
+            checkPort(currentEnv.clickhousePort),
+            checkPort(currentEnv.clickhouseDataPort)
           ])
 
           res.end(JSON.stringify({
@@ -133,12 +139,16 @@ function infraLauncherPlugin(): Plugin {
             controlApi: isControlApi,
             connectWs: isConnectWs,
             connectSync: isConnectSync,
+            clickhouse: isClickhouse,
+            clickhouseData: isClickhouseData,
             ports: {
               mysql: currentEnv.mysqlPort,
               kafka: currentEnv.kafkaPort,
               api: currentEnv.apiPort,
               ws: currentEnv.wsPort,
-              sync: currentEnv.syncPort
+              sync: currentEnv.syncPort,
+              clickhouse: currentEnv.clickhousePort,
+              clickhouseData: currentEnv.clickhouseDataPort
             }
           }))
           return
@@ -279,6 +289,16 @@ function infraLauncherPlugin(): Plugin {
             runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
           } else if (service === 'tester') {
             runServiceProcess('tester', 'start-elvis-tester.bat', 'ELVIS - Tester Harness', isBackground)
+          } else if (service === 'clickhouse') {
+            runServiceProcess('clickhouse', 'start-clickhouse.bat', 'ELVIS - ClickHouse v26.7 Server', isBackground)
+          } else if (service === 'clickhouse-data') {
+            runServiceProcess('clickhouse-data', 'start-elvis-data-clickhouse.bat', 'ELVIS - ClickHouse Bulk Engine', isBackground)
+          } else if (service === 'all-extensions') {
+            // 확장 기능 전체 기동: ClickHouse Server -> elvis-data-clickhouse
+            runServiceProcess('clickhouse', 'start-clickhouse.bat', 'ELVIS - ClickHouse v26.7 Server', isBackground)
+            setTimeout(() => {
+              runServiceProcess('clickhouse-data', 'start-elvis-data-clickhouse.bat', 'ELVIS - ClickHouse Bulk Engine', isBackground)
+            }, 3000)
           } else if (service === 'all-infra') {
             // 인프라 전체 기동: Kafka -> MySQL
             if (isBackground) {
@@ -337,7 +357,7 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 7. 서비스 중지 (POST /api/infra/stop?service=mysql|kafka|ws|sync|api|tester|all-infra|all-services|all)
+        // 7. 서비스 중지 (POST /api/infra/stop?service=mysql|kafka|ws|sync|api|clickhouse|clickhouse-data|all-extensions|tester|all-infra|all-services|all)
         if (pathname === '/api/infra/stop') {
           const currentEnv = readEnv()
           const service = url.searchParams.get('service')
@@ -351,6 +371,12 @@ function infraLauncherPlugin(): Plugin {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.syncPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect Sync*\\" 2>$null"`)
           } else if (service === 'api') {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control API*\\" 2>$null"`)
+          } else if (service === 'clickhouse') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhousePort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null"`)
+          } else if (service === 'clickhouse-data') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse Bulk*\\" 2>$null"`)
+          } else if (service === 'all-extensions') {
+            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhousePort}, ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null"`)
           } else if (service === 'tester') {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.testerPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Tester Harness*\\" 2>$null"`)
           } else if (service === 'all-infra') {
@@ -358,7 +384,7 @@ function infraLauncherPlugin(): Plugin {
           } else if (service === 'all-services') {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null"`)
           } else if (service === 'all') {
-            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort}, ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`)
+            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort}, ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort}, ${currentEnv.clickhousePort}, ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`)
           }
           res.end(JSON.stringify({ success: true, message: `${service} 중지 명령이 전송되었습니다.` }))
           return
@@ -453,6 +479,10 @@ function infraLauncherPlugin(): Plugin {
               exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.syncPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect Sync*\\" 2>$null"`, onStopped)
             } else if (svc === 'api') {
               exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control API*\\" 2>$null"`, onStopped)
+            } else if (svc === 'clickhouse') {
+              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhousePort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null"`, onStopped)
+            } else if (svc === 'clickhouse-data') {
+              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse Bulk*\\" 2>$null"`, onStopped)
             } else {
               onStopped()
             }
@@ -469,6 +499,10 @@ function infraLauncherPlugin(): Plugin {
               runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
             } else if (svc === 'api') {
               runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
+            } else if (svc === 'clickhouse') {
+              runServiceProcess('clickhouse', 'start-clickhouse.bat', 'ELVIS - ClickHouse v26.7 Server', isBackground)
+            } else if (svc === 'clickhouse-data') {
+              runServiceProcess('clickhouse-data', 'start-elvis-data-clickhouse.bat', 'ELVIS - ClickHouse Bulk Engine', isBackground)
             }
           }
 
@@ -521,20 +555,30 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 10. 콘솔 로그 조회 (GET /api/infra/logs?service=mysql|kafka&tail=250)
+        // 10. 콘솔 로그 조회 (GET /api/infra/logs?service=mysql|clickhouse&tail=250&type=all|error)
         if (pathname === '/api/infra/logs' && req.method === 'GET') {
           const currentEnv = readEnv()
           const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
           const service = url.searchParams.get('service') || 'mysql'
           const tailLines = parseInt(url.searchParams.get('tail') || '250', 10)
-          const logFile = path.resolve(logDir, `${service}.log`)
+          const logType = url.searchParams.get('type') || 'all'
+
+          let logFile = path.resolve(logDir, `${service}.log`)
+          const errLogFile = path.resolve(logDir, `${service}-err.log`)
+          let isDedicatedErrFile = false
+
+          if (logType === 'error' && fs.existsSync(errLogFile)) {
+            logFile = errLogFile
+            isDedicatedErrFile = true
+          }
 
           if (!fs.existsSync(logFile)) {
             res.end(JSON.stringify({
               success: true,
               service,
+              type: logType,
               exists: false,
-              message: `${service}.log 파일이 아직 없습니다. 서비스를 기동하면 실시간 로그가 기록됩니다.`,
+              message: `${path.basename(logFile)} 파일이 아직 없습니다.`,
               lines: [],
               fileSize: 0,
               lastModified: null
@@ -544,7 +588,7 @@ function infraLauncherPlugin(): Plugin {
 
           try {
             const stats = fs.statSync(logFile)
-            const maxReadBytes = 256 * 1024
+            const maxReadBytes = 512 * 1024
             const fileSize = stats.size
             const readSize = Math.min(fileSize, maxReadBytes)
             const buffer = Buffer.alloc(readSize)
@@ -553,15 +597,21 @@ function infraLauncherPlugin(): Plugin {
             fs.closeSync(fd)
 
             const rawContent = buffer.toString('utf-8')
-            const allLines = rawContent.split(/\r?\n/)
+            let allLines = rawContent.split(/\r?\n/)
             if (fileSize > maxReadBytes && allLines.length > 1) {
               allLines.shift()
             }
+
+            if (logType === 'error' && !isDedicatedErrFile) {
+              allLines = allLines.filter(line => /error|exception|fatal|fail|심각|실패/i.test(line))
+            }
+
             const recentLines = allLines.slice(-tailLines)
 
             res.end(JSON.stringify({
               success: true,
               service,
+              type: logType,
               exists: true,
               fileSize: stats.size,
               lastModified: stats.mtime.toISOString(),
@@ -571,6 +621,7 @@ function infraLauncherPlugin(): Plugin {
             res.end(JSON.stringify({
               success: true,
               service,
+              type: logType,
               exists: true,
               fileSize: 0,
               lastModified: null,
@@ -603,22 +654,33 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 11-1. 실시간 콘솔 터미널 창 기동 (POST /api/infra/logs/open-terminal?service=mysql)
+        // 11-1. 실시간 콘솔 터미널 창 기동 (POST /api/infra/logs/open-terminal?service=mysql&type=all|error)
         if (pathname === '/api/infra/logs/open-terminal') {
           const currentEnv = readEnv()
           const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
           const service = url.searchParams.get('service') || 'mysql'
-          const logFile = path.resolve(logDir, `${service}.log`)
+          const logType = url.searchParams.get('type') || 'all'
+
           const titles: Record<string, string> = {
             mysql: 'MySQL 9.71 (:13306)',
             kafka: 'Apache Kafka (:19092)',
             ws: 'elvis-connect-ws (:18080)',
             sync: 'elvis-connect-sync (:18081)',
             api: 'elvis-control-api (:18082)',
+            clickhouse: 'ClickHouse v26.7 (:8123)',
+            'clickhouse-data': 'elvis-data-clickhouse (:18083)',
             tester: 'elvis-tester (:8085)'
           }
           const display = titles[service] || service
-          const winTitle = `ELVIS - ${display} 실시간 콘솔 로그`
+
+          let logFile = path.resolve(logDir, `${service}.log`)
+          const errFile = path.resolve(logDir, `${service}-err.log`)
+          const isErrorMode = logType === 'error'
+
+          let winTitle = `ELVIS - ${display} 실시간 콘솔 로그`
+          if (isErrorMode) {
+            winTitle = `ELVIS - ${display} 실시간 [에러] 콘솔 로그`
+          }
 
           // 1) 기존 동일 서비스 로그창이 이미 열려 있는지 검사 -> 활성화(Focus) 성공 시 중복 생성 방지
           const checkCmd = `powershell -NoProfile -Command "$w = New-Object -ComObject WScript.Shell; if ($w.AppActivate('${winTitle}')) { exit 10 }; $p = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like '*${winTitle}*' }; if ($p) { if ($w.AppActivate($p[0].Id)) { exit 10 } }; exit 0"`
@@ -629,8 +691,19 @@ function infraLauncherPlugin(): Plugin {
               return
             }
 
-            // 2) 신규 창 기동
-            const psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 콘솔 로그' -ForegroundColor Cyan; Write-Host '  로그 경로: ${logFile}' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host ''; if (Test-Path '${logFile}') { Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 } else { Write-Host '[안내] 아직 로그 파일이 없습니다. 서비스 기동 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${logFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 로그 감시를 시작합니다.' -ForegroundColor Green; Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 }`
+            // 2) 신규 창 기동 스크립트 작성
+            let psCmd = ''
+            if (isErrorMode) {
+              // 에러 모드: ClickHouse 등 전용 에러 파일이 있으면 그 파일 감시, 없으면 로그 파일에서 ERROR 라인 실시간 필터링
+              if (service === 'clickhouse' || fs.existsSync(errFile)) {
+                psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 [에러] 콘솔 로그' -ForegroundColor Red; Write-Host '  에러 로그 경로: ${errFile}' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host ''; if (Test-Path '${errFile}') { Write-Host '[모니터링] ${display} 전용 에러 로그 스트림을 감시합니다.' -ForegroundColor Red; Get-Content -Path '${errFile}' -Tail 150 -Wait -Encoding utf8 } else { Write-Host '[안내] 에러 로그 파일(${path.basename(errFile)}) 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${errFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 에러 로그 감시를 시작합니다.' -ForegroundColor Red; Get-Content -Path '${errFile}' -Tail 150 -Wait -Encoding utf8 }`
+              } else {
+                psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 [에러/예외] 필터 스트림' -ForegroundColor Red; Write-Host '  감시 대상: ${logFile} (ERROR | Exception | FATAL | 실패 필터링)' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host ''; if (Test-Path '${logFile}') { Write-Host '[실시간 필터] ERROR/Exception 발생 이벤트를 대기 및 모니터링합니다...' -ForegroundColor DarkYellow; Get-Content -Path '${logFile}' -Tail 200 -Wait -Encoding utf8 | Where-Object { $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' } } else { Write-Host '[안내] 원본 로그 파일 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${logFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 에러 필터 감시를 시작합니다.' -ForegroundColor Red; Get-Content -Path '${logFile}' -Tail 200 -Wait -Encoding utf8 | Where-Object { $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' } }`
+              }
+            } else {
+              // 일반 전체 로그 모드
+              psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 콘솔 로그' -ForegroundColor Cyan; Write-Host '  로그 경로: ${logFile}' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkCyan; Write-Host ''; if (Test-Path '${logFile}') { Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 } else { Write-Host '[안내] 아직 로그 파일이 없습니다. 서비스 기동 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${logFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 로그 감시를 시작합니다.' -ForegroundColor Green; Get-Content -Path '${logFile}' -Tail 150 -Wait -Encoding utf8 }`
+            }
 
             try {
               const child = spawn('cmd.exe', ['/c', 'start', winTitle, 'powershell', '-NoExit', '-Command', psCmd], {
@@ -638,7 +711,7 @@ function infraLauncherPlugin(): Plugin {
                 stdio: 'ignore'
               })
               child.unref()
-              res.end(JSON.stringify({ success: true, message: `${display} 터미널 콘솔이 실행되었습니다.` }))
+              res.end(JSON.stringify({ success: true, message: `${display} ${isErrorMode ? '에러' : '표준'} 터미널 콘솔이 실행되었습니다.` }))
             } catch (err: any) {
               res.statusCode = 500
               res.end(JSON.stringify({ success: false, message: '터미널 기동 실패: ' + err.message }))

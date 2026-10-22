@@ -2,9 +2,9 @@
   <!-- 메인 런처 제어판 -->
   <!-- 2. 메인 런처 창 모드 (초슬림 & 제로 스크롤 리모컨)                  -->
   <!-- ================================================================= -->
-  <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/20 selection:text-sky-900">
+  <div class="h-screen overflow-hidden flex flex-col bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/20 selection:text-sky-900">
     <!-- 초슬림 GNB 헤더 -->
-    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200/90 sticky top-0 z-50 px-4 py-2 flex items-center justify-between shadow-2xs">
+    <header class="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/90 sticky top-0 z-50 px-3.5 py-1.5 flex items-center justify-between shadow-2xs">
       <div class="flex items-center gap-2.5">
         <!-- 모던 미니멀 로고마크 -->
         <div class="w-6 h-6 rounded-md bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-2xs">
@@ -24,7 +24,7 @@
             :class="runningCount > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
           >
             <span class="w-1.5 h-1.5 rounded-full" :class="runningCount > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
-            <span>{{ runningCount }}/5 RUNNING</span>
+            <span>{{ runningCount }}/{{ totalCount }} RUNNING</span>
           </span>
         </div>
       </div>
@@ -43,13 +43,13 @@
       </div>
     </header>
 
-    <!-- 메인 컨텐츠 영역 (슬림 콤팩트 리모컨) -->
-    <main class="flex-1 max-w-xl w-full mx-auto p-2.5 space-y-2">
-      <!-- 서비스 통합 리스트 카드 -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+    <!-- 메인 컨텐츠 영역 (창 세로 꽉 채움 레이아웃) -->
+    <main class="flex-1 min-h-0 max-w-2xl w-full mx-auto p-2 flex flex-col gap-1.5 overflow-hidden">
+      <!-- 서비스 통합 리스트 카드 (5개 서비스) -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col flex-[5] min-h-0 overflow-hidden">
         
         <!-- A. 인프라 미들웨어 그룹 -->
-        <div class="px-3.5 py-1.5 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
+        <div class="flex-shrink-0 px-3.5 py-1 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
             <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-700">인프라 미들웨어</span>
@@ -66,7 +66,7 @@
             <button
               @click="startInfra"
               :disabled="isExecuting || (infra.mysql && infra.kafka)"
-              class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
               title="인프라(MySQL, Kafka) 시작"
             >
               <svg v-if="pendingAction.infra === 'start'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -75,7 +75,7 @@
             <button
               @click="stopInfra"
               :disabled="isExecuting || (!infra.mysql && !infra.kafka)"
-              class="px-2 py-0.5 rounded text-[10px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
               title="인프라(MySQL, Kafka) 종료"
             >
               <svg v-if="pendingAction.infra === 'stop'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -84,7 +84,7 @@
             <button
               @click="restartInfra"
               :disabled="isExecuting"
-              class="px-2 py-0.5 rounded text-[10px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
               title="인프라(MySQL, Kafka)만 순차 재기동"
             >
               <svg v-if="pendingAction.infra === 'restart'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -92,7 +92,7 @@
             </button>
             <button
               @click="openProcessStatus('infra')"
-              class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition-colors cursor-pointer flex items-center gap-0.5"
+              class="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/90 shadow-2xs transition-all cursor-pointer flex items-center gap-0.5"
               title="인프라 포트(13306, 19092) 및 프로세스 진단"
             >
               <svg class="w-2.5 h-2.5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -101,9 +101,9 @@
           </div>
         </div>
 
-        <div class="divide-y divide-slate-100">
+        <div class="flex-[2] min-h-0 flex flex-col divide-y divide-slate-100">
           <!-- 1) MySQL -->
-          <div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -120,24 +120,37 @@
                     {{ pendingAction.mysql === 'start' ? 'STARTING...' : pendingAction.mysql === 'stop' ? 'STOPPING...' : pendingAction.mysql === 'restart' ? 'RESTARTING...' : (infra.mysql ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
-                <p class="text-[11px] text-slate-500">충전 자산, 세션, 단가, 트랜잭션 원장 보관</p>
+                <p class="text-[10.5px] text-slate-500 leading-tight">충전 자산, 세션, 단가, 트랜잭션 원장 보관</p>
               </div>
             </div>
 
-            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
-              <button
-                @click="openLogWindow('mysql')"
-                class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
-                title="MySQL 로그 독립 창 열기"
-              >
-                로그
-              </button>
+            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
+              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
+              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
+                <button
+                  @click="openLogWindow('mysql', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                  title="MySQL 전체 통합 로그 열기"
+                >
+                  로그
+                </button>
+                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
+                <button
+                  @click="openLogWindow('mysql', 'error')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
+                  title="MySQL 실시간 에러/예외 로그 전용 창 열기"
+                >
+                  에러로그
+                </button>
+              </div>
+
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 v-if="!infra.mysql"
                 @click="control('start', 'mysql', true)"
                 :disabled="isExecuting || pendingAction.mysql !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.mysql === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.mysql === 'start' ? '기동중' : '시작' }}</span>
@@ -146,15 +159,17 @@
                 v-else
                 @click="control('stop', 'mysql')"
                 :disabled="isExecuting || pendingAction.mysql !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.mysql === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.mysql === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+
+              <!-- 재기동 -->
               <button
                 @click="restartService('mysql')"
                 :disabled="isExecuting || pendingAction.mysql !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
                 title="MySQL 재기동"
               >
                 <svg v-if="pendingAction.mysql === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -164,7 +179,7 @@
           </div>
 
           <!-- 2) Kafka -->
-          <div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -181,24 +196,37 @@
                     {{ pendingAction.kafka === 'start' ? 'STARTING...' : pendingAction.kafka === 'stop' ? 'STOPPING...' : pendingAction.kafka === 'restart' ? 'RESTARTING...' : (infra.kafka ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
-                <p class="text-[11px] text-slate-500">OCPP 이벤트 스트리밍 및 메시지 버퍼</p>
+                <p class="text-[10.5px] text-slate-500 leading-tight">OCPP 이벤트 스트리밍 및 메시지 버퍼</p>
               </div>
             </div>
 
-            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
-              <button
-                @click="openLogWindow('kafka')"
-                class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
-                title="Kafka 로그 독립 창 열기"
-              >
-                로그
-              </button>
+            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
+              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
+              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
+                <button
+                  @click="openLogWindow('kafka', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                  title="Kafka 전체 통합 로그 열기"
+                >
+                  로그
+                </button>
+                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
+                <button
+                  @click="openLogWindow('kafka', 'error')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
+                  title="Kafka 실시간 에러/예외 로그 전용 창 열기"
+                >
+                  에러로그
+                </button>
+              </div>
+
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 v-if="!infra.kafka"
                 @click="control('start', 'kafka', true)"
                 :disabled="isExecuting || pendingAction.kafka !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.kafka === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.kafka === 'start' ? '기동중' : '시작' }}</span>
@@ -207,15 +235,17 @@
                 v-else
                 @click="control('stop', 'kafka')"
                 :disabled="isExecuting || pendingAction.kafka !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.kafka === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.kafka === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+
+              <!-- 재기동 -->
               <button
                 @click="restartService('kafka')"
                 :disabled="isExecuting || pendingAction.kafka !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
                 title="Kafka 재기동"
               >
                 <svg v-if="pendingAction.kafka === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -226,7 +256,7 @@
         </div>
 
         <!-- B. 코어 백엔드 서비스 그룹 -->
-        <div class="px-3.5 py-1.5 bg-slate-50/70 border-t border-b border-slate-200/80 flex items-center justify-between">
+        <div class="flex-shrink-0 px-3.5 py-1 bg-slate-50/70 border-t border-b border-slate-200/80 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-700">코어 백엔드 엔진</span>
@@ -243,7 +273,7 @@
             <button
               @click="startServices"
               :disabled="isExecuting || (infra.connectWs && infra.connectSync && infra.controlApi)"
-              class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
               title="코어 백엔드 엔진(WS, Sync, API) 순차 시작"
             >
               <svg v-if="pendingAction.services === 'start'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -252,7 +282,7 @@
             <button
               @click="stopServices"
               :disabled="isExecuting || (!infra.connectWs && !infra.connectSync && !infra.controlApi)"
-              class="px-2 py-0.5 rounded text-[10px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
               title="코어 백엔드 엔진(WS, Sync, API) 일괄 종료"
             >
               <svg v-if="pendingAction.services === 'stop'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -261,7 +291,7 @@
             <button
               @click="restartServices"
               :disabled="isExecuting"
-              class="px-2 py-0.5 rounded text-[10px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
               title="인프라(MySQL, Kafka)는 유지하고 백엔드 엔진만 순차 재기동"
             >
               <svg v-if="pendingAction.services === 'restart'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -269,7 +299,7 @@
             </button>
             <button
               @click="openProcessStatus('core')"
-              class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer flex items-center gap-0.5"
+              class="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-2xs transition-all cursor-pointer flex items-center gap-0.5"
               title="코어 엔진 포트(18080, 18081, 18082) 및 Java PID 진단"
             >
               <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -278,9 +308,9 @@
           </div>
         </div>
 
-        <div class="divide-y divide-slate-100">
+        <div class="flex-[3] min-h-0 flex flex-col divide-y divide-slate-100">
           <!-- 3) elvis-connect-ws -->
-          <div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -297,24 +327,37 @@
                     {{ pendingAction.ws === 'start' ? 'STARTING...' : pendingAction.ws === 'stop' ? 'STOPPING...' : pendingAction.ws === 'restart' ? 'RESTARTING...' : (infra.connectWs ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
-                <p class="text-[11px] text-slate-500">충전기 단말 WebSocket 커넥션 수용 게이트웨이</p>
+                <p class="text-[10.5px] text-slate-500 leading-tight">충전기 단말 WebSocket 커넥션 수용 게이트웨이</p>
               </div>
             </div>
 
-            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
-              <button
-                @click="openLogWindow('ws')"
-                class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
-                title="WS 게이트웨이 로그 독립 창 열기"
-              >
-                로그
-              </button>
+            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
+              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
+              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
+                <button
+                  @click="openLogWindow('ws', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                  title="WS 게이트웨이 전체 통합 로그 열기"
+                >
+                  로그
+                </button>
+                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
+                <button
+                  @click="openLogWindow('ws', 'error')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
+                  title="WS 게이트웨이 실시간 에러/예외 로그 전용 창 열기"
+                >
+                  에러로그
+                </button>
+              </div>
+
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 v-if="!infra.connectWs"
                 @click="control('start', 'ws', true)"
                 :disabled="isExecuting || pendingAction.ws !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.ws === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.ws === 'start' ? '기동중' : '시작' }}</span>
@@ -323,15 +366,17 @@
                 v-else
                 @click="control('stop', 'ws')"
                 :disabled="isExecuting || pendingAction.ws !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.ws === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.ws === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+
+              <!-- 재기동 -->
               <button
                 @click="restartService('ws')"
                 :disabled="isExecuting || pendingAction.ws !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
                 title="WS 게이트웨이 재기동"
               >
                 <svg v-if="pendingAction.ws === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -341,7 +386,7 @@
           </div>
 
           <!-- 4) elvis-connect-sync -->
-          <div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -358,24 +403,37 @@
                     {{ pendingAction.sync === 'start' ? 'STARTING...' : pendingAction.sync === 'stop' ? 'STOPPING...' : pendingAction.sync === 'restart' ? 'RESTARTING...' : (infra.connectSync ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
-                <p class="text-[11px] text-slate-500">Kafka 이벤트 컨슘, 상태 UPDATE 및 원장 DB 적재</p>
+                <p class="text-[10.5px] text-slate-500 leading-tight">Kafka 이벤트 컨슘, 상태 UPDATE 및 원장 DB 적재</p>
               </div>
             </div>
 
-            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
-              <button
-                @click="openLogWindow('sync')"
-                class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
-                title="Sync 엔진 로그 독립 창 열기"
-              >
-                로그
-              </button>
+            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
+              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
+              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
+                <button
+                  @click="openLogWindow('sync', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                  title="Sync 엔진 전체 통합 로그 열기"
+                >
+                  로그
+                </button>
+                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
+                <button
+                  @click="openLogWindow('sync', 'error')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
+                  title="Sync 엔진 실시간 에러/예외 로그 전용 창 열기"
+                >
+                  에러로그
+                </button>
+              </div>
+
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 v-if="!infra.connectSync"
                 @click="control('start', 'sync', true)"
                 :disabled="isExecuting || pendingAction.sync !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.sync === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.sync === 'start' ? '기동중' : '시작' }}</span>
@@ -384,15 +442,17 @@
                 v-else
                 @click="control('stop', 'sync')"
                 :disabled="isExecuting || pendingAction.sync !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.sync === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.sync === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+
+              <!-- 재기동 -->
               <button
                 @click="restartService('sync')"
                 :disabled="isExecuting || pendingAction.sync !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
                 title="Sync 엔진 재기동"
               >
                 <svg v-if="pendingAction.sync === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -402,7 +462,7 @@
           </div>
 
           <!-- 5) elvis-control-api -->
-          <div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -419,24 +479,37 @@
                     {{ pendingAction.api === 'start' ? 'STARTING...' : pendingAction.api === 'stop' ? 'STOPPING...' : pendingAction.api === 'restart' ? 'RESTARTING...' : (infra.controlApi ? 'ONLINE' : 'OFFLINE') }}
                   </span>
                 </div>
-                <p class="text-[11px] text-slate-500">관제 어드민 REST API 서버 & 실시간 웹소켓 푸시</p>
+                <p class="text-[10.5px] text-slate-500 leading-tight">관제 어드민 REST API 서버 & 실시간 웹소켓 푸시</p>
               </div>
             </div>
 
-            <!-- 통일된 3단 액션 버튼군 (로그 w-14 & 시작/종료 w-16 & 재기동 w-16) -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 w-52 justify-end">
-              <button
-                @click="openLogWindow('api')"
-                class="w-14 py-1.5 rounded-lg text-center text-xs font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer transition-colors shadow-2xs"
-                title="Control API 로그 독립 창 열기"
-              >
-                로그
-              </button>
+            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
+              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
+              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
+                <button
+                  @click="openLogWindow('api', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                  title="Control API 전체 통합 로그 열기"
+                >
+                  로그
+                </button>
+                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
+                <button
+                  @click="openLogWindow('api', 'error')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
+                  title="Control API 실시간 에러/예외 로그 전용 창 열기"
+                >
+                  에러로그
+                </button>
+              </div>
+
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 v-if="!infra.controlApi"
                 @click="control('start', 'api', true)"
                 :disabled="isExecuting || pendingAction.api !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.api === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.api === 'start' ? '기동중' : '시작' }}</span>
@@ -445,19 +518,222 @@
                 v-else
                 @click="control('stop', 'api')"
                 :disabled="isExecuting || pendingAction.api !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.api === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.api === 'stop' ? '종료중' : '종료' }}</span>
               </button>
+
+              <!-- 재기동 -->
               <button
                 @click="restartService('api')"
                 :disabled="isExecuting || pendingAction.api !== null"
-                class="w-16 py-1.5 rounded-lg text-center text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
                 title="Control API 재기동"
               >
                 <svg v-if="pendingAction.api === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.api === 'restart' ? '재기동중' : '재기동' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. 확장 기능 (시계열 분석 & OLAP) 독립 카드 -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col flex-[2] min-h-0 overflow-hidden">
+        <div class="flex-shrink-0 px-3.5 py-1 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-700">확장 기능 (시계열 분석 & OLAP)</span>
+            <span
+              class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-medium border"
+              :class="extensionRunningCount > 0 ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-slate-100 text-slate-500 border-slate-200'"
+            >
+              {{ extensionRunningCount }}/2
+            </span>
+          </div>
+
+          <!-- 확장 기능 헤더 제어 버튼군: 시작 / 종료 / 재기동 -->
+          <div class="flex items-center gap-1">
+            <button
+              @click="startExtensions"
+              :disabled="isExecuting || (infra.clickhouse && infra.clickhouseData)"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              title="확장 기능(ClickHouse, Bulk 엔진) 순차 시작"
+            >
+              <svg v-if="pendingAction.extensions === 'start'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+              <span>{{ pendingAction.extensions === 'start' ? '기동중...' : '시작' }}</span>
+            </button>
+            <button
+              @click="stopExtensions"
+              :disabled="isExecuting || (!infra.clickhouse && !infra.clickhouseData)"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              title="확장 기능(ClickHouse, Bulk 엔진) 일괄 종료"
+            >
+              <svg v-if="pendingAction.extensions === 'stop'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+              <span>{{ pendingAction.extensions === 'stop' ? '종료중...' : '종료' }}</span>
+            </button>
+            <button
+              @click="restartExtensions"
+              :disabled="isExecuting"
+              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
+              title="확장 기능 순차 재기동"
+            >
+              <svg v-if="pendingAction.extensions === 'restart'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+              <span>{{ pendingAction.extensions === 'restart' ? '재기동중...' : '재기동' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 min-h-0 flex flex-col divide-y divide-slate-100">
+          <!-- 6) ClickHouse Server -->
+          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+            <div class="flex items-center gap-2.5">
+              <span
+                class="w-2 h-2 rounded-full flex-shrink-0"
+                :class="pendingAction.clickhouse ? 'bg-amber-400 ring-2 ring-amber-200 animate-ping' : (infra.clickhouse ? 'bg-emerald-500 ring-2 ring-emerald-100 animate-pulse' : 'bg-slate-300')"
+              ></span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900">ClickHouse v26.7</span>
+                  <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.clickhouse }}</span>
+                  <span
+                    class="text-[9px] font-mono font-medium"
+                    :class="pendingAction.clickhouse ? 'text-amber-600' : (infra.clickhouse ? 'text-emerald-600' : 'text-slate-400')"
+                  >
+                    {{ pendingAction.clickhouse === 'start' ? 'STARTING...' : pendingAction.clickhouse === 'stop' ? 'STOPPING...' : pendingAction.clickhouse === 'restart' ? 'RESTARTING...' : (infra.clickhouse ? 'ONLINE' : 'OFFLINE') }}
+                  </span>
+                </div>
+                <p class="text-[10.5px] text-slate-500 leading-tight">대용량 1초 미터값 및 시계열 분석 OLAP DB (WSL2)</p>
+              </div>
+            </div>
+
+            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
+              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
+              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
+                <button
+                  @click="openLogWindow('clickhouse', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                  title="ClickHouse 전체 통합 로그 열기"
+                >
+                  로그
+                </button>
+                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
+                <button
+                  @click="openLogWindow('clickhouse', 'error')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
+                  title="ClickHouse 실시간 에러 전용 로그(clickhouse-err.log) 창 열기"
+                >
+                  에러로그
+                </button>
+              </div>
+
+              <!-- 서비스 제어: 시작 / 종료 -->
+              <button
+                v-if="!infra.clickhouse"
+                @click="control('start', 'clickhouse', true)"
+                :disabled="isExecuting || pendingAction.clickhouse !== null"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+              >
+                <svg v-if="pendingAction.clickhouse === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.clickhouse === 'start' ? '기동중' : '시작' }}</span>
+              </button>
+              <button
+                v-else
+                @click="control('stop', 'clickhouse')"
+                :disabled="isExecuting || pendingAction.clickhouse !== null"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+              >
+                <svg v-if="pendingAction.clickhouse === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.clickhouse === 'stop' ? '종료중' : '종료' }}</span>
+              </button>
+
+              <!-- 재기동 -->
+              <button
+                @click="restartService('clickhouse')"
+                :disabled="isExecuting || pendingAction.clickhouse !== null"
+                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                title="ClickHouse 재기동"
+              >
+                <svg v-if="pendingAction.clickhouse === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.clickhouse === 'restart' ? '재기동중' : '재기동' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 7) elvis-data-clickhouse -->
+          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+            <div class="flex items-center gap-2.5">
+              <span
+                class="w-2 h-2 rounded-full flex-shrink-0"
+                :class="pendingAction.clickhouseData ? 'bg-amber-400 ring-2 ring-amber-200 animate-ping' : (infra.clickhouseData ? 'bg-emerald-500 ring-2 ring-emerald-100 animate-pulse' : 'bg-slate-300')"
+              ></span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900">elvis-data-clickhouse</span>
+                  <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.clickhouseData }}</span>
+                  <span
+                    class="text-[9px] font-mono font-medium"
+                    :class="pendingAction.clickhouseData ? 'text-amber-600' : (infra.clickhouseData ? 'text-emerald-600' : 'text-slate-400')"
+                  >
+                    {{ pendingAction.clickhouseData === 'start' ? 'STARTING...' : pendingAction.clickhouseData === 'stop' ? 'STOPPING...' : pendingAction.clickhouseData === 'restart' ? 'RESTARTING...' : (infra.clickhouseData ? 'ONLINE' : 'OFFLINE') }}
+                  </span>
+                </div>
+                <p class="text-[10.5px] text-slate-500 leading-tight">Kafka 미터값 컨슘 및 ClickHouse 1초/1,000건 벌크 적재 엔진</p>
+              </div>
+            </div>
+
+            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
+              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
+              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
+                <button
+                  @click="openLogWindow('clickhouse-data', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                  title="ClickHouse Bulk 적재 전체 통합 로그 열기"
+                >
+                  로그
+                </button>
+                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
+                <button
+                  @click="openLogWindow('clickhouse-data', 'error')"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
+                  title="ClickHouse Bulk 적재 실시간 에러/예외 로그 전용 창 열기"
+                >
+                  에러로그
+                </button>
+              </div>
+
+              <!-- 서비스 제어: 시작 / 종료 -->
+              <button
+                v-if="!infra.clickhouseData"
+                @click="control('start', 'clickhouse-data', true)"
+                :disabled="isExecuting || pendingAction.clickhouseData !== null"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+              >
+                <svg v-if="pendingAction.clickhouseData === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.clickhouseData === 'start' ? '기동중' : '시작' }}</span>
+              </button>
+              <button
+                v-else
+                @click="control('stop', 'clickhouse-data')"
+                :disabled="isExecuting || pendingAction.clickhouseData !== null"
+                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+              >
+                <svg v-if="pendingAction.clickhouseData === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.clickhouseData === 'stop' ? '종료중' : '종료' }}</span>
+              </button>
+
+              <!-- 재기동 -->
+              <button
+                @click="restartService('clickhouse-data')"
+                :disabled="isExecuting || pendingAction.clickhouseData !== null"
+                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                title="ClickHouse Bulk 적재 재기동"
+              >
+                <svg v-if="pendingAction.clickhouseData === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>{{ pendingAction.clickhouseData === 'restart' ? '재기동중' : '재기동' }}</span>
               </button>
             </div>
           </div>
@@ -514,7 +790,7 @@ function addToast(title: string, message: string, type: 'success' | 'error' | 'i
   }, 3500)
 }
 
-type LogServiceType = 'mysql' | 'kafka' | 'ws' | 'sync' | 'api'
+type LogServiceType = 'mysql' | 'kafka' | 'ws' | 'sync' | 'api' | 'clickhouse' | 'clickhouse-data'
 
 // 1. 현재 창의 역할 판별 (URL 쿼리스트링 및 Tauri 창 라벨 상호 검증)
 const urlParams = new URLSearchParams(window.location.search)
@@ -526,7 +802,7 @@ try {
   if (currentWin && currentWin.label && currentWin.label.startsWith('log_')) {
     detectedView = 'logs'
     const labelSvc = currentWin.label.replace('log_', '') as LogServiceType
-    if (['mysql', 'kafka', 'ws', 'sync', 'api'].includes(labelSvc)) {
+    if (['mysql', 'kafka', 'ws', 'sync', 'api', 'clickhouse', 'clickhouse-data'].includes(labelSvc)) {
       detectedService = labelSvc
     }
   }
@@ -535,13 +811,15 @@ try {
 const currentView = ref(detectedView)
 const selectedLogService = ref<LogServiceType>(detectedService)
 
-// 5대 핵심 서비스 점유 상태
+// 핵심 서비스 및 확장 기능 점유 상태
 const infra = reactive({
   mysql: false,
   kafka: false,
   connectWs: false,
   connectSync: false,
-  controlApi: false
+  controlApi: false,
+  clickhouse: false,
+  clickhouseData: false
 })
 
 const ports = reactive({
@@ -549,7 +827,9 @@ const ports = reactive({
   kafka: 19092,
   ws: 18080,
   sync: 18081,
-  api: 18082
+  api: 18082,
+  clickhouse: 8123,
+  clickhouseData: 18083
 })
 
 const isChecking = ref(false)
@@ -562,19 +842,26 @@ const pendingAction = reactive<Record<string, string | null>>({
   ws: null,
   sync: null,
   api: null,
+  clickhouse: null,
+  clickhouseData: null,
   infra: null,
   services: null,
+  extensions: null,
   all: null
 })
 
-// 가동 중인 서비스 수 계산 (5대 컴포넌트 기준)
+const totalCount = computed(() => 7)
+
+// 가동 중인 전체 서비스 수 계산 (총 7개 기준)
 const runningCount = computed(() => {
   return [
     infra.mysql,
     infra.kafka,
     infra.connectWs,
     infra.connectSync,
-    infra.controlApi
+    infra.controlApi,
+    infra.clickhouse,
+    infra.clickhouseData
   ].filter(Boolean).length
 })
 
@@ -588,8 +875,13 @@ const coreRunningCount = computed(() => {
   return [infra.connectWs, infra.connectSync, infra.controlApi].filter(Boolean).length
 })
 
+// 확장 기능 가동 수 (2개 기준)
+const extensionRunningCount = computed(() => {
+  return [infra.clickhouse, infra.clickhouseData].filter(Boolean).length
+})
+
 const isAllRunning = computed(() => {
-  return infra.mysql && infra.kafka && infra.connectWs && infra.connectSync && infra.controlApi
+  return infra.mysql && infra.kafka && infra.connectWs && infra.connectSync && infra.controlApi && infra.clickhouse && infra.clickhouseData
 })
 const logLines = ref<string[]>([])
 const searchKeyword = ref('')
@@ -620,6 +912,8 @@ function getServiceStatus(service: string): boolean {
   if (service === 'ws') return !!infra.connectWs
   if (service === 'sync') return !!infra.connectSync
   if (service === 'api') return !!infra.controlApi
+  if (service === 'clickhouse') return !!infra.clickhouse
+  if (service === 'clickhouse-data') return !!infra.clickhouseData
   return false
 }
 
@@ -653,6 +947,8 @@ async function checkStatus() {
     infra.controlApi = !!data.controlApi
     infra.connectWs = !!data.connectWs
     infra.connectSync = !!data.connectSync
+    infra.clickhouse = !!data.clickhouse
+    infra.clickhouseData = !!data.clickhouseData
 
     if (data.ports) {
       ports.mysql = data.ports.mysql || ports.mysql
@@ -660,6 +956,8 @@ async function checkStatus() {
       ports.api = data.ports.api || ports.api
       ports.ws = data.ports.ws || ports.ws
       ports.sync = data.ports.sync || ports.sync
+      ports.clickhouse = data.ports.clickhouse || ports.clickhouse
+      ports.clickhouseData = data.ports.clickhouseData || ports.clickhouseData
     }
 
     // 서비스가 완전히 기동되거나 종료되면 개별 pending 상태 자동 해제
@@ -677,6 +975,12 @@ async function checkStatus() {
 
     if (infra.controlApi && pendingAction.api === 'start') pendingAction.api = null
     if (!infra.controlApi && pendingAction.api === 'stop') pendingAction.api = null
+
+    if (infra.clickhouse && pendingAction.clickhouse === 'start') pendingAction.clickhouse = null
+    if (!infra.clickhouse && pendingAction.clickhouse === 'stop') pendingAction.clickhouse = null
+
+    if (infra.clickhouseData && pendingAction.clickhouseData === 'start') pendingAction.clickhouseData = null
+    if (!infra.clickhouseData && pendingAction.clickhouseData === 'stop') pendingAction.clickhouseData = null
   } catch (e: any) {
     console.warn('[Status-Check-Error]', e.message)
   } finally {
@@ -805,7 +1109,7 @@ async function restartInfra() {
   }
 }
 
-// 3-3. 개별 단일 서비스 재기동 (MySQL, Kafka, WS, Sync, API)
+// 3-3. 개별 단일 서비스 재기동 (MySQL, Kafka, WS, Sync, API, ClickHouse, Bulk)
 async function restartService(service: string) {
   isExecuting.value = true
   pendingAction[service] = 'restart'
@@ -814,7 +1118,9 @@ async function restartService(service: string) {
     kafka: 'Kafka',
     ws: 'WS 게이트웨이',
     sync: 'Sync 엔진',
-    api: 'Control API'
+    api: 'Control API',
+    clickhouse: 'ClickHouse OLAP',
+    'clickhouse-data': 'ClickHouse Bulk 적재'
   }
   const svcName = serviceNames[service] || service.toUpperCase()
 
@@ -947,6 +1253,71 @@ async function restartServices() {
     isExecuting.value = false
     await checkStatus()
   }
+}
+
+// 4-3. 확장 기능만 시작 (ClickHouse & elvis-data-clickhouse)
+async function startExtensions() {
+  isExecuting.value = true
+  pendingAction.extensions = 'start'
+  if (!infra.clickhouse) pendingAction.clickhouse = 'start'
+  if (!infra.clickhouseData) pendingAction.clickhouseData = 'start'
+  try {
+    const res = await fetch('/api/infra/start?service=all-extensions&background=true', { method: 'POST' })
+    const data = await res.json()
+    if (data.success) {
+      addToast('확장 기능 기동', 'ClickHouse -> elvis-data-clickhouse 순차 기동 중입니다...', 'info')
+      const ok = await waitForCondition(() => infra.clickhouse && infra.clickhouseData, 60000, 1000)
+      if (ok) {
+        addToast('확장 기능 기동 완료', 'ClickHouse 및 Bulk 적재 엔진이 모두 정상 기동되었습니다.', 'success')
+      }
+    } else {
+      addToast('기동 실패', data.message, 'error')
+    }
+  } catch (err: any) {
+    addToast('기동 실패', err.message, 'error')
+  } finally {
+    pendingAction.extensions = null
+    pendingAction.clickhouse = null
+    pendingAction.clickhouseData = null
+    isExecuting.value = false
+    await checkStatus()
+  }
+}
+
+// 4-4. 확장 기능만 중지
+async function stopExtensions() {
+  isExecuting.value = true
+  pendingAction.extensions = 'stop'
+  if (infra.clickhouse) pendingAction.clickhouse = 'stop'
+  if (infra.clickhouseData) pendingAction.clickhouseData = 'stop'
+  try {
+    const res = await fetch('/api/infra/stop?service=all-extensions', { method: 'POST' })
+    const data = await res.json()
+    if (data.success) {
+      addToast('확장 기능 중지', '확장 기능 서비스 중지 중입니다...', 'info')
+      const ok = await waitForCondition(() => !infra.clickhouse && !infra.clickhouseData, 15000, 500)
+      if (ok) {
+        addToast('확장 기능 중지 완료', 'ClickHouse 및 Bulk 적재 엔진이 모두 완전히 중지되었습니다.', 'success')
+      }
+    } else {
+      addToast('중지 실패', data.message, 'error')
+    }
+  } catch (err: any) {
+    addToast('중지 실패', err.message, 'error')
+  } finally {
+    pendingAction.extensions = null
+    pendingAction.clickhouse = null
+    pendingAction.clickhouseData = null
+    isExecuting.value = false
+    await checkStatus()
+  }
+}
+
+// 4-5. 확장 기능 재기동
+async function restartExtensions() {
+  await stopExtensions()
+  await new Promise((r) => setTimeout(r, 1500))
+  await startExtensions()
 }
 
 // 5. 전체 기동 (인프라 + 코어 서비스 일괄 순차 부팅: 5대 모두 뜰 때까지 대기)
@@ -1085,22 +1456,25 @@ async function openProcessStatus(target: string = 'all') {
   }
 }
 
-// 9. 독립 실시간 콘솔 터미널 창 띄우기 (PowerShell 실시간 스트리밍: 서비스별 단일 창 보장)
-async function openLogWindow(svc?: string) {
+// 9. 독립 실시간 콘솔 터미널 창 띄우기 (PowerShell 실시간 스트리밍: 서비스별 단일 창 보장, 에러 모드 지원)
+async function openLogWindow(svc?: string, logType: 'all' | 'error' = 'all') {
   const targetService = svc || 'mysql'
+  const isError = logType === 'error'
+  const modeTitle = isError ? '에러 콘솔' : '로그 콘솔'
+
   try {
     // 1) Tauri 데스크톱 환경: Rust 커맨드로 PowerShell 콘솔 창 실행
-    const msg = await invoke<string>('open_log_window', { service: targetService })
-    addToast('로그 콘솔', msg, 'info')
+    const msg = await invoke<string>('open_log_window', { service: targetService, logType })
+    addToast(modeTitle, msg, isError ? 'error' : 'info')
     return
   } catch (_) {}
 
   // 2) 브라우저 / fallback 환경: Vite 백엔드 API로 PowerShell 콘솔 창 실행
   try {
-    const res = await fetch('/api/infra/logs/open-terminal?service=' + targetService, { method: 'POST' })
+    const res = await fetch(`/api/infra/logs/open-terminal?service=${targetService}&type=${logType}`, { method: 'POST' })
     const data = await res.json()
     if (data.success) {
-      addToast('로그 콘솔', data.message, 'info')
+      addToast(modeTitle, data.message, isError ? 'error' : 'info')
     } else {
       addToast('터미널 기동 실패', data.message, 'error')
     }
