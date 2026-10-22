@@ -134,6 +134,27 @@ function onActionChange() {
   }
 }
 
+function handleSelectConnector(connId: number) {
+  if (targetCharger.value) {
+    targetCharger.value.activeConnectorId = connId
+    if (store.setActiveConnector) {
+      store.setActiveConnector(connId, targetCharger.value.id)
+    }
+    onActionChange()
+  }
+}
+
+const connectorList = computed(() => {
+  const c = targetCharger.value
+  if (c && c.connectors && c.connectors.length > 0) {
+    return c.connectors
+  }
+  return [
+    { connectorId: 1, status: (c?.status || 'Available') as any, type: 'DC콤보1 (CCS1)', maxPowerKw: Math.round((c?.powerKw || 350) / 2) },
+    { connectorId: 2, status: 'Available' as any, type: 'DC콤보1 (CCS1)', maxPowerKw: Math.round((c?.powerKw || 350) / 2) }
+  ]
+})
+
 function sendManualCall() {
   const cid = targetCharger.value.id
   if (sendMode.value === 'raw') {
@@ -272,8 +293,8 @@ function handleAbortScenario() {
         </div>
       </div>
 
-      <!-- 하단 실시간 상태 지표 그리드 -->
-      <div class="grid grid-cols-4 gap-1.5 pt-2 text-[11px]">
+      <!-- 하단 실시간 상태 지표 그리드 (가로 부족 시 2x2 세로 배치) -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-1.5 pt-2 text-[11px]">
         <div class="bg-slate-50 border border-slate-200/80 rounded-md px-2 py-1 flex flex-col">
           <span class="text-[9px] text-slate-400 uppercase font-mono">OCPP 상태</span>
           <span class="font-bold truncate" :class="targetCharger.status === 'Charging' ? 'text-indigo-600 font-black' : 'text-slate-800'">
@@ -302,11 +323,85 @@ function handleAbortScenario() {
           </span>
         </div>
       </div>
+
+      <!-- 듀얼 커넥터 (1, 2번 포트) 간략 상태 및 활성 제어 바 (세로 스택 유연 배치) -->
+      <div class="pt-2.5 mt-2 border-t border-slate-100">
+        <div class="flex items-center justify-between pb-1.5 text-[10px]">
+          <div class="flex items-center gap-1.5 font-bold text-slate-700">
+            <span>🔌 커넥터 (충전건) 현황</span>
+            <span class="text-[9px] px-1.5 py-0.2 rounded font-mono font-medium bg-slate-100 text-slate-500">
+              클릭 시 제어 포트 전환
+            </span>
+          </div>
+          <span class="text-[10px] text-slate-500 font-mono">
+            선택된 포트: <strong class="text-sky-700">#{{ targetCharger.activeConnectorId || 1 }}</strong>
+          </span>
+        </div>
+
+        <!-- 가로 폭에 따라 세로 1열 스택(기본) / 넓을 때 2열 확장 -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-2">
+          <div
+            v-for="conn in connectorList"
+            :key="conn.connectorId"
+            @click="handleSelectConnector(conn.connectorId)"
+            class="p-2.5 rounded-lg border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs"
+            :class="(targetCharger.activeConnectorId || 1) === conn.connectorId
+              ? (conn.connectorId === 1 ? 'bg-sky-50/90 border-sky-300 ring-1.5 ring-sky-400' : 'bg-indigo-50/90 border-indigo-300 ring-1.5 ring-indigo-400')
+              : 'bg-slate-50/80 border-slate-200 hover:bg-white hover:border-slate-300'"
+            :title="`커넥터 #${conn.connectorId}를 전문 제어 대상으로 선택합니다.`"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span
+                class="w-6 h-6 rounded-md flex items-center justify-center font-mono font-bold text-xs text-white flex-shrink-0"
+                :class="conn.connectorId === 1 ? 'bg-sky-600' : 'bg-indigo-600'"
+              >
+                {{ conn.connectorId }}
+              </span>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-xs text-slate-900">포트 #{{ conn.connectorId }}</span>
+                  <span class="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold bg-white border border-slate-200 text-slate-700">
+                    {{ conn.type || 'DC콤보1 (CCS1)' }}
+                  </span>
+                  <span class="text-[10px] font-mono text-sky-700 font-bold">
+                    {{ conn.maxPowerKw || Math.round(targetCharger.powerKw / 2) }} kW
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-slate-500 font-medium pt-0.5 truncate">
+                  <span>차량: <strong class="text-slate-700 font-sans">{{ conn.carModel || (conn.connectorId === 1 ? '아이오닉5 (현대)' : 'EV6 (기아)') }}</strong></span>
+                  <span class="text-slate-300">|</span>
+                  <span>RFID: <strong class="text-slate-700 font-mono">{{ conn.userTag || (conn.connectorId === 1 ? 'CARD-CORP-9901' : 'CARD-USER-1001') }}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center sm:flex-col sm:items-end justify-between sm:justify-center gap-1 flex-shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <span
+                class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border"
+                :class="conn.status === 'Charging'
+                  ? 'bg-indigo-100 text-indigo-700 border-indigo-200 animate-pulse'
+                  : conn.status === 'Available'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200'"
+              >
+                {{ conn.status || 'Available' }}
+              </span>
+              <span
+                v-if="(targetCharger.activeConnectorId || 1) === conn.connectorId"
+                class="text-[10px] font-bold tracking-tight"
+                :class="conn.connectorId === 1 ? 'text-sky-700' : 'text-indigo-700'"
+              >
+                ● 제어 활성화
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 2. 용도별 4대 메인 탭 네비게이션 -->
+    <!-- 2. 용도별 4대 메인 탭 네비게이션 (가로 부족 시 2x2 세로 배치) -->
     <div class="bg-white rounded-xl border border-slate-200 p-1.5 shadow-2xs flex-shrink-0">
-      <div class="grid grid-cols-4 gap-1">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1">
         <!-- 탭 1: 전문 제어 & 자동화 -->
         <button
           @click="activeTab = 'message'"
@@ -890,7 +985,7 @@ function handleAbortScenario() {
           <span class="text-[10px] text-slate-400">CSMS ConnectorDetailDto 1:1 대응</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           <div
             v-for="conn in targetCharger.connectors"
             :key="conn.connectorId"

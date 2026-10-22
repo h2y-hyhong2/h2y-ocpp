@@ -543,6 +543,15 @@ export function useVirtualCharger() {
     }
   }
 
+  function setActiveConnector(connectorId: number, targetId?: string) {
+    const cid = targetId || selectedChargerId.value
+    const c = chargers.find(item => item.id === cid)
+    if (c) {
+      c.activeConnectorId = connectorId
+      saveChargersToStorage()
+    }
+  }
+
   function deleteCharger(id: string) {
     disconnect(id)
     const idx = chargers.findIndex(c => c.id === id)
@@ -1566,6 +1575,7 @@ export function useVirtualCharger() {
     isFullManualMode,
     selectedIdTag,
     setSelectedIdTag,
+    setActiveConnector,
     runFullChargeScenario,
     runBootSequence,
     abortScenario,

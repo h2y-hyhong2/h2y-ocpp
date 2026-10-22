@@ -158,6 +158,7 @@ export const useCsmsStore = defineStore('csms', {
     // 📡 중앙 REST API (/api/v1) MySQL 9.71 실데이터 연동 액션
     async fetchInitialData(silent = false) {
       try {
+        console.log('%c[CSMS UI] 📡 REST API 데이터 조회 쿼리 실행: GET /api/v1/{corps, stations, chargers, cdr}', 'color: #3b82f6; font-weight: bold')
         const [corpRes, stRes, chgRes, cdrRes] = await Promise.all([
           fetch('/api/v1/corps'),
           fetch('/api/v1/stations'),
@@ -166,42 +167,57 @@ export const useCsmsStore = defineStore('csms', {
         ])
 
         if (stRes.ok && chgRes.ok) {
-          const stData = await stRes.json()
-          const chgData = await chgRes.json()
+          const stJson = await stRes.json()
+          const chgJson = await chgRes.json()
+
+          const unwrap = (json: any) => {
+            if (!json) return []
+            if (Array.isArray(json)) return json
+            if (json.data && Array.isArray(json.data)) return json.data
+            return []
+          }
 
           if (corpRes.ok) {
-            const corpData = await corpRes.json()
-            if (Array.isArray(corpData)) {
-              this.corps = corpData
+            const corpJson = await corpRes.json()
+            const corpList = unwrap(corpJson)
+            if (corpList.length > 0) {
+              this.corps = corpList
             }
           }
 
-          if (Array.isArray(stData)) {
-            this.stations = stData
-            if (this.stations.length > 0) {
-              if (this.curStFilter !== 'ALL' && !this.stations.some(s => s.id === this.curStFilter)) {
-                this.curStFilter = this.stations[0].id
-              }
-            } else {
-              this.curStFilter = 'ALL'
+          const stList = unwrap(stJson)
+          if (stList.length > 0) {
+            this.stations = stList
+            if (this.curStFilter !== 'ALL' && !this.stations.some(s => s.id === this.curStFilter)) {
+              this.curStFilter = this.stations[0].id
             }
+          } else {
+            this.stations = []
+            this.curStFilter = 'ALL'
           }
 
-          if (Array.isArray(chgData)) {
-            this.chargers = chgData
-            if (this.chargers.length > 0) {
-              if (!this.selectedCharger || !this.chargers.some(c => c.chargeBoxId === this.selectedCharger?.chargeBoxId)) {
-                this.selectedCharger = this.chargers[0]
-              }
-            } else {
-              this.selectedCharger = null
+          const chgList = unwrap(chgJson)
+          if (chgList.length > 0) {
+            this.chargers = chgList
+            if (!this.selectedCharger || !this.chargers.some(c => c.chargeBoxId === this.selectedCharger?.chargeBoxId)) {
+              this.selectedCharger = this.chargers[0]
             }
+          } else {
+            this.chargers = []
+            this.selectedCharger = null
           }
+
+          console.log(`%c[CSMS UI] 📥 실데이터 응답 수신: 법인 ${this.corps.length}건, 충전소 ${this.stations.length}건, 충전기 ${this.chargers.length}건`, 'color: #10b981; font-weight: bold', {
+            corps: this.corps,
+            stations: this.stations,
+            chargers: this.chargers
+          })
 
           let cdrSummary = null
           if (cdrRes.ok) {
-            const cdrData = await cdrRes.json()
-            if (cdrData.summary) {
+            const cdrJson = await cdrRes.json()
+            const cdrData = cdrJson.data || cdrJson
+            if (cdrData && cdrData.summary) {
               cdrSummary = cdrData.summary
             }
           }

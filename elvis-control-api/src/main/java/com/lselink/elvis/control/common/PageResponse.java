@@ -56,6 +56,13 @@ public class PageResponse<T> {
         return new PageResponse<>(content, page, size, totalElements, totalPages, isLast);
     }
 
+    /**
+     * 수동 리스트 상세 페이징 생성 (전체 페이지 수 및 마지막 페이지 여부 포함)
+     */
+    public static <T> PageResponse<T> of(List<T> content, int page, int size, long totalElements, int totalPages, boolean isLast) {
+        return new PageResponse<>(content, page, size, totalElements, totalPages, isLast);
+    }
+
     public List<T> getContent() {
         return content;
     }

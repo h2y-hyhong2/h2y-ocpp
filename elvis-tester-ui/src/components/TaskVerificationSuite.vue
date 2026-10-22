@@ -840,8 +840,8 @@ function copyPayload(payload?: string) {
       </div>
     </div>
 
-    <!-- 2. 지표 요약 카드 (Summary KPI Cards) -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+    <!-- 2. 지표 요약 카드 (Summary KPI Cards - 가로 부족 시 2~3열 세로 배치) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
       <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
         <span class="text-[10px] text-slate-500 font-bold block">전체 TE 항목</span>
         <span class="text-base font-bold font-mono text-slate-800">{{ stats.total }}건</span>
@@ -914,8 +914,8 @@ function copyPayload(payload?: string) {
             : 'bg-slate-50/60 border-slate-200 hover:bg-white'
         "
       >
-        <!-- 카드 상단 라인: 식별자, 배지, 실행 버튼 -->
-        <div class="flex items-start justify-between gap-2">
+        <!-- 카드 상단 라인: 식별자, 배지, 실행 버튼 (가로 부족 시 세로 스택) -->
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
           <div class="space-y-1">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-800">
@@ -937,7 +937,7 @@ function copyPayload(payload?: string) {
           </div>
 
           <!-- 상태 배지 및 단독 실행 버튼 -->
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0 flex-wrap">
             <span
               v-if="task.status === 'pass'"
               class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1"

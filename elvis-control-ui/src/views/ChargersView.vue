@@ -38,13 +38,14 @@ const currentStationChargers = computed(() => {
 
 // 필터링 및 검색된 충전기 목록
 const filteredChargers = computed(() => {
+  const q = (searchQuery.value || '').toLowerCase().trim()
   return currentStationChargers.value.filter((chg) => {
     const matchStatus = store.curStatusFilter === 'ALL' || chg.status === store.curStatusFilter
+    if (!q) return matchStatus
     const matchQuery =
-      searchQuery.value === '' ||
-      chg.chargeBoxId.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      chg.stationName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      chg.carModel.toLowerCase().includes(searchQuery.value.toLowerCase())
+      (chg.chargeBoxId || '').toLowerCase().includes(q) ||
+      (chg.stationName || '').toLowerCase().includes(q) ||
+      (chg.carModel || '').toLowerCase().includes(q)
     return matchStatus && matchQuery
   })
 })

@@ -261,7 +261,7 @@ function getSmartChips(log: OcppLogEntry): SmartChip[] {
         </span>
       </div>
 
-      <div class="flex items-center gap-1.5 text-xs">
+      <div class="flex items-center gap-1.5 text-xs flex-wrap">
         <!-- 방향 필터 탭 -->
         <div class="flex items-center bg-white border border-slate-200 rounded-md p-0.5 text-[10px]">
           <button

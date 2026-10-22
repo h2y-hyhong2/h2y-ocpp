@@ -383,7 +383,7 @@ function getChargerListCardClass(c: ChargerInstance) {
       </div>
 
       <!-- 뷰 모드 탭 (매트릭스 vs 리스트) -->
-      <div class="flex items-center justify-between gap-1 pt-1">
+      <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1">
         <div class="flex items-center bg-slate-200/70 p-0.5 rounded-md text-[11px] font-medium">
           <button
             @click="viewMode = 'matrix'"
@@ -454,8 +454,8 @@ function getChargerListCardClass(c: ChargerInstance) {
           <span class="text-[10px] text-slate-500 font-mono">{{ grp.chargers.length }}기</span>
         </div>
 
-        <!-- 바둑판 충전기 타일 그리드 (시안 A: 컴팩트 4열 네모 + 하단 커넥터 미니 슬롯) -->
-        <div class="grid grid-cols-4 gap-1.5">
+        <!-- 바둑판 충전기 타일 그리드 (가로 폭에 따라 2~4열 세로 유연 배치) -->
+        <div class="grid grid-cols-2 min-[340px]:grid-cols-3 min-[400px]:grid-cols-4 gap-1.5">
           <div
             v-for="c in grp.chargers"
             :key="c.id"
@@ -560,6 +560,22 @@ function getChargerListCardClass(c: ChargerInstance) {
 
         <div class="text-[11px] text-slate-600 truncate">
           {{ c.name }}
+        </div>
+
+        <!-- 커넥터 간략 슬롯 (기본 2구 포트 1, 2) -->
+        <div class="flex items-center gap-1.5 py-0.5">
+          <div
+            v-for="conn in getConnectors(c)"
+            :key="conn.connectorId"
+            class="flex-1 flex items-center justify-between px-2 py-0.5 rounded text-[9px] font-mono border transition-colors truncate"
+            :class="getConnectorBadgeClass(c, conn.status)"
+            :title="`커넥터 #${conn.connectorId}: ${conn.status}`"
+          >
+            <span class="font-sans font-bold opacity-80">포트 {{ conn.connectorId }}</span>
+            <span class="font-bold truncate">
+              {{ getConnectorStatusText(c, conn.status) }}
+            </span>
+          </div>
         </div>
 
         <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-100">

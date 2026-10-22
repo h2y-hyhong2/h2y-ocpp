@@ -268,8 +268,8 @@ function handleSave() {
         </button>
       </div>
 
-      <!-- 2. 탭 바 -->
-      <div class="flex items-center border-b border-slate-200 bg-slate-50 px-5 gap-1 pt-2 flex-shrink-0 text-xs font-medium">
+      <!-- 2. 탭 바 (가로 부족 시 스크롤 허용) -->
+      <div class="flex items-center border-b border-slate-200 bg-slate-50 px-5 gap-1 pt-2 flex-shrink-0 text-xs font-medium overflow-x-auto scrollbar-none">
         <button
           @click="activeTab = 'identity'"
           class="pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer"
@@ -328,7 +328,7 @@ function handleSave() {
             <span class="text-[11px] text-sky-600 font-medium">충전소(6자리) + 충전기(2자리) = 8자리 표준</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1">충전소 ID (ST_ID, 6자리)</label>
               <input
@@ -358,7 +358,7 @@ function handleSave() {
             />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1">충전소명</label>
               <input
@@ -377,8 +377,8 @@ function handleSave() {
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-3">
-            <div class="col-span-2">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
               <label class="block text-[11px] font-bold text-slate-700 mb-1">설치 위치 / 주소</label>
               <input
                 v-model="addr"
@@ -401,7 +401,7 @@ function handleSave() {
 
         <!-- 탭 2: 기기 HW & 펌웨어 -->
         <div v-show="activeTab === 'spec'" class="space-y-4">
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1">제조사 (Vendor)</label>
               <input
@@ -420,7 +420,7 @@ function handleSave() {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1">정격 용량 (kW)</label>
               <div class="flex items-center gap-2">
@@ -443,7 +443,7 @@ function handleSave() {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1">통신 프로토콜 (PROTOCOL)</label>
               <select
@@ -476,7 +476,7 @@ function handleSave() {
             <span>CSMS Lite 표준 원칙: 샘플/에뮬레이터 충전기는 <strong>기본 2개(듀얼건)</strong>로 구성됩니다.</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- 커넥터 #1 -->
             <div class="p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
               <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -666,7 +666,7 @@ function handleSave() {
               </select>
             </div>
 
-            <div class="grid grid-cols-2 gap-2.5 pt-1 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
               <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-sky-50/40 transition-colors">
                 <input type="checkbox" v-model="autoHeartbeat" class="rounded text-sky-600" />
                 <div class="flex flex-col">

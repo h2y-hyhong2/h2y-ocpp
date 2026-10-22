@@ -88,7 +88,7 @@ elvis-control-ui/
 │   │   └── main.rs               # 데스크톱 실행 바이너리 엔트리 포인트
 │   ├── build.rs                  # Tauri 빌드 스크립트
 │   ├── Cargo.toml                # Rust 의존성 및 패키지 설정
-│   └── tauri.conf.json           # 윈도우 크기(1440x900), 보안(CSP), 번들링 설정
+│   └── tauri.conf.json           # 윈도우 크기(1920x1080 FHD), 보안(CSP), 번들링 설정
 ├── .node-version                 # FNM/NVM Node.js 버전 고정 (24)
 ├── package.json                  # Node.js 의존성 및 실행 스크립트
 ├── pnpm-lock.yaml                # pnpm 고정 잠금 파일
@@ -127,10 +127,10 @@ Tauri는 가벼운 Rust 백엔드와 OS 내장 웹뷰(Windows WebView2)를 결�
     "windows": [
       {
         "title": "ELVIS-CSMS 관제 센터",
-        "width": 1440,
-        "height": 900,
-        "minWidth": 1024,
-        "minHeight": 700,
+        "width": 1920,
+        "height": 1080,
+        "minWidth": 1280,
+        "minHeight": 720,
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
@@ -161,7 +161,7 @@ Tauri는 가벼운 Rust 백엔드와 OS 내장 웹뷰(Windows WebView2)를 결�
   - `beforeDevCommand`: `pnpm tauri:dev` 실행 시 프론트엔드 Vite 개발 서버(`pnpm dev`)를 백그라운드에서 자동 기동합니다.
   - `devUrl`: Tauri 윈도우가 실시간 HMR(Hot Module Replacement)로 연결할 프론트엔드 URL(`http://localhost:1420`)입니다.
   - `beforeBuildCommand` & `frontendDist`: 프로덕션 빌드 시 Vue 산출물(`../dist`)을 생성하고 이를 최종 단일 바이너리에 임베딩합니다.
-- **`app.windows`**: 관제 대시보드에 최적화된 기본 해상도(`1440x900`, 최소 `1024x700`) 및 화면 중앙 배치(`center: true`)를 정의합니다.
+- **`app.windows`**: 관제 대시보드에 최적화된 기본 해상도(`1920x1080 FHD`, 최소 `1280x720`) 및 화면 중앙 배치(`center: true`)를 정의합니다.
 - **`bundle.icon`**: Windows 실행 파일 및 각 플랫폼별 번들에 탑재될 아이콘 경로 목록을 지정합니다.
 
 ### 3.3 데스크톱 및 웹 앱 필수 아이콘 생성 가이드 (`src-tauri/icons/`)

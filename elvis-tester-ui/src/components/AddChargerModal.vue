@@ -77,7 +77,7 @@ function handleSave() {
         </div>
 
         <!-- 충전소 ID & 충전기 ID -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-[11px] font-bold text-slate-700 mb-1">
               충전소 ID (6자리) <span class="text-rose-500">*</span>
@@ -126,7 +126,7 @@ function handleSave() {
         </div>
 
         <!-- 제조사 / 모델 / 용량 -->
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
             <label class="block text-[11px] font-medium text-slate-600 mb-1">제조사</label>
             <input

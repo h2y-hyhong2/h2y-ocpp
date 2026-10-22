@@ -303,8 +303,8 @@ function applyIdtagToTester(idtag: string) {
   <div class="h-full flex flex-col bg-slate-50 text-slate-800 text-xs overflow-hidden select-none font-sans">
     <!-- 1. 상단 툴바: 탭 네비게이션 & 검색 & 액션 버튼 -->
     <div class="p-2.5 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 flex-shrink-0 shadow-2xs">
-      <!-- 5대 서브 탭 버튼군 -->
-      <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+      <!-- 5대 서브 탭 버튼군 (가로 부족 시 스크롤 허용) -->
+      <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 overflow-x-auto scrollbar-none max-w-full">
         <button
           @click="activeSubTab = 'user'"
           class="px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
@@ -351,8 +351,8 @@ function applyIdtagToTester(idtag: string) {
         </button>
       </div>
 
-      <!-- 우측 검색창 및 버튼군 -->
-      <div class="flex items-center gap-1.5 flex-1 sm:flex-initial justify-end">
+      <!-- 우측 검색창 및 버튼군 (가로 부족 시 세로 스택) -->
+      <div class="flex items-center gap-1.5 flex-1 sm:flex-initial w-full sm:w-auto justify-end">
         <div class="relative w-48">
           <input
             v-model="searchQuery"
@@ -380,8 +380,8 @@ function applyIdtagToTester(idtag: string) {
       </div>
     </div>
 
-    <!-- 2. 본문: 서브 탭별 테이블 그리드 -->
-    <div class="flex-1 overflow-y-auto p-2.5">
+    <!-- 2. 본문: 서브 탭별 테이블 그리드 (가로 부족 시 스크롤 허용) -->
+    <div class="flex-1 overflow-y-auto overflow-x-auto p-2.5">
       <!-- 2-1. 사용자 관리 테이블 -->
       <table v-if="activeSubTab === 'user'" class="w-full border-collapse bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden">
         <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono text-[11px] text-left">
@@ -602,7 +602,7 @@ function applyIdtagToTester(idtag: string) {
               <label class="block text-[11px] font-bold text-slate-700 mb-1">회원명 / 상호</label>
               <input v-model="userForm.userNm" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs" />
             </div>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 mb-1">법인 ID</label>
                 <input v-model="userForm.corpId" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 font-mono text-xs" />
@@ -633,7 +633,7 @@ function applyIdtagToTester(idtag: string) {
               <label class="block text-[11px] font-bold text-slate-700 mb-1">차종명</label>
               <input v-model="vehicleForm.modelName" placeholder="예: 현대 일렉시티 더블데커" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs" />
             </div>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] font-bold text-slate-700 mb-1">배터리 용량 (kWh)</label>
                 <input v-model.number="vehicleForm.batteryCapacity" type="number" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 font-mono text-xs" />

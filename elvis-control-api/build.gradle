@@ -14,4 +14,7 @@ dependencies {
     // JSON 처리
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // P6Spy SQL 파라미터 인라인 치환 및 쿼리 로깅
+    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.2'
 }

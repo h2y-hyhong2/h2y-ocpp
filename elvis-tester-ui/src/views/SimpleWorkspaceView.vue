@@ -223,13 +223,13 @@ function stopDockResize() {
         class="h-9 px-3 bg-slate-50 hover:bg-slate-100/80 transition-colors border-b border-slate-200/80 flex items-center justify-between cursor-pointer select-none"
         @click="isMasterDataDockOpen = !isMasterDataDockOpen"
       >
-        <div class="flex items-center gap-2.5">
-          <span class="text-sm">🚗</span>
-          <span class="text-xs font-bold text-slate-900">마스터 데이터 관리</span>
-          <span class="text-[10px] text-slate-500 font-medium hidden sm:inline">(사용자 · 차량 · 인증정보)</span>
+        <div class="flex items-center gap-2.5 overflow-hidden min-w-0">
+          <span class="text-sm shrink-0">🚗</span>
+          <span class="text-xs font-bold text-slate-900 shrink-0">마스터 데이터 관리</span>
+          <span class="text-[10px] text-slate-500 font-medium hidden sm:inline shrink-0">(사용자 · 차량 · 인증정보)</span>
 
-          <!-- 실시간 집계 칩 배지군 -->
-          <div class="flex items-center gap-1 text-[10px] font-mono">
+          <!-- 실시간 집계 칩 배지군 (가로 부족 시 스크롤 허용) -->
+          <div class="flex items-center gap-1 text-[10px] font-mono overflow-x-auto scrollbar-none">
             <span class="px-2 py-0.5 rounded-full font-bold bg-white text-slate-800 border border-slate-200 shadow-2xs">
               👤 사용자 <b>{{ master.users.value.length }}</b>
             </span>
