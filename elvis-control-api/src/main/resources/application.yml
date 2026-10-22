@@ -24,6 +24,19 @@ spring:
     hibernate:
       ddl-auto: none
 
+# ClickHouse OLAP 시계열 집계 DB 설정
+elvis:
+  clickhouse:
+    enabled: ${CLICKHOUSE_ENABLED:false}
+    url: jdbc:ch://${CLICKHOUSE_HOST:localhost}:${CLICKHOUSE_PORT:8123}/${CLICKHOUSE_DB:elvis_poc}
+    user: ${CLICKHOUSE_USER:default}
+    password: ${CLICKHOUSE_PASSWORD:}
+    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+    maximum-pool-size: 15
+    minimum-idle: 5
+    connection-timeout-ms: 5000
+    socket-timeout-ms: 10000
+
 # P6Spy SQL 파라미터 인라인 치환 및 Pretty 포매팅 설정
 decorator:
   datasource:

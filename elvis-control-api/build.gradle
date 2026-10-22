@@ -11,6 +11,9 @@ dependencies {
     // MySQL 9.x Connector/J JDBC Driver
     implementation 'com.mysql:mysql-connector-j:9.1.0'
 
+    // ClickHouse Official JDBC Driver (OLAP 시계열 통계 쿼리 전용)
+    implementation 'com.clickhouse:clickhouse-jdbc:0.6.0'
+
     // JSON 처리
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
