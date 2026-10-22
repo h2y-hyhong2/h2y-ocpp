@@ -816,51 +816,122 @@ function handleAbortScenario() {
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <h3 class="text-xs font-bold text-slate-900">충전기 하드웨어 스펙 & 커넥터(충전건) 현황</h3>
+          <h3 class="text-xs font-bold text-slate-900">충전기 자산 마스터 & 듀얼 커넥터 스펙</h3>
         </div>
-        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold">
-          CSMS Lite 표준
-        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold">
+            CSMS Lite 표준
+          </span>
+          <button
+            @click="emit('open-edit-modal', targetCharger)"
+            class="text-[11px] font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-md transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>마스터 편집</span>
+          </button>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <!-- 1. 기기 식별자 및 소속 -->
         <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-          <span class="text-[11px] font-bold text-slate-500">기기 식별자 체계</span>
+          <span class="text-[11px] font-bold text-slate-500">자산 식별자 및 소속</span>
           <div class="font-mono text-xs text-slate-800 space-y-1">
-            <div>충전소 ID (ST_ID): <b>{{ targetCharger.stationId }}</b></div>
-            <div>충전기 ID (CP_ID): <b>{{ targetCharger.chargerId }}</b></div>
-            <div>결합 ID (chargeBoxId): <b class="text-sky-700">{{ targetCharger.id }}</b></div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">결합 ID (chargeBoxId):</span>
+              <b class="text-sky-700">{{ targetCharger.id }}</b>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">충전소 ID / 충전기 ID:</span>
+              <b>{{ targetCharger.stationId }} / {{ targetCharger.chargerId }}</b>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">소속 충전소명:</span>
+              <span class="font-sans font-semibold truncate">{{ targetCharger.stationName || '판교 LS R&D 센터 충전소' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">운영 법인:</span>
+              <span class="font-sans font-semibold">{{ targetCharger.corpName || 'LS E-Link' }}</span>
+            </div>
           </div>
         </div>
 
+        <!-- 2. 하드웨어 및 펌웨어 -->
         <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-          <span class="text-[11px] font-bold text-slate-500">엔드포인트 및 하드웨어</span>
-          <div class="font-mono text-xs text-slate-800 space-y-1 truncate">
-            <div>엔드포인트: <span class="text-slate-600">{{ targetCharger.wsUrl }}</span></div>
-            <div>제조사/모델: <b>{{ targetCharger.vendor }} / {{ targetCharger.model }}</b></div>
-            <div>정격 용량: <b class="text-emerald-700">{{ targetCharger.powerKw }} kW</b></div>
+          <span class="text-[11px] font-bold text-slate-500">하드웨어 & 펌웨어 사양</span>
+          <div class="font-mono text-xs text-slate-800 space-y-1">
+            <div class="flex justify-between">
+              <span class="text-slate-500">제조사 / 모델:</span>
+              <b>{{ targetCharger.vendor }} / {{ targetCharger.model }}</b>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">정격 용량 / 규격:</span>
+              <b class="text-emerald-700">{{ targetCharger.powerKw }} kW ({{ targetCharger.spec || '초급속 듀얼' }})</b>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">통신 프로토콜:</span>
+              <span class="font-semibold">{{ targetCharger.protocol || 'OCPP 1.6-J' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">펌웨어 버전:</span>
+              <span class="text-slate-700 font-bold">{{ targetCharger.firmwareVer || '1.0.0-RELEASE' }}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 커넥터 목록 -->
+      <!-- 커넥터 듀얼건 상세 현황 -->
       <div class="space-y-2">
-        <span class="text-[11px] font-bold text-slate-700">채널 커넥터 현황</span>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold text-slate-700">듀얼 커넥터 (1, 2번 포트) 세부 규격</span>
+          <span class="text-[10px] text-slate-400">CSMS ConnectorDetailDto 1:1 대응</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
           <div
             v-for="conn in targetCharger.connectors"
             :key="conn.connectorId"
-            class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between"
+            class="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2"
           >
-            <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center font-mono font-bold text-xs text-slate-700">
-                #{{ conn.connectorId }}
+            <div class="flex items-center justify-between pb-1.5 border-b border-slate-200/80">
+              <div class="flex items-center gap-1.5">
+                <span
+                  class="w-5 h-5 rounded-md flex items-center justify-center font-mono font-bold text-[10px] text-white"
+                  :class="conn.connectorId === 1 ? 'bg-sky-600' : 'bg-indigo-600'"
+                >
+                  {{ conn.connectorId }}
+                </span>
+                <span class="text-xs font-bold text-slate-800">커넥터 #{{ conn.connectorId }}</span>
+              </div>
+              <span
+                class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold"
+                :class="conn.status === 'Charging' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'"
+              >
+                {{ conn.status }}
               </span>
-              <span class="text-xs font-medium text-slate-800">커넥터 {{ conn.connectorId }}</span>
             </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold" :class="conn.status === 'Charging' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'">
-              {{ conn.status }}
-            </span>
+
+            <div class="text-[11px] font-mono text-slate-600 space-y-1">
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">타입:</span>
+                <span class="font-bold text-slate-800">{{ conn.type || 'DC콤보1 (CCS1)' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">최대 출력:</span>
+                <span class="font-bold text-sky-700">{{ conn.maxPowerKw || Math.round(targetCharger.powerKw / 2) }} kW ({{ conn.voltageV || 800 }}V, {{ conn.currentA || 250 }}A)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">배정차량:</span>
+                <span class="font-sans font-medium text-slate-700">{{ conn.carModel || (conn.connectorId === 1 ? 'IONIQ 5 (현대)' : 'EV6 (기아)') }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">배정 RFID:</span>
+                <span class="font-bold text-slate-700">{{ conn.userTag || (conn.connectorId === 1 ? 'CARD-CORP-9901' : 'CARD-USER-1001') }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -303,12 +303,49 @@ function initChargers(): ChargerInstance[] {
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map((item: any) => ({
           ...item,
+          stationName: item.stationName || '강남 테헤란 충전스테이션',
+          corpName: item.corpName || 'LS E-Link',
+          addr: item.addr || '서울특별시 강남구 테헤란로 128 지상 1층',
+          spec: item.spec || `${item.powerKw || 350}kW 급속 듀얼 (DC콤보1)`,
+          protocol: item.protocol || 'OCPP 1.6-J',
+          firmwareVer: item.firmwareVer || '1.0.0-RELEASE',
+          useYn: item.useYn || 'Y',
           status: 'Unavailable',
           connectors: (item.connectors && item.connectors.length >= 2)
-            ? item.connectors
+            ? item.connectors.map((cn: any) => ({
+                connectorId: cn.connectorId,
+                status: 'Unavailable',
+                type: cn.type || 'DC콤보1 (CCS1)',
+                maxPowerKw: cn.maxPowerKw || Math.round((item.powerKw || 350) / 2),
+                voltageV: cn.voltageV || 800,
+                currentA: cn.currentA || 250,
+                carModel: cn.carModel || (cn.connectorId === 1 ? 'IONIQ 5 (현대)' : 'EV6 (기아)'),
+                userTag: cn.userTag || (cn.connectorId === 1 ? 'CARD-CORP-9901' : 'CARD-USER-1001'),
+                accumulatedKwh: cn.accumulatedKwh || 5240.5
+              }))
             : [
-                { connectorId: 1, status: 'Unavailable' },
-                { connectorId: 2, status: 'Unavailable' }
+                {
+                  connectorId: 1,
+                  status: 'Unavailable',
+                  type: 'DC콤보1 (CCS1)',
+                  maxPowerKw: Math.round((item.powerKw || 350) / 2),
+                  voltageV: 800,
+                  currentA: 250,
+                  carModel: 'IONIQ 5 (현대)',
+                  userTag: 'CARD-CORP-9901',
+                  accumulatedKwh: 5240.5
+                },
+                {
+                  connectorId: 2,
+                  status: 'Unavailable',
+                  type: 'DC콤보1 (CCS1)',
+                  maxPowerKw: Math.round((item.powerKw || 350) / 2),
+                  voltageV: 800,
+                  currentA: 250,
+                  carModel: 'EV6 (기아)',
+                  userTag: 'CARD-USER-1001',
+                  accumulatedKwh: 3410.2
+                }
               ],
           connected: false,
           connecting: false,

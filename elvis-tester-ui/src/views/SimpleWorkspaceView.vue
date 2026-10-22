@@ -4,7 +4,7 @@ import ChargerListPanel from '../components/ChargerListPanel.vue'
 import ActionControlPanel from '../components/ActionControlPanel.vue'
 import PacketTerminal from '../components/PacketTerminal.vue'
 import AddChargerModal from '../components/AddChargerModal.vue'
-import EditChargerModal from '../components/EditChargerModal.vue'
+import ChargerMasterModal from '../components/ChargerMasterModal.vue'
 import MasterDataManager from '../components/MasterDataManager.vue'
 import { useVirtualCharger } from '../composables/useVirtualCharger'
 import { useMasterData } from '../composables/useMasterData'
@@ -277,8 +277,8 @@ function stopDockResize() {
       @close="isAddModalOpen = false"
     />
 
-    <!-- 충전기 정보 수정 모달 -->
-    <EditChargerModal
+    <!-- 충전기 자산 마스터 관리 모달 -->
+    <ChargerMasterModal
       v-if="isEditModalOpen"
       :charger="editingCharger"
       @close="isEditModalOpen = false"
