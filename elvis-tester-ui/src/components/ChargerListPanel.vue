@@ -34,8 +34,8 @@ function openContextMenu(e: MouseEvent, charger: ChargerInstance) {
   handleSelect(charger.id)
   contextCharger.value = charger
 
-  const menuWidth = 260
-  const menuHeight = 400
+  const menuWidth = 360
+  const menuHeight = 560
   let posX = e.clientX
   let posY = e.clientY
 
@@ -48,6 +48,14 @@ function openContextMenu(e: MouseEvent, charger: ChargerInstance) {
 
   contextMenuPos.value = { x: posX, y: posY }
   isContextMenuOpen.value = true
+}
+
+function handleContextSelectConnector(connId: number) {
+  if (!contextCharger.value) return
+  contextCharger.value.activeConnectorId = connId
+  if (store.setActiveConnector) {
+    store.setActiveConnector(connId, contextCharger.value.id)
+  }
 }
 
 function closeContextMenu() {
@@ -617,168 +625,290 @@ function getChargerListCardClass(c: ChargerInstance) {
       <span class="text-slate-400">우클릭: 빠른 전문 발송</span>
     </div>
 
-    <!-- 🖱️ 우클릭 플로팅 컨텍스트 메뉴 -->
+    <!-- 🖱️ 우클릭 플로팅 컨텍스트 메뉴 (충전기 종합 상세 정보 & 퀵 제어) -->
     <div
       v-if="isContextMenuOpen && contextCharger"
-      class="fixed z-50 bg-white rounded-xl shadow-xl border border-slate-200 w-64 overflow-hidden select-none animate-in fade-in zoom-in-95 duration-100 text-xs font-sans"
+      class="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200/90 w-[360px] max-h-[85vh] flex flex-col overflow-hidden select-none animate-in fade-in zoom-in-95 duration-100 text-xs font-sans ring-1 ring-black/5"
       :style="{ top: `${contextMenuPos.y}px`, left: `${contextMenuPos.x}px` }"
       @click.stop
       @contextmenu.prevent
     >
-      <!-- 컨텍스트 메뉴 상단 헤더 -->
-      <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-        <div class="flex flex-col min-w-0">
-          <span class="font-mono font-bold text-xs text-slate-900 truncate">
-            🏢 {{ contextCharger.id }}
-          </span>
-          <span class="text-[10px] text-slate-500 truncate">
-            {{ contextCharger.name }}
-          </span>
+      <!-- 1. 컨텍스트 메뉴 고정 헤더: 충전기 ID 및 연결 토글 -->
+      <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+            ⚡
+          </div>
+          <div class="flex flex-col min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono font-black text-sm text-slate-900 tracking-tight">
+                {{ contextCharger.id }}
+              </span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-sky-100 text-sky-800 border border-sky-200">
+                {{ contextCharger.powerKw }}kW
+              </span>
+            </div>
+            <span class="text-[10px] text-slate-500 truncate" :title="contextCharger.name">
+              {{ contextCharger.name }}
+            </span>
+          </div>
         </div>
-        <span
-          class="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold"
-          :class="contextCharger.connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'"
-        >
-          {{ contextCharger.connected ? 'ONLINE' : 'OFFLINE' }}
-        </span>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span
+            class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border"
+            :class="contextCharger.connected ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-slate-100 text-slate-500 border-slate-200'"
+          >
+            {{ contextCharger.connected ? 'ONLINE' : 'OFFLINE' }}
+          </span>
+          <button
+            @click="closeContextMenu"
+            class="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-200/60 transition-colors"
+            title="닫기"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
-      <!-- 컨텍스트 메뉴 액션 리스트 -->
-      <div class="p-1 space-y-0.5">
-        <!-- 1. 소켓 연결 / 해제 -->
-        <button
-          @click="handleContextToggleConnect"
-          class="w-full px-2.5 py-1.5 rounded-md text-left font-semibold flex items-center gap-2 transition-colors cursor-pointer"
-          :class="contextCharger.connected ? 'text-rose-700 hover:bg-rose-50' : 'text-emerald-700 hover:bg-emerald-50'"
-        >
-          <span>{{ contextCharger.connected ? '⏹' : '▶' }}</span>
-          <span>{{ contextCharger.connected ? 'WebSocket 연결 해제' : 'WebSocket 연결하기' }}</span>
-        </button>
-
-        <!-- 2. 실시간 패킷 필터링 바로가기 -->
-        <button
-          @click="handleContextFilterTerminal"
-          class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
-        >
-          <span>📡</span>
-          <div class="flex flex-col">
-            <span class="font-medium">실시간 패킷 필터링</span>
-            <span class="text-[10px] text-slate-400">터미널에 [{{ contextCharger.id }}] 지정</span>
+      <!-- 2. 내부 스크롤 콘텐츠 영역 (상세 정보 + 커넥터 + 퀵 액션) -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-100 text-slate-700">
+        <!-- 2-1. 실시간 메트릭 2x2 카드 -->
+        <div class="p-3 bg-slate-50/50">
+          <div class="text-[10px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+            <span>📊 실시간 운전 메트릭</span>
+            <span class="font-mono text-[9px] text-slate-400">포트 #{{ contextCharger.activeConnectorId || 1 }} 기준</span>
           </div>
-        </button>
-
-        <div class="my-1 border-t border-slate-100"></div>
-
-        <!-- 3. 기동 4단계 연속 발송 -->
-        <button
-          @click="handleContextBootSequence"
-          class="w-full px-2.5 py-1.5 rounded-md text-left font-bold text-sky-800 bg-sky-50/60 hover:bg-sky-100/80 flex items-center gap-2 transition-colors cursor-pointer"
-          title="부팅 기동 4대 전문(Boot, Preparing, Available, Heartbeat) 순차 자동 발송"
-        >
-          <span>⚡</span>
-          <div class="flex flex-col">
-            <span>기동 4단계 연속 발송</span>
-            <span class="text-[10px] text-sky-600 font-normal">Boot + 상태(2건) + HB</span>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+            <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col shadow-2xs">
+              <span class="text-[9px] text-slate-400 uppercase font-mono">OCPP 상태</span>
+              <span
+                class="font-black truncate mt-0.5"
+                :class="contextCharger.status === 'Charging' ? 'text-indigo-600' : contextCharger.status === 'Available' ? 'text-emerald-600' : 'text-slate-800'"
+              >
+                {{ contextCharger.status }}
+              </span>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col shadow-2xs">
+              <span class="text-[9px] text-slate-400 uppercase font-mono">배터리 SoC</span>
+              <span class="font-mono font-bold text-sky-700 truncate mt-0.5">
+                {{ contextCharger.soc || 0 }} %
+              </span>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col shadow-2xs">
+              <span class="text-[9px] text-slate-400 uppercase font-mono">트랜잭션 ID</span>
+              <span class="font-mono font-bold text-slate-800 truncate mt-0.5">
+                {{ contextCharger.transactionId || '-' }}
+              </span>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col shadow-2xs">
+              <span class="text-[9px] text-slate-400 uppercase font-mono">누적 계량 (Wh)</span>
+              <span class="font-mono font-bold text-slate-800 truncate mt-0.5">
+                {{ (contextCharger.meterValueWh || 0).toLocaleString() }}
+              </span>
+            </div>
           </div>
-        </button>
-
-        <div class="my-1 border-t border-slate-100"></div>
-
-        <!-- 4. 개별 전문 빠른 발송 -->
-        <button
-          @click="handleContextSendBootNotification"
-          class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
-        >
-          <span>🚀</span>
-          <span>BootNotification 발송</span>
-        </button>
-
-        <button
-          @click="handleContextSendHeartbeat"
-          class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
-        >
-          <span>💓</span>
-          <span>Heartbeat 1회 즉시 전송</span>
-        </button>
-
-        <button
-          @click="handleContextToggleHeartbeat"
-          class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center justify-between transition-colors cursor-pointer font-medium"
-        >
-          <div class="flex items-center gap-2">
-            <span>🔄</span>
-            <span>Heartbeat 자동 발송</span>
-          </div>
-          <span
-            class="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold border"
-            :class="contextCharger?.autoHeartbeat ? 'bg-sky-50 text-sky-700 border-sky-300' : 'bg-slate-100 text-slate-500 border-slate-200'"
-          >
-            {{ contextCharger?.autoHeartbeat ? 'ON' : 'OFF' }}
-          </span>
-        </button>
-
-        <button
-          @click="handleContextSendMeterValues"
-          class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
-        >
-          <span>📊</span>
-          <span>MeterValues(계량) 전송</span>
-        </button>
-
-        <div class="my-1 border-t border-slate-100"></div>
-
-        <!-- 5. 상태(Status) 통보 칩 -->
-        <div class="px-2 py-0.5 text-[10px] font-bold text-slate-400 uppercase">
-          상태 통보 (StatusNotification)
-        </div>
-        <div class="grid grid-cols-4 gap-1 px-1 py-1">
-          <button
-            @click="handleContextChangeStatus('Available')"
-            class="px-1 py-1 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-center cursor-pointer"
-            title="정상 대기 (Available)"
-          >
-            대기
-          </button>
-          <button
-            @click="handleContextChangeStatus('Preparing')"
-            class="px-1 py-1 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-center cursor-pointer"
-            title="준비/체결 (Preparing)"
-          >
-            준비
-          </button>
-          <button
-            @click="handleContextChangeStatus('Charging')"
-            class="px-1 py-1 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-center cursor-pointer"
-            title="충전중 (Charging)"
-          >
-            충전
-          </button>
-          <button
-            @click="handleContextChangeStatus('Faulted')"
-            class="px-1 py-1 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-center cursor-pointer"
-            title="장애 (Faulted)"
-          >
-            장애
-          </button>
         </div>
 
-        <div class="my-1 border-t border-slate-100"></div>
+        <!-- 2-2. 듀얼 커넥터 (충전건) 현황 및 포트 전환 -->
+        <div class="p-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[10px] font-bold text-slate-500">🔌 커넥터 (충전건) 현황</span>
+            <span class="text-[9px] text-sky-600 font-medium">클릭 시 활성 포트 전환</span>
+          </div>
+          <div class="space-y-1.5">
+            <div
+              v-for="conn in getConnectors(contextCharger)"
+              :key="conn.connectorId"
+              @click="handleContextSelectConnector(conn.connectorId)"
+              class="p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs"
+              :class="(contextCharger.activeConnectorId || 1) === conn.connectorId
+                ? 'bg-sky-50/80 border-sky-300 ring-1 ring-sky-400'
+                : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'"
+              :title="`포트 #${conn.connectorId}를 제어 대상으로 선택`"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <span
+                  class="w-5 h-5 rounded flex items-center justify-center font-mono font-bold text-[10px] text-white shrink-0"
+                  :class="conn.connectorId === 1 ? 'bg-sky-600' : 'bg-indigo-600'"
+                >
+                  {{ conn.connectorId }}
+                </span>
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-[11px] text-slate-800">포트 #{{ conn.connectorId }}</span>
+                    <span class="text-[9px] font-mono text-slate-500">{{ conn.type || 'DC콤보1' }}</span>
+                  </div>
+                  <span class="text-[9px] text-slate-400 truncate">
+                    {{ conn.carModel || (conn.connectorId === 1 ? '아이오닉5' : 'EV6') }} · {{ conn.userTag || 'CARD-CORP-9901' }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <span
+                  class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold border"
+                  :class="conn.status === 'Charging' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : conn.status === 'Available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
+                >
+                  {{ conn.status || '대기' }}
+                </span>
+                <span v-if="(contextCharger.activeConnectorId || 1) === conn.connectorId" class="text-[9px] text-sky-700 font-black">
+                  ●
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <!-- 6. 수정 & 삭제 -->
-        <button
-          @click="handleContextOpenEdit"
-          class="w-full px-2.5 py-1.5 rounded-md text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
-        >
-          <span>✏️</span>
-          <span>충전기 정보 수정</span>
-        </button>
-        <button
-          @click="handleContextDelete"
-          class="w-full px-2.5 py-1.5 rounded-md text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer"
-        >
-          <span>🗑️</span>
-          <span>충전기 인스턴스 삭제</span>
-        </button>
+        <!-- 2-3. 하드웨어 스펙 요약 정보 -->
+        <div class="p-3 bg-slate-50/40 text-[10px]">
+          <span class="font-bold text-slate-500 block mb-1.5">📋 기기 스펙 & 네트워크</span>
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-slate-600 bg-white p-2 rounded-lg border border-slate-200">
+            <div><span class="text-slate-400">제조사:</span> {{ contextCharger.vendor }}</div>
+            <div><span class="text-slate-400">모델명:</span> {{ contextCharger.model }}</div>
+            <div><span class="text-slate-400">충전소:</span> {{ contextCharger.stationId }}</div>
+            <div><span class="text-slate-400">버전:</span> {{ contextCharger.firmwareVer || '1.0.0' }}</div>
+            <div class="col-span-2 truncate" :title="contextCharger.wsUrl">
+              <span class="text-slate-400">URL:</span> {{ contextCharger.wsUrl }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-4. 빠른 제어 & 전문 발송 액션들 -->
+        <div class="p-2 space-y-1">
+          <span class="px-1 text-[10px] font-bold text-slate-400 block uppercase tracking-wider">⚡ 빠른 전문 제어</span>
+
+          <!-- 1) WebSocket 연결 / 해제 -->
+          <button
+            @click="handleContextToggleConnect"
+            class="w-full px-2.5 py-1.5 rounded-lg text-left font-bold flex items-center justify-between transition-colors cursor-pointer border"
+            :class="contextCharger.connected ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'"
+          >
+            <div class="flex items-center gap-2">
+              <span>{{ contextCharger.connected ? '🔌' : '⚡' }}</span>
+              <span>{{ contextCharger.connected ? 'WebSocket 연결 해제' : 'WebSocket 즉시 연결' }}</span>
+            </div>
+            <span class="text-[9px] font-mono opacity-80">{{ contextCharger.connected ? 'DISCONNECT' : 'CONNECT' }}</span>
+          </button>
+
+          <!-- 2) 터미널 필터링 -->
+          <button
+            @click="handleContextFilterTerminal"
+            class="w-full px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100 flex items-center justify-between transition-colors cursor-pointer border border-transparent hover:border-slate-200"
+          >
+            <div class="flex items-center gap-2">
+              <span>📡</span>
+              <span>실시간 패킷 터미널 필터링</span>
+            </div>
+            <span class="text-[9px] font-mono text-slate-400">[{{ contextCharger.id }}]</span>
+          </button>
+
+          <!-- 3) 기동 4단계 시퀀스 -->
+          <button
+            @click="handleContextBootSequence"
+            class="w-full px-2.5 py-1.5 rounded-lg text-left font-bold text-sky-800 bg-sky-50/70 hover:bg-sky-100 border border-sky-200/80 flex items-center justify-between transition-colors cursor-pointer"
+            title="부팅 기동 4대 전문(Boot, Preparing, Available, Heartbeat) 순차 자동 발송"
+          >
+            <div class="flex items-center gap-2">
+              <span>🚀</span>
+              <span>기동 4단계 연속 발송</span>
+            </div>
+            <span class="text-[9px] font-mono text-sky-600">Boot+상태+HB</span>
+          </button>
+
+          <!-- 4) 개별 전문 발송 버튼군 -->
+          <div class="grid grid-cols-2 gap-1 pt-1">
+            <button
+              @click="handleContextSendBootNotification"
+              class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>📨</span>
+              <span class="truncate">Boot 발송</span>
+            </button>
+            <button
+              @click="handleContextSendHeartbeat"
+              class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>💓</span>
+              <span class="truncate">Heartbeat 1회</span>
+            </button>
+            <button
+              @click="handleContextSendMeterValues"
+              class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>📊</span>
+              <span class="truncate">MeterValues 전송</span>
+            </button>
+            <button
+              @click="handleContextToggleHeartbeat"
+              class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between transition-colors cursor-pointer"
+            >
+              <div class="flex items-center gap-1.5 truncate">
+                <span>🔄</span>
+                <span>HB 자동</span>
+              </div>
+              <span
+                class="text-[9px] font-mono px-1 py-0.2 rounded font-bold border"
+                :class="contextCharger?.autoHeartbeat ? 'bg-sky-50 text-sky-700 border-sky-300' : 'bg-slate-200 text-slate-500 border-slate-300'"
+              >
+                {{ contextCharger?.autoHeartbeat ? 'ON' : 'OFF' }}
+              </span>
+            </button>
+          </div>
+
+          <!-- 5) 상태 통보 (StatusNotification) 변경 칩 -->
+          <div class="pt-1.5">
+            <span class="px-1 text-[9px] font-bold text-slate-400 uppercase">상태 통보 (StatusNotification)</span>
+            <div class="grid grid-cols-4 gap-1 pt-1">
+              <button
+                @click="handleContextChangeStatus('Available')"
+                class="px-1 py-1 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-center cursor-pointer transition-colors"
+                title="정상 대기 (Available)"
+              >
+                대기
+              </button>
+              <button
+                @click="handleContextChangeStatus('Preparing')"
+                class="px-1 py-1 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-center cursor-pointer transition-colors"
+                title="준비/체결 (Preparing)"
+              >
+                준비
+              </button>
+              <button
+                @click="handleContextChangeStatus('Charging')"
+                class="px-1 py-1 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-center cursor-pointer transition-colors"
+                title="충전중 (Charging)"
+              >
+                충전
+              </button>
+              <button
+                @click="handleContextChangeStatus('Faulted')"
+                class="px-1 py-1 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-center cursor-pointer transition-colors"
+                title="장애 (Faulted)"
+              >
+                장애
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-5. 하단 유틸리티 (수정 및 삭제) -->
+        <div class="p-2 bg-slate-50 flex items-center justify-between gap-1.5">
+          <button
+            @click="handleContextOpenEdit"
+            class="flex-1 px-2.5 py-1.5 rounded-lg text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+          >
+            <span>⚙️</span>
+            <span>마스터 정보 관리</span>
+          </button>
+          <button
+            @click="handleContextDelete"
+            class="px-2.5 py-1.5 rounded-lg text-rose-600 bg-white hover:bg-rose-50 border border-rose-200 font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+            title="충전기 인스턴스 삭제"
+          >
+            <span>🗑️</span>
+            <span>삭제</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

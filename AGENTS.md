@@ -54,3 +54,59 @@
     * 서버 기동 또는 캐시 미스 시 DB의 `MAX(TRN_ID)`를 조회하여 Redis 시퀀스 초기값 자동 동기화.
   * **오버플로우 및 수명 주기**:
     * 일일 10만 건 충전 기준 약 58년(21,474일) 동안 롤오버 없이 사용 가능하며, 21억 도달 시 안전 롤오버 처리.
+
+---
+
+## 5. 🧩 백엔드 쿼리 및 QueryDSL 표준 규칙 (QueryDSL Architecture Standards)
+
+* **기술 스택별 역할 분담 및 책임 분리 원칙**:
+  1. **Spring Data JPA (`JpaRepository`)**:
+     * PK 기반 단건 조회 (`findById`), 엔티티 기본 영속화 (`save`, `delete`).
+     * 조건이 1~2개로 매우 단순한 고정 단건/목록 조회 (`findByChargeBoxId`, `findByTrnId` 등).
+  2. **QueryDSL (`JPAQueryFactory`) (실무 표준)**:
+     * **다중 조건 검색 및 동적 필터링**: 관제/어드민 검색 조건(기간, 충전소, 상태, 키워드 등).
+     * **복합 조인 및 화면 맞춤 DTO 프로젝션**: 엔티티 전체 로딩 대신 필요한 컬럼만 `Projections.constructor`로 직접 조회하여 N+1 및 메모리 낭비 원천 차단.
+     * **페이징 및 정렬**: `Pageable`과 연동된 카운트 쿼리 최적화.
+  3. **MyBatis 하이브리드 허용 기준**:
+     * 대용량 정산 집계, 일괄 벌크 연산(Bulk Insert/Update), 복잡한 윈도우 함수/통계 SQL 등 순수 RDBMS 최적화가 필수적인 특수 영역에 한해 선별적 사용.
+
+* **🚨 기형적으로 긴 JPA 쿼리 메소드명 작성 엄격 금지**:
+  * `findByChargerIdAndStatusAndCreatedAtBetweenOrderByCreatedAtDesc(...)` 처럼 조건/정렬이 3개 이상 결합되어 메소드명이 장황해지는 JPA 메소드 선언을 금지합니다.
+  * 검색 조건이 2개 이상이거나 동적 조건이 필요한 경우, 지체 없이 **QueryDSL Custom Repository(`XxxRepositoryCustom`, `XxxRepositoryImpl`)** 구조로 전환합니다.
+
+* **QueryDSL 코딩 및 설계 표준**:
+  * **`BooleanExpression` 조건절 분리 (호이스팅 및 가독성)**:
+    * `where(...)` 절 내부에 null 체크를 인라인으로 작성하지 않고, 의미가 명확한 개별 private 메소드(`eqChargerId`, `betweenDate`, `containsKeyword` 등)로 분리합니다.
+    * QueryDSL은 `BooleanExpression`이 `null`을 반환하면 `where` 조건절에서 자동으로 제외하므로 안전하고 깔끔한 동적 쿼리가 완성됩니다.
+    ```java
+    // ⭕ 표준 권장 구조
+    public Page<ChargerDto> searchChargers(ChargerSearchCond cond, Pageable pageable) {
+        List<ChargerDto> content = queryFactory
+            .select(Projections.constructor(ChargerDto.class,
+                charger.chargerId,
+                charger.stationId,
+                charger.status,
+                charger.lastHeartbeat))
+            .from(charger)
+            .where(
+                eqStationId(cond.getStationId()),
+                eqStatus(cond.getStatus()),
+                betweenCreatedAt(cond.getStartDate(), cond.getEndDate())
+            )
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .fetch();
+        ...
+    }
+
+    private BooleanExpression eqStationId(String stationId) {
+        if (!StringUtils.hasText(stationId)) {
+            return null;
+        }
+        return charger.stationId.eq(stationId);
+    }
+    ```
+  * **표준 패키지 및 클래스 네이밍 구조**:
+    * 기본 리포지토리: `XxxRepository extends JpaRepository<Xxx, ID>, XxxRepositoryCustom`
+    * 커스텀 인터페이스: `XxxRepositoryCustom`
+    * 커스텀 구현체: `XxxRepositoryImpl implements XxxRepositoryCustom` (`JPAQueryFactory` 주입)
