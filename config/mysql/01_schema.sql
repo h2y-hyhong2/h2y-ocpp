@@ -23,12 +23,14 @@ FLUSH PRIVILEGES;
 -- 기존 뷰 및 테이블 정리
 -- ==============================================================================
 SET FOREIGN_KEY_CHECKS = 0;
+DROP VIEW IF EXISTS tb_fault_history;
 DROP VIEW IF EXISTS tb_transaction_cdr;
 -- DROP VIEW IF EXISTS tb_connector_status; (Sprint 18 실시간 물리 테이블로 분리)
 DROP VIEW IF EXISTS tb_charger;
 DROP VIEW IF EXISTS tb_station;
 DROP VIEW IF EXISTS tb_corp;
 
+DROP TABLE IF EXISTS tbl_fault_history;
 DROP TABLE IF EXISTS tbl_transaction_cdr;
 DROP TABLE IF EXISTS tbl_transaction_session;
 DROP TABLE IF EXISTS tbl_connector_status;
@@ -140,10 +142,35 @@ CREATE TABLE tbl_transaction_cdr (
 ) ENGINE=InnoDB AUTO_INCREMENT=98120 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전 과금 원장 (CDR)';
 
 -- ==============================================================================
--- 6. 레거시 호환 뷰 (tb_*) 생성
+-- 6. 충전기 장애 발생 및 복구 이력 원장 (tbl_fault_history)
+-- ==============================================================================
+CREATE TABLE tbl_fault_history (
+    FAULT_ID            BIGINT AUTO_INCREMENT NOT NULL COMMENT '장애 고유 ID (PK)',
+    CHARGE_BOX_ID       VARCHAR(50)     NOT NULL COMMENT '충전기 ID (FK)',
+    CONNECTOR_ID        INT             NOT NULL DEFAULT 1 COMMENT '커넥터 번호 (0=본체, 1~N=커넥터)',
+    STATUS              VARCHAR(32)     NOT NULL COMMENT '발생 당시 상태 (Faulted 등)',
+    ERROR_CODE          VARCHAR(50)     NOT NULL COMMENT 'OCPP 표준 에러코드 (OverVoltage, GroundFailure 등)',
+    VENDOR_ERROR_CODE   VARCHAR(50)     NULL COMMENT '제조사 상세 에러코드',
+    SEVERITY            VARCHAR(20)     NOT NULL DEFAULT 'MAJOR' COMMENT '심각도 (CRITICAL, MAJOR, MINOR, INFO)',
+    FAULT_MSG           VARCHAR(500)    NULL COMMENT '상세 장애 설명 메시지',
+    OCCURRED_DT         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '장애 발생 일시',
+    RESOLVED_DT         DATETIME        NULL COMMENT '장애 복구 일시',
+    IS_RESOLVED         CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '해결 여부 (Y/N)',
+    REG_DT              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+    UPDT_DT             DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+    PRIMARY KEY (FAULT_ID),
+    KEY IX_FAULT_BOX_CONN (CHARGE_BOX_ID, CONNECTOR_ID, IS_RESOLVED),
+    KEY IX_FAULT_OCCURRED (OCCURRED_DT),
+    KEY IX_FAULT_SEVERITY (SEVERITY),
+    CONSTRAINT FK_FAULT_CHARGER FOREIGN KEY (CHARGE_BOX_ID) REFERENCES tbl_charger (CHARGE_BOX_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전기 장애 발생 및 복구 이력 원장';
+
+-- ==============================================================================
+-- 7. 레거시 호환 뷰 (tb_*) 생성
 -- ==============================================================================
 CREATE OR REPLACE VIEW tb_corp AS SELECT * FROM tbl_corp;
 CREATE OR REPLACE VIEW tb_station AS SELECT * FROM tbl_station;
 CREATE OR REPLACE VIEW tb_charger AS SELECT * FROM tbl_charger;
 -- CREATE OR REPLACE VIEW tb_connector_status AS SELECT * FROM tbl_connector_status; (Sprint 18 실시간 물리 테이블로 분리)
 CREATE OR REPLACE VIEW tb_transaction_cdr AS SELECT * FROM tbl_transaction_cdr;
+CREATE OR REPLACE VIEW tb_fault_history AS SELECT * FROM tbl_fault_history;

@@ -27,9 +27,12 @@ public class ConnectorStatusService {
     private static final Logger log = LoggerFactory.getLogger(ConnectorStatusService.class);
 
     private final ConnectorStatusRepository repository;
+    private final FaultDetectionService faultDetectionService;
 
-    public ConnectorStatusService(ConnectorStatusRepository repository) {
+    public ConnectorStatusService(ConnectorStatusRepository repository,
+                                  FaultDetectionService faultDetectionService) {
         this.repository = repository;
+        this.faultDetectionService = faultDetectionService;
     }
 
     /**
@@ -57,10 +60,14 @@ public class ConnectorStatusService {
             String vendorId    = nullIfEmpty(msg.getPayload().path("vendorId").asText(null));
             String info        = nullIfEmpty(msg.getPayload().path("info").asText(null));
 
+            // 1. 실시간 상태 테이블 Upsert (Sprint 18)
             repository.upsertStatus(chargeBoxId, connectorId, status, errorCode, vendorId, info, LocalDateTime.now());
 
             log.info("[StatusSvc] StatusNotification Upsert 완료: chargeBoxId={}, connectorId={}, status={}, errorCode={}",
                     chargeBoxId, connectorId, status, errorCode);
+
+            // 2. 장애 감지 및 Kafka UI 알림 발행 연계 (Sprint 23: S23-SYNC-0060-CO)
+            faultDetectionService.processFaultEvent(msg);
 
         } catch (Exception e) {
             log.error("[StatusSvc] StatusNotification 처리 실패: chargeBoxId={}, error={}", chargeBoxId, e.getMessage(), e);
