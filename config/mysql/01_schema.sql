@@ -166,7 +166,32 @@ CREATE TABLE tbl_fault_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='충전기 장애 발생 및 복구 이력 원장';
 
 -- ==============================================================================
--- 7. 레거시 호환 뷰 (tb_*) 생성
+-- 7. Dead Letter Topic (DLT) 실패 메시지 격리 및 재처리 원장 (tbl_dlt_history)
+-- ==============================================================================
+CREATE TABLE tbl_dlt_history (
+    DLT_ID              VARCHAR(64)     NOT NULL COMMENT 'DLT 고유 식별자 (PK - 예: DLT-20261022-xxxx)',
+    CHARGE_BOX_ID       VARCHAR(50)     NULL COMMENT '충전기 ID (파싱 실패 시 null 가능)',
+    SOURCE_TOPIC        VARCHAR(100)    NOT NULL DEFAULT 'ocpp-raw-events' COMMENT '원본 인바운드 토픽',
+    SOURCE_PARTITION    INT             NOT NULL DEFAULT 0 COMMENT '원본 토픽 파티션',
+    SOURCE_OFFSET       BIGINT          NOT NULL DEFAULT 0 COMMENT '원본 토픽 오프셋',
+    ERROR_CATEGORY      VARCHAR(30)     NOT NULL DEFAULT 'NON_RETRYABLE' COMMENT '오류 분류 (NON_RETRYABLE, TRANSIENT, BUSINESS_LOGIC)',
+    EXCEPTION_CLASS     VARCHAR(200)    NULL COMMENT '발생 예외 클래스명',
+    ERROR_MESSAGE       VARCHAR(1000)   NULL COMMENT '오류 메시지 요약',
+    RAW_PAYLOAD         LONGTEXT        NOT NULL COMMENT '원본 OCPP 수신 전문',
+    RETRY_COUNT         INT             NOT NULL DEFAULT 0 COMMENT '재시도 횟수',
+    STATUS              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '재처리 상태 (PENDING, REPLAYED, DISCARDED, FAILED)',
+    FAILED_DT           DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '최초 실패 일시',
+    REPLAYED_DT         DATETIME(3)     NULL COMMENT '재처리 완료 일시',
+    REG_DT              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '등록일시',
+    UPDT_DT             DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '수정일시',
+    PRIMARY KEY (DLT_ID),
+    KEY IX_DLT_BOX (CHARGE_BOX_ID),
+    KEY IX_DLT_STATUS (STATUS),
+    KEY IX_DLT_FAILED (FAILED_DT)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dead Letter Topic 실패 메시지 격리 및 재처리 원장';
+
+-- ==============================================================================
+-- 8. 레거시 호환 뷰 (tb_*) 생성
 -- ==============================================================================
 CREATE OR REPLACE VIEW tb_corp AS SELECT * FROM tbl_corp;
 CREATE OR REPLACE VIEW tb_station AS SELECT * FROM tbl_station;
@@ -174,3 +199,5 @@ CREATE OR REPLACE VIEW tb_charger AS SELECT * FROM tbl_charger;
 -- CREATE OR REPLACE VIEW tb_connector_status AS SELECT * FROM tbl_connector_status; (Sprint 18 실시간 물리 테이블로 분리)
 CREATE OR REPLACE VIEW tb_transaction_cdr AS SELECT * FROM tbl_transaction_cdr;
 CREATE OR REPLACE VIEW tb_fault_history AS SELECT * FROM tbl_fault_history;
+CREATE OR REPLACE VIEW tb_dlt_history AS SELECT * FROM tbl_dlt_history;
+

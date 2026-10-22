@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useVirtualCharger } from '../composables/useVirtualCharger'
 import type { ChargerInstance } from '../types/ocpp'
+import TaskVerificationSuite from './TaskVerificationSuite.vue'
 
 const props = defineProps<{
   charger?: ReturnType<typeof useVirtualCharger>
@@ -21,8 +22,8 @@ const targetCharger = computed(() => {
   return store.currentCharger.value
 })
 
-// 3대 서브 탭: 'manual' (수동 전문) | 'scenario' (시나리오 러너) | 'spec' (기기 스펙)
-const activeSubTab = ref<'manual' | 'scenario' | 'spec'>('manual')
+// 3대 서브 탭: 'manual' (수동 전문) | 'scenario' (시나리오 러너) | 'verify' (과제 검증)
+const activeSubTab = ref<'manual' | 'scenario' | 'verify'>('manual')
 
 // 세로형 전문 자동화 제어 패널 접기/펼치기 상태 (기본 펼침)
 const isAutoPanelExpanded = ref(true)
@@ -572,12 +573,12 @@ function handleAbortScenario() {
           <span>충전 시나리오 러너 (Scenario)</span>
         </button>
         <button
-          @click="activeSubTab = 'spec'"
+          @click="activeSubTab = 'verify'"
           class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
-          :class="activeSubTab === 'spec' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+          :class="activeSubTab === 'verify' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
         >
-          <span>📋</span>
-          <span>기기 스펙 & 커넥터</span>
+          <span>🧪</span>
+          <span>과제 검증 (Task Suite)</span>
         </button>
       </div>
     </div>
@@ -785,59 +786,11 @@ function handleAbortScenario() {
       </div>
     </div>
 
-    <!-- TAB 3: 기기 스펙 & 커넥터 정보 -->
-    <div v-else class="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <h3 class="text-xs font-bold text-slate-900">충전기 하드웨어 스펙 & 커넥터(충전건) 현황</h3>
-        </div>
-        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold">
-          CSMS Lite 표준
-        </span>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-          <span class="text-[11px] font-bold text-slate-500">기기 식별자 체계</span>
-          <div class="font-mono text-xs text-slate-800 space-y-1">
-            <div>충전소 ID (ST_ID): <b>{{ targetCharger.stationId }}</b></div>
-            <div>충전기 ID (CP_ID): <b>{{ targetCharger.chargerId }}</b></div>
-            <div>결합 ID (chargeBoxId): <b class="text-sky-700">{{ targetCharger.id }}</b></div>
-          </div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-          <span class="text-[11px] font-bold text-slate-500">엔드포인트 및 하드웨어</span>
-          <div class="font-mono text-xs text-slate-800 space-y-1 truncate">
-            <div>엔드포인트: <span class="text-slate-600">{{ targetCharger.wsUrl }}</span></div>
-            <div>제조사/모델: <b>{{ targetCharger.vendor }} / {{ targetCharger.model }}</b></div>
-            <div>정격 용량: <b class="text-emerald-700">{{ targetCharger.powerKw }} kW</b></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 커넥터 목록 -->
-      <div class="space-y-2">
-        <span class="text-[11px] font-bold text-slate-700">채널 커넥터 현황</span>
-        <div class="grid grid-cols-2 gap-2">
-          <div
-            v-for="conn in targetCharger.connectors"
-            :key="conn.connectorId"
-            class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between"
-          >
-            <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center font-mono font-bold text-xs text-slate-700">
-                #{{ conn.connectorId }}
-              </span>
-              <span class="text-xs font-medium text-slate-800">커넥터 {{ conn.connectorId }}</span>
-            </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold" :class="conn.status === 'Charging' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'">
-              {{ conn.status }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- TAB 3: [3368] CSMS Lite WBS 과제 검증 스위트 -->
+    <TaskVerificationSuite
+      v-else
+      :charger-id="targetCharger.id"
+      :charger="store"
+    />
   </div>
 </template>

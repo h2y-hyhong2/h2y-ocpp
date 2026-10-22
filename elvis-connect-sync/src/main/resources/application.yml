@@ -66,6 +66,7 @@ elvis:
       inbound-topic: ocpp-raw-events
       outbound-topic: ocpp-outbound-commands
       notification-topic: ${ELVIS_NOTIFICATION_TOPIC:ocpp-ui-notifications}
+      dlt-topic: ${ELVIS_DLT_TOPIC:ocpp-dlt}
     fault:
       flapping-window-seconds: 60
 
