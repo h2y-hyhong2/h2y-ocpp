@@ -1,16 +1,18 @@
 package com.lselink.elvis.control.controller;
 
+import com.lselink.elvis.control.common.ApiResponse;
+import com.lselink.elvis.control.dto.CorpResponseDto;
 import com.lselink.elvis.control.dto.StationResponseDto;
-import com.lselink.elvis.control.entity.CorpEntity;
 import com.lselink.elvis.control.service.StationService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
-@CrossOrigin(origins = "*")
 public class StationController {
 
     private final StationService stationService;
@@ -20,12 +22,16 @@ public class StationController {
     }
 
     @GetMapping("/corps")
-    public ResponseEntity<List<com.lselink.elvis.control.dto.CorpResponseDto>> getCorps() {
-        return ResponseEntity.ok(stationService.getAllCorps());
+    public ApiResponse<List<CorpResponseDto>> getCorps() {
+        List<CorpResponseDto> list = stationService.getAllCorps();
+        return ApiResponse.success(list);
     }
 
     @GetMapping("/stations")
-    public ResponseEntity<List<StationResponseDto>> getStations(@RequestParam(required = false, defaultValue = "ALL") String corpId) {
-        return ResponseEntity.ok(stationService.getAllStations(corpId));
+    public ApiResponse<List<StationResponseDto>> getStations(
+            @RequestParam(required = false, defaultValue = "ALL") String corpId) {
+        List<StationResponseDto> list = stationService.getAllStations(corpId);
+        return ApiResponse.success(list);
     }
 }
+

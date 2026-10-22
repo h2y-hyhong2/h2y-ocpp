@@ -1,25 +1,23 @@
 package com.lselink.elvis.control.controller;
 
+import com.lselink.elvis.control.common.ApiResponse;
 import com.lselink.elvis.control.entity.StationEntity;
 import com.lselink.elvis.control.entity.TransactionCdrEntity;
 import com.lselink.elvis.control.repository.StationRepository;
 import com.lselink.elvis.control.repository.TransactionCdrRepository;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/cdr")
-@CrossOrigin(origins = "*")
 public class BillingCdrController {
 
     private final TransactionCdrRepository transactionCdrRepository;
@@ -130,7 +128,7 @@ public class BillingCdrController {
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getCdrRecords() {
+    public ApiResponse<Map<String, Object>> getCdrRecords() {
         List<TransactionCdrEntity> list = transactionCdrRepository.findAllByOrderByStartTimeDesc();
 
         Map<String, String> stationNameMap = stationRepository.findAll().stream()
@@ -143,13 +141,18 @@ public class BillingCdrController {
             String stId = chargerStationMap.getOrDefault(c.getChargeBoxId(), "10001");
             String stationName = stationNameMap.getOrDefault(stId, "강남 테헤란로 하이퍼차징 스테이션");
 
+            String stopTimeStr = "진행중 (실시간)";
+            if (c.getStopTime() != null) {
+                stopTimeStr = c.getStopTime().format(FMT);
+            }
+
             return CdrItemDto.builder()
                     .transactionId(c.getTransactionId())
                     .userTag(c.getUserTag())
                     .chargeBoxId(c.getChargeBoxId())
                     .stationName(stationName)
                     .startTime(c.getStartTime().format(FMT))
-                    .stopTime(c.getStopTime() != null ? c.getStopTime().format(FMT) : "진행중 (실시간)")
+                    .stopTime(stopTimeStr)
                     .kwh(c.getTotalKwh())
                     .unitPrice(c.getUnitPrice())
                     .totalAmount(c.getTotalAmount())
@@ -161,15 +164,16 @@ public class BillingCdrController {
         BigDecimal totalKwh = list.stream().map(TransactionCdrEntity::getTotalKwh).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalAmt = list.stream().map(TransactionCdrEntity::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("records", items);
-        result.put("summary", Map.of(
-                "totalCount", count,
-                "totalKwh", totalKwh,
-                "totalAmount", totalAmt,
-                "avgMinutes", 38.6
-        ));
+        Map<String, Object> summaryMap = new LinkedHashMap<>();
+        summaryMap.put("totalCount", count);
+        summaryMap.put("totalKwh", totalKwh);
+        summaryMap.put("totalAmount", totalAmt);
+        summaryMap.put("avgMinutes", 38.6);
 
-        return ResponseEntity.ok(result);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("records", items);
+        result.put("summary", summaryMap);
+
+        return ApiResponse.success(result);
     }
 }

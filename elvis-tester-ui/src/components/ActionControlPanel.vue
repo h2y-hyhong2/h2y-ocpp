@@ -22,8 +22,8 @@ const targetCharger = computed(() => {
   return store.currentCharger.value
 })
 
-// 3대 서브 탭: 'manual' (수동 전문) | 'scenario' (시나리오 러너) | 'verify' (과제 검증)
-const activeSubTab = ref<'manual' | 'scenario' | 'verify'>('manual')
+// 4대 용도별 메인 탭: 'message' (전문 제어) | 'scenario' (충전 시나리오) | 'verify' (과제 검증) | 'spec' (기기 스펙)
+const activeTab = ref<'message' | 'scenario' | 'verify' | 'spec'>('message')
 
 // 세로형 전문 자동화 제어 패널 접기/펼치기 상태 (기본 펼침)
 const isAutoPanelExpanded = ref(true)
@@ -198,34 +198,34 @@ function handleAbortScenario() {
 
 <template>
   <div class="h-full flex flex-col overflow-y-auto space-y-3 select-none p-1 font-sans">
-    <!-- 1. 선택된 충전기 상태 및 빠른 제어 바 -->
+    <!-- 1. 선택된 충전기 컴팩트 상태 및 빠른 제어 바 -->
     <div
-      class="rounded-xl border p-3.5 shadow-2xs flex-shrink-0 transition-colors"
-      :class="targetCharger.connected ? 'bg-emerald-50/30 border-emerald-200' : targetCharger.connecting ? 'bg-amber-50/40 border-amber-200 animate-pulse' : 'bg-white border-slate-200'"
+      class="rounded-xl border p-3 shadow-2xs flex-shrink-0 transition-colors"
+      :class="targetCharger.connected ? 'bg-emerald-50/20 border-emerald-200' : targetCharger.connecting ? 'bg-amber-50/40 border-amber-200 animate-pulse' : 'bg-white border-slate-200'"
     >
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      <div class="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
         <!-- 충전기 식별자 및 타이틀 -->
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center font-bold text-sm shadow-2xs">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center font-bold text-xs shadow-2xs">
             ⚡
           </div>
           <div class="flex flex-col">
-            <div class="flex items-center gap-2">
-              <span class="text-base font-black font-mono text-slate-900 tracking-tight">
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm font-black font-mono text-slate-900 tracking-tight">
                 {{ targetCharger.id }}
               </span>
-              <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-sky-100 text-sky-800 border border-sky-200">
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-sky-100 text-sky-800 border border-sky-200">
                 {{ targetCharger.powerKw }}kW 급속
               </span>
               <button
                 @click="emit('open-edit-modal', targetCharger)"
-                class="text-[11px] text-slate-400 hover:text-slate-700 hover:bg-slate-100 px-1 rounded transition-colors"
+                class="text-[10px] text-slate-400 hover:text-slate-700 hover:bg-slate-100 px-1 rounded transition-colors"
                 title="충전기 설정 수정"
               >
                 ✏️ 수정
               </button>
             </div>
-            <span class="text-xs text-slate-500 font-medium truncate max-w-sm">
+            <span class="text-[11px] text-slate-500 font-medium truncate max-w-sm">
               {{ targetCharger.name }}
             </span>
           </div>
@@ -234,12 +234,12 @@ function handleAbortScenario() {
         <!-- 우측 연결 상태 및 연결/해제 토글 -->
         <div class="flex items-center gap-2">
           <!-- 연결 상태 배지 -->
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono bg-slate-50 border-slate-200">
+          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border text-xs font-mono bg-slate-50 border-slate-200">
             <span
-              class="w-2.5 h-2.5 rounded-full"
+              class="w-2 h-2 rounded-full"
               :class="targetCharger.connected ? 'bg-emerald-500 ring-2 ring-emerald-100 animate-pulse' : targetCharger.connecting ? 'bg-amber-400 animate-ping' : 'bg-slate-300'"
             ></span>
-            <span class="font-bold text-[11px]" :class="targetCharger.connected ? 'text-emerald-700' : 'text-slate-500'">
+            <span class="font-bold text-[10px]" :class="targetCharger.connected ? 'text-emerald-700' : 'text-slate-500'">
               {{ targetCharger.connected ? 'ONLINE (:18080)' : targetCharger.connecting ? 'CONNECTING...' : 'OFFLINE' }}
             </span>
           </div>
@@ -247,7 +247,7 @@ function handleAbortScenario() {
           <!-- 연결/해제 토글 버튼 -->
           <button
             @click="targetCharger.connected ? store.disconnect(targetCharger.id) : store.connect(targetCharger.id)"
-            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
+            class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all shadow-2xs cursor-pointer flex items-center gap-1"
             :class="targetCharger.connected ? 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100' : 'bg-emerald-600 text-white hover:bg-emerald-700'"
           >
             <span v-if="targetCharger.connected">🔌 연결 해제</span>
@@ -257,470 +257,471 @@ function handleAbortScenario() {
       </div>
 
       <!-- 하단 실시간 상태 지표 그리드 -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3">
-        <div class="bg-slate-50/80 border border-slate-200/80 rounded-lg p-2 flex flex-col">
-          <span class="text-[10px] text-slate-400 uppercase font-mono">OCPP 상태</span>
-          <span class="text-xs font-bold mt-0.5" :class="targetCharger.status === 'Charging' ? 'text-indigo-600 font-black' : 'text-slate-800'">
+      <div class="grid grid-cols-4 gap-1.5 pt-2 text-[11px]">
+        <div class="bg-slate-50 border border-slate-200/80 rounded-md px-2 py-1 flex flex-col">
+          <span class="text-[9px] text-slate-400 uppercase font-mono">OCPP 상태</span>
+          <span class="font-bold truncate" :class="targetCharger.status === 'Charging' ? 'text-indigo-600 font-black' : 'text-slate-800'">
             {{ targetCharger.status }}
           </span>
         </div>
 
-        <div class="bg-slate-50/80 border border-slate-200/80 rounded-lg p-2 flex flex-col">
-          <span class="text-[10px] text-slate-400 uppercase font-mono">트랜잭션 ID</span>
-          <span class="text-xs font-mono font-bold text-slate-800 mt-0.5">
-            {{ targetCharger.transactionId || '세션 없음' }}
+        <div class="bg-slate-50 border border-slate-200/80 rounded-md px-2 py-1 flex flex-col">
+          <span class="text-[9px] text-slate-400 uppercase font-mono">트랜잭션 ID</span>
+          <span class="font-mono font-bold text-slate-800 truncate">
+            {{ targetCharger.transactionId || '-' }}
           </span>
         </div>
 
-        <div class="bg-slate-50/80 border border-slate-200/80 rounded-lg p-2 flex flex-col">
-          <span class="text-[10px] text-slate-400 uppercase font-mono">누적 계량 (Wh)</span>
-          <span class="text-xs font-mono font-bold text-slate-800 mt-0.5">
-            {{ targetCharger.meterValueWh.toLocaleString() }} Wh
+        <div class="bg-slate-50 border border-slate-200/80 rounded-md px-2 py-1 flex flex-col">
+          <span class="text-[9px] text-slate-400 uppercase font-mono">누적 계량 (Wh)</span>
+          <span class="font-mono font-bold text-slate-800 truncate">
+            {{ targetCharger.meterValueWh.toLocaleString() }}
           </span>
         </div>
 
-        <div class="bg-slate-50/80 border border-slate-200/80 rounded-lg p-2 flex flex-col">
-          <span class="text-[10px] text-slate-400 uppercase font-mono">배터리 SoC</span>
-          <span class="text-xs font-mono font-bold text-sky-700 mt-0.5">
+        <div class="bg-slate-50 border border-slate-200/80 rounded-md px-2 py-1 flex flex-col">
+          <span class="text-[9px] text-slate-400 uppercase font-mono">배터리 SoC</span>
+          <span class="font-mono font-bold text-sky-700 truncate">
             {{ targetCharger.soc }} %
           </span>
         </div>
       </div>
     </div>
 
-    <!-- 1-2. 충전기 전문 자동화 제어 패널 (세로 수직 행 리스트 형태) -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-2xs flex-shrink-0 overflow-hidden font-sans">
-      <!-- 패널 헤더 (클릭 시 접기/펼치기) -->
-      <div
-        @click="isAutoPanelExpanded = !isAutoPanelExpanded"
-        class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between cursor-pointer hover:bg-slate-100/70 transition-colors select-none"
-      >
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-sm">⚙️</span>
-          <span class="text-xs font-bold text-slate-900">전문 자동화 제어</span>
-          <span class="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-200/70 text-slate-700">
-            {{ targetCharger.id }}
-          </span>
-
-          <!-- 상단 요약 칩 배지군 -->
-          <div class="flex items-center gap-1 text-[10px] font-mono">
-            <span
-              class="px-1.5 py-0.2 rounded font-semibold border"
-              :class="targetCharger.autoHeartbeat ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
-            >
-              💓 HB: {{ targetCharger.autoHeartbeat ? `${targetCharger.heartbeatIntervalSec || 60}s` : 'OFF' }}
-            </span>
-            <span
-              class="px-1.5 py-0.2 rounded font-semibold border"
-              :class="targetCharger.autoBootOnConnect ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
-            >
-              🚀 기동: {{ targetCharger.autoBootOnConnect ? 'ON' : 'OFF' }}
-            </span>
-            <span
-              class="px-1.5 py-0.2 rounded font-semibold border"
-              :class="targetCharger.autoReply ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
-            >
-              🤖 응답: {{ targetCharger.autoReply ? 'ON' : 'OFF' }}
-            </span>
-            <span
-              class="px-1.5 py-0.2 rounded font-semibold border"
-              :class="targetCharger.autoMeterValues ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
-            >
-              📊 계측: {{ targetCharger.autoMeterValues ? 'ON' : 'OFF' }}
-            </span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-1.5 text-[11px] font-mono" @click.stop>
-          <button
-            type="button"
-            @click="handleManualPreset(targetCharger.id)"
-            class="px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold cursor-pointer transition-colors shadow-2xs"
-            title="이 충전기의 모든 자동화(Heartbeat, Auto-Boot, Auto-Reply, Auto-Meter) 일괄 정지"
-          >
-            🛑 전체OFF
-          </button>
-          <button
-            type="button"
-            @click="handleAutoPreset(targetCharger.id)"
-            class="px-2 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold cursor-pointer transition-colors shadow-2xs"
-            title="이 충전기의 표준 자동화(Heartbeat 60s, Auto-Boot, Auto-Reply) 일괄 가동"
-          >
-            ⚡ 전체ON
-          </button>
-          <button
-            type="button"
-            @click="isAutoPanelExpanded = !isAutoPanelExpanded"
-            class="px-1.5 py-0.5 rounded border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-white text-[10px] font-bold transition-colors cursor-pointer"
-          >
-            {{ isAutoPanelExpanded ? '▲ 접기' : '▼ 펼침' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 세로 목록 본문 (4대 전문 자동화 수직 행 배치) -->
-      <div v-if="isAutoPanelExpanded" class="p-2.5 space-y-2 text-xs bg-white">
-        <!-- 1. 자동 Heartbeat 수직 행 -->
-        <div
-          class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-          :class="targetCharger.autoHeartbeat ? 'bg-sky-50/40 border-sky-200' : 'bg-slate-50 border-slate-200'"
-        >
-          <div class="flex items-start gap-2.5 min-w-0">
-            <span class="text-base flex-shrink-0 mt-0.5">💓</span>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-900">자동 Heartbeat 주기 발송</span>
-                <span
-                  class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
-                  :class="targetCharger.autoHeartbeat ? 'bg-sky-100 text-sky-800' : 'bg-slate-200 text-slate-500'"
-                >
-                  {{ targetCharger.autoHeartbeat ? 'ACTIVE' : 'STOPPED' }}
-                </span>
-              </div>
-              <span class="text-[11px] text-slate-500 truncate">
-                연결 상태에서 백그라운드 타이머로 Heartbeat(생존 신호) 주기 자동 발송
-              </span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1.5 self-end sm:self-center flex-shrink-0">
-            <!-- 주기 드롭다운 -->
-            <div class="flex items-center gap-1 font-mono text-[11px]">
-              <span class="text-slate-500">주기:</span>
-              <select
-                :value="targetCharger.heartbeatIntervalSec || 60"
-                @change="(e: any) => store.setHeartbeatInterval(Number(e.target.value), targetCharger.id)"
-                class="bg-white border border-slate-200 rounded px-1.5 py-1 text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-sky-500"
-                title="하트비트 발송 주기 변경"
-              >
-                <option :value="10">10초</option>
-                <option :value="30">30초</option>
-                <option :value="60">60초 (표준)</option>
-                <option :value="120">120초 (2분)</option>
-                <option :value="300">300초 (5분)</option>
-                <option :value="600">600초 (10분)</option>
-                <option
-                  v-if="![10, 30, 60, 120, 300, 600].includes(targetCharger.heartbeatIntervalSec || 60)"
-                  :value="targetCharger.heartbeatIntervalSec"
-                >
-                  {{ targetCharger.heartbeatIntervalSec }}초 (관제 수신)
-                </option>
-              </select>
-            </div>
-
-            <!-- ON/OFF 토글 알약 버튼 -->
-            <button
-              @click="store.toggleAutoHeartbeat(targetCharger.id)"
-              class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
-              :class="targetCharger.autoHeartbeat ? 'bg-sky-600 text-white border-sky-600 hover:bg-sky-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
-              :title="targetCharger.autoHeartbeat ? '자동 발송 켜짐 (클릭 시 중지)' : '자동 발송 꺼짐 (클릭 시 가동)'"
-            >
-              {{ targetCharger.autoHeartbeat ? '● ON' : '○ OFF' }}
-            </button>
-
-            <!-- 1회 즉시 전송 버튼 -->
-            <button
-              @click="store.sendHeartbeat(targetCharger.id)"
-              :disabled="!targetCharger.connected"
-              class="px-2 py-1 rounded-md text-[11px] font-mono font-semibold transition-all border shadow-2xs"
-              :class="targetCharger.connected ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 cursor-pointer' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'"
-              title="관제 서버로 Heartbeat 1회 즉시 전송"
-            >
-              1회 전송
-            </button>
-          </div>
-        </div>
-
-        <!-- 2. 연결 시 기동전문 자동 발송 수직 행 -->
-        <div
-          class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-          :class="targetCharger.autoBootOnConnect ? 'bg-sky-50/40 border-sky-200' : 'bg-slate-50 border-slate-200'"
-        >
-          <div class="flex items-start gap-2.5 min-w-0">
-            <span class="text-base flex-shrink-0 mt-0.5">🚀</span>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-900">연결 시 기동전문 자동 발송 (Auto-Boot)</span>
-                <span
-                  class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
-                  :class="targetCharger.autoBootOnConnect ? 'bg-sky-100 text-sky-800' : 'bg-slate-200 text-slate-500'"
-                >
-                  {{ targetCharger.autoBootOnConnect ? 'ACTIVE' : 'STOPPED' }}
-                </span>
-              </div>
-              <span class="text-[11px] text-slate-500 truncate">
-                WebSocket 연결 수립 직후 BootNotification 및 StatusNotification 기동 시퀀스 자동 순차 발송
-              </span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-            <button
-              @click="store.toggleAutoBootOnConnect(targetCharger.id)"
-              class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
-              :class="targetCharger.autoBootOnConnect ? 'bg-sky-600 text-white border-sky-600 hover:bg-sky-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
-              :title="targetCharger.autoBootOnConnect ? '연결 시 자동 기동 활성화 (클릭 시 중지)' : '연결 시 자동 기동 비활성화 (클릭 시 가동)'"
-            >
-              {{ targetCharger.autoBootOnConnect ? '● ON' : '○ OFF' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 3. 관제 CALL 자동응답 수직 행 -->
-        <div
-          class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-          :class="targetCharger.autoReply ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200'"
-        >
-          <div class="flex items-start gap-2.5 min-w-0">
-            <span class="text-base flex-shrink-0 mt-0.5">🤖</span>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-900">관제 요청(CALL) 자동응답 (Auto-Reply)</span>
-                <span
-                  class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
-                  :class="targetCharger.autoReply ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
-                >
-                  {{ targetCharger.autoReply ? 'ACCEPTED 회신' : '무응답(타임아웃 검증)' }}
-                </span>
-              </div>
-              <span class="text-[11px] text-slate-500 truncate">
-                관제 원격 명령(RemoteStart, Reset, Trigger 등) 수신 시 Accepted 자동 회신 (OFF 시 수동/무응답 타임아웃 테스트)
-              </span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-            <button
-              @click="store.toggleAutoReply(targetCharger.id)"
-              class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
-              :class="targetCharger.autoReply ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
-              :title="targetCharger.autoReply ? '서버 CALL 자동 회신 켜짐' : '서버 CALL 자동 회신 꺼짐 (무응답)'"
-            >
-              {{ targetCharger.autoReply ? '● ON' : '○ OFF' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 4. 충전 중 계측치(MeterValues) 주기 발송 수직 행 -->
-        <div
-          class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-          :class="targetCharger.autoMeterValues ? 'bg-indigo-50/40 border-indigo-200' : 'bg-slate-50 border-slate-200'"
-        >
-          <div class="flex items-start gap-2.5 min-w-0">
-            <span class="text-base flex-shrink-0 mt-0.5">📊</span>
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-900">충전 중 계측치(MeterValues) 주기 발송</span>
-                <span
-                  class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
-                  :class="targetCharger.autoMeterValues ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-200 text-slate-500'"
-                >
-                  {{ targetCharger.autoMeterValues ? 'ACTIVE' : 'STOPPED' }}
-                </span>
-              </div>
-              <span class="text-[11px] text-slate-500 truncate">
-                충전 진행 중(Charging 상태)일 때 설정된 주기로 누적 계량치(Wh, SoC) 자동 발송
-              </span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1.5 self-end sm:self-center flex-shrink-0">
-            <div class="flex items-center gap-1 font-mono text-[11px]">
-              <span class="text-slate-500">주기:</span>
-              <select
-                :value="targetCharger.autoMeterIntervalSec || 10"
-                @change="(e: any) => store.setAutoMeterInterval(Number(e.target.value), targetCharger.id)"
-                class="bg-white border border-slate-200 rounded px-1.5 py-1 text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-sky-500"
-                title="계측치 발송 주기 변경"
-              >
-                <option :value="5">5초 (고속)</option>
-                <option :value="10">10초 (표준)</option>
-                <option :value="30">30초</option>
-                <option :value="60">60초 (1분)</option>
-              </select>
-            </div>
-
-            <button
-              @click="store.toggleAutoMeterValues(targetCharger.id)"
-              class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
-              :class="targetCharger.autoMeterValues ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
-              :title="targetCharger.autoMeterValues ? '계측치 자동 주기 발송 켜짐' : '계측치 자동 주기 발송 꺼짐'"
-            >
-              {{ targetCharger.autoMeterValues ? '● ON' : '○ OFF' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. 서브 탭 네비게이션 -->
-    <div class="bg-white rounded-xl border border-slate-200 p-2 shadow-2xs flex-shrink-0">
-      <div class="flex items-center gap-1">
+    <!-- 2. 용도별 4대 메인 탭 네비게이션 -->
+    <div class="bg-white rounded-xl border border-slate-200 p-1.5 shadow-2xs flex-shrink-0">
+      <div class="grid grid-cols-4 gap-1">
+        <!-- 탭 1: 전문 제어 & 자동화 -->
         <button
-          @click="activeSubTab = 'manual'"
-          class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
-          :class="activeSubTab === 'manual' ? 'bg-sky-50 text-sky-700 border border-sky-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+          @click="activeTab = 'message'"
+          class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+          :class="activeTab === 'message' ? 'bg-sky-50 text-sky-700 border border-sky-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
         >
           <span>📨</span>
-          <span>수동 전문 전송 (Manual Sender)</span>
+          <span class="truncate">전문 제어</span>
         </button>
+
+        <!-- 탭 2: 충전 시나리오 러너 -->
         <button
-          @click="activeSubTab = 'scenario'"
-          class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
-          :class="activeSubTab === 'scenario' ? 'bg-indigo-50 text-indigo-700 border border-indigo-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+          @click="activeTab = 'scenario'"
+          class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+          :class="activeTab === 'scenario' ? 'bg-indigo-50 text-indigo-700 border border-indigo-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
         >
           <span>🚀</span>
-          <span>충전 시나리오 러너 (Scenario)</span>
+          <span class="truncate">시나리오</span>
         </button>
+
+        <!-- 탭 3: WBS 과제 검증 -->
         <button
-          @click="activeSubTab = 'verify'"
-          class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
-          :class="activeSubTab === 'verify' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+          @click="activeTab = 'verify'"
+          class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+          :class="activeTab === 'verify' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
         >
           <span>🧪</span>
-          <span>과제 검증 (Task Suite)</span>
+          <span class="truncate">과제 검증</span>
+        </button>
+
+        <!-- 탭 4: 기기 스펙 & 커넥터 -->
+        <button
+          @click="activeTab = 'spec'"
+          class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+          :class="activeTab === 'spec' ? 'bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
+        >
+          <span>📋</span>
+          <span class="truncate">기기 스펙</span>
         </button>
       </div>
     </div>
 
     <!-- 3. 메인 콘텐츠 영역 (탭별 내용) -->
 
-    <!-- TAB 1: 수동 전문 전송 -->
-    <div v-if="activeSubTab === 'manual'" class="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-          <h3 class="text-xs font-bold text-slate-900">OCPP 1.6-J 핵심 전문 수동 발송</h3>
-        </div>
-
-        <div class="flex items-center bg-slate-100 p-0.5 rounded-lg text-[11px] border border-slate-200">
-          <button
-            @click="sendMode = 'template'"
-            class="px-2.5 py-0.5 rounded transition-all cursor-pointer font-medium"
-            :class="sendMode === 'template' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-          >
-            템플릿 폼
-          </button>
-          <button
-            @click="sendMode = 'raw'; onActionChange()"
-            class="px-2.5 py-0.5 rounded transition-all cursor-pointer font-medium"
-            :class="sendMode === 'raw' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-          >
-            Raw JSON 편집
-          </button>
-        </div>
-      </div>
-
-      <!-- 액션 선택 드롭다운 -->
-      <div>
-        <label class="block text-[11px] font-bold text-slate-700 mb-1">
-          발송할 OCPP Action 선택
-        </label>
-        <select
-          v-model="selectedAction"
-          @change="onActionChange"
-          class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+    <!-- TAB 1: 전문 제어 & 자동화 (Message & Automation) -->
+    <div v-if="activeTab === 'message'" class="space-y-3">
+      <!-- 1-1. 충전기 전문 자동화 제어 패널 (수직 행 배치) -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden font-sans">
+        <div
+          @click="isAutoPanelExpanded = !isAutoPanelExpanded"
+          class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between cursor-pointer hover:bg-slate-100/70 transition-colors select-none"
         >
-          <option value="StatusNotification">StatusNotification (상태 통보)</option>
-          <option value="BootNotification">BootNotification (충전기 기동/부팅)</option>
-          <option value="Heartbeat">Heartbeat (생존 신호)</option>
-          <option value="Authorize">Authorize (RFID 회원 인증 요청)</option>
-          <option value="StartTransaction">StartTransaction (충전 시작 세션 개시)</option>
-          <option value="MeterValues">MeterValues (충전 계측 전력량 전송)</option>
-          <option value="StopTransaction">StopTransaction (충전 종료 및 정산)</option>
-          <option value="DataTransfer">DataTransfer (커스텀 데이터 전송)</option>
-        </select>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm">⚙️</span>
+            <span class="text-xs font-bold text-slate-900">전문 자동화 제어</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-200/70 text-slate-700">
+              {{ targetCharger.id }}
+            </span>
+
+            <!-- 요약 칩 배지 -->
+            <div class="flex items-center gap-1 text-[10px] font-mono">
+              <span
+                class="px-1.5 py-0.2 rounded font-semibold border"
+                :class="targetCharger.autoHeartbeat ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
+              >
+                💓 HB: {{ targetCharger.autoHeartbeat ? `${targetCharger.heartbeatIntervalSec || 60}s` : 'OFF' }}
+              </span>
+              <span
+                class="px-1.5 py-0.2 rounded font-semibold border"
+                :class="targetCharger.autoBootOnConnect ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
+              >
+                🚀 기동: {{ targetCharger.autoBootOnConnect ? 'ON' : 'OFF' }}
+              </span>
+              <span
+                class="px-1.5 py-0.2 rounded font-semibold border"
+                :class="targetCharger.autoReply ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
+              >
+                🤖 응답: {{ targetCharger.autoReply ? 'ON' : 'OFF' }}
+              </span>
+              <span
+                class="px-1.5 py-0.2 rounded font-semibold border"
+                :class="targetCharger.autoMeterValues ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
+              >
+                📊 계측: {{ targetCharger.autoMeterValues ? 'ON' : 'OFF' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 text-[11px] font-mono" @click.stop>
+            <button
+              type="button"
+              @click="handleManualPreset(targetCharger.id)"
+              class="px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold cursor-pointer transition-colors shadow-2xs"
+              title="이 충전기의 모든 자동화(Heartbeat, Auto-Boot, Auto-Reply, Auto-Meter) 일괄 정지"
+            >
+              🛑 전체OFF
+            </button>
+            <button
+              type="button"
+              @click="handleAutoPreset(targetCharger.id)"
+              class="px-2 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold cursor-pointer transition-colors shadow-2xs"
+              title="이 충전기의 표준 자동화(Heartbeat 60s, Auto-Boot, Auto-Reply) 일괄 가동"
+            >
+              ⚡ 전체ON
+            </button>
+            <button
+              type="button"
+              @click="isAutoPanelExpanded = !isAutoPanelExpanded"
+              class="px-1.5 py-0.5 rounded border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-white text-[10px] font-bold transition-colors cursor-pointer"
+            >
+              {{ isAutoPanelExpanded ? '▲ 접기' : '▼ 펼침' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 세로 목록 본문 (4대 전문 자동화 수직 행) -->
+        <div v-if="isAutoPanelExpanded" class="p-2.5 space-y-2 text-xs bg-white">
+          <!-- 1. 자동 Heartbeat 수직 행 -->
+          <div
+            class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            :class="targetCharger.autoHeartbeat ? 'bg-sky-50/40 border-sky-200' : 'bg-slate-50 border-slate-200'"
+          >
+            <div class="flex items-start gap-2.5 min-w-0">
+              <span class="text-base flex-shrink-0 mt-0.5">💓</span>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900">자동 Heartbeat 주기 발송</span>
+                  <span
+                    class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
+                    :class="targetCharger.autoHeartbeat ? 'bg-sky-100 text-sky-800' : 'bg-slate-200 text-slate-500'"
+                  >
+                    {{ targetCharger.autoHeartbeat ? 'ACTIVE' : 'STOPPED' }}
+                  </span>
+                </div>
+                <span class="text-[11px] text-slate-500 truncate">
+                  연결 상태에서 백그라운드 타이머로 Heartbeat(생존 신호) 주기 자동 발송
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 self-end sm:self-center flex-shrink-0">
+              <div class="flex items-center gap-1 font-mono text-[11px]">
+                <span class="text-slate-500">주기:</span>
+                <select
+                  :value="targetCharger.heartbeatIntervalSec || 60"
+                  @change="(e: any) => store.setHeartbeatInterval(Number(e.target.value), targetCharger.id)"
+                  class="bg-white border border-slate-200 rounded px-1.5 py-1 text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+                >
+                  <option :value="10">10초</option>
+                  <option :value="30">30초</option>
+                  <option :value="60">60초 (표준)</option>
+                  <option :value="120">120초 (2분)</option>
+                  <option :value="300">300초 (5분)</option>
+                  <option :value="600">600초 (10분)</option>
+                </select>
+              </div>
+
+              <button
+                @click="store.toggleAutoHeartbeat(targetCharger.id)"
+                class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
+                :class="targetCharger.autoHeartbeat ? 'bg-sky-600 text-white border-sky-600 hover:bg-sky-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
+              >
+                {{ targetCharger.autoHeartbeat ? '● ON' : '○ OFF' }}
+              </button>
+
+              <button
+                @click="store.sendHeartbeat(targetCharger.id)"
+                :disabled="!targetCharger.connected"
+                class="px-2 py-1 rounded-md text-[11px] font-mono font-semibold transition-all border shadow-2xs"
+                :class="targetCharger.connected ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 cursor-pointer' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'"
+              >
+                1회 전송
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. 연결 시 기동전문 자동 발송 -->
+          <div
+            class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            :class="targetCharger.autoBootOnConnect ? 'bg-sky-50/40 border-sky-200' : 'bg-slate-50 border-slate-200'"
+          >
+            <div class="flex items-start gap-2.5 min-w-0">
+              <span class="text-base flex-shrink-0 mt-0.5">🚀</span>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900">연결 시 기동전문 자동 발송 (Auto-Boot)</span>
+                  <span
+                    class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
+                    :class="targetCharger.autoBootOnConnect ? 'bg-sky-100 text-sky-800' : 'bg-slate-200 text-slate-500'"
+                  >
+                    {{ targetCharger.autoBootOnConnect ? 'ACTIVE' : 'STOPPED' }}
+                  </span>
+                </div>
+                <span class="text-[11px] text-slate-500 truncate">
+                  WebSocket 연결 직후 BootNotification 및 StatusNotification 기동 시퀀스 자동 순차 발송
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+              <button
+                @click="store.toggleAutoBootOnConnect(targetCharger.id)"
+                class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
+                :class="targetCharger.autoBootOnConnect ? 'bg-sky-600 text-white border-sky-600 hover:bg-sky-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
+              >
+                {{ targetCharger.autoBootOnConnect ? '● ON' : '○ OFF' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. 관제 CALL 자동응답 -->
+          <div
+            class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            :class="targetCharger.autoReply ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200'"
+          >
+            <div class="flex items-start gap-2.5 min-w-0">
+              <span class="text-base flex-shrink-0 mt-0.5">🤖</span>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900">관제 요청(CALL) 자동응답 (Auto-Reply)</span>
+                  <span
+                    class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
+                    :class="targetCharger.autoReply ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                  >
+                    {{ targetCharger.autoReply ? 'ACCEPTED 회신' : '무응답(타임아웃 검증)' }}
+                  </span>
+                </div>
+                <span class="text-[11px] text-slate-500 truncate">
+                  관제 원격 명령(RemoteStart, Reset 등) 수신 시 Accepted 자동 회신
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+              <button
+                @click="store.toggleAutoReply(targetCharger.id)"
+                class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
+                :class="targetCharger.autoReply ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
+              >
+                {{ targetCharger.autoReply ? '● ON' : '○ OFF' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. 계측치(MeterValues) 주기 발송 -->
+          <div
+            class="p-2.5 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            :class="targetCharger.autoMeterValues ? 'bg-indigo-50/40 border-indigo-200' : 'bg-slate-50 border-slate-200'"
+          >
+            <div class="flex items-start gap-2.5 min-w-0">
+              <span class="text-base flex-shrink-0 mt-0.5">📊</span>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900">충전 중 계측치(MeterValues) 주기 발송</span>
+                  <span
+                    class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold"
+                    :class="targetCharger.autoMeterValues ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-200 text-slate-500'"
+                  >
+                    {{ targetCharger.autoMeterValues ? 'ACTIVE' : 'STOPPED' }}
+                  </span>
+                </div>
+                <span class="text-[11px] text-slate-500 truncate">
+                  충전 진행 중(Charging)일 때 누적 계량치(Wh, SoC) 자동 발송
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 self-end sm:self-center flex-shrink-0">
+              <div class="flex items-center gap-1 font-mono text-[11px]">
+                <span class="text-slate-500">주기:</span>
+                <select
+                  :value="targetCharger.autoMeterIntervalSec || 10"
+                  @change="(e: any) => store.setAutoMeterInterval(Number(e.target.value), targetCharger.id)"
+                  class="bg-white border border-slate-200 rounded px-1.5 py-1 text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+                >
+                  <option :value="5">5초 (고속)</option>
+                  <option :value="10">10초 (표준)</option>
+                  <option :value="30">30초</option>
+                  <option :value="60">60초 (1분)</option>
+                </select>
+              </div>
+
+              <button
+                @click="store.toggleAutoMeterValues(targetCharger.id)"
+                class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer border shadow-2xs"
+                :class="targetCharger.autoMeterValues ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
+              >
+                {{ targetCharger.autoMeterValues ? '● ON' : '○ OFF' }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 1) 템플릿 폼 모드 -->
-      <div v-if="sendMode === 'template'" class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs">
-        <!-- StatusNotification 전용 파라미터 -->
-        <div v-if="selectedAction === 'StatusNotification'" class="space-y-2">
-          <label class="block text-[11px] font-bold text-slate-700">변경할 충전기 상태 (Status)</label>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono text-[11px]">
+      <!-- 1-2. 수동 전문 전송 (Manual Sender) -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+            <h3 class="text-xs font-bold text-slate-900">OCPP 1.6-J 핵심 전문 수동 발송</h3>
+          </div>
+
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-lg text-[11px] border border-slate-200">
             <button
-              v-for="st in (['Available', 'Preparing', 'Charging', 'Finishing', 'Faulted', 'Unavailable'] as const)"
-              :key="st"
-              @click="manualStatus = st"
-              class="px-2 py-1 rounded border transition-colors cursor-pointer text-center"
-              :class="manualStatus === st ? 'bg-sky-600 text-white font-bold border-sky-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
+              @click="sendMode = 'template'"
+              class="px-2.5 py-0.5 rounded transition-all cursor-pointer font-medium"
+              :class="sendMode === 'template' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
             >
-              {{ st }}
+              템플릿 폼
+            </button>
+            <button
+              @click="sendMode = 'raw'; onActionChange()"
+              class="px-2.5 py-0.5 rounded transition-all cursor-pointer font-medium"
+              :class="sendMode === 'raw' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+            >
+              Raw JSON 편집
             </button>
           </div>
         </div>
 
-        <!-- Authorize / StartTransaction / StopTransaction RFID -->
-        <div v-if="['Authorize', 'StartTransaction', 'StopTransaction'].includes(selectedAction)" class="space-y-2">
-          <label class="block text-[11px] font-bold text-slate-700">RFID 회원 카드번호 (idTag)</label>
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <button
-              v-for="p in rfidPresets"
-              :key="p.tag"
-              @click="manualRfid = p.tag"
-              class="px-2 py-1 text-[11px] font-mono rounded border transition-colors cursor-pointer"
-              :class="manualRfid === p.tag ? 'bg-sky-600 text-white font-bold border-sky-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
-            >
-              {{ p.label }}
-            </button>
-          </div>
-          <input
-            v-model="manualRfid"
-            class="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-sky-500"
-          />
-        </div>
-
-        <!-- StartTransaction / MeterValues 전력량 (Wh) -->
-        <div v-if="['StartTransaction', 'MeterValues'].includes(selectedAction)" class="space-y-1">
-          <label class="block text-[11px] font-bold text-slate-700">계측 전력량 (meterValue Wh)</label>
-          <input
-            v-model.number="manualMeterWh"
-            type="number"
-            class="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-sky-500"
-          />
-        </div>
-
-        <!-- StopTransaction 종료 사유 -->
-        <div v-if="selectedAction === 'StopTransaction'" class="space-y-1">
-          <label class="block text-[11px] font-bold text-slate-700">종료 사유 (Reason)</label>
+        <!-- 액션 선택 드롭다운 -->
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+            발송할 OCPP Action 선택
+          </label>
           <select
-            v-model="manualStopReason"
-            class="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-mono text-xs"
+            v-model="selectedAction"
+            @change="onActionChange"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
           >
-            <option value="Local">Local (사용자 현장 종료)</option>
-            <option value="Remote">Remote (원격 정지)</option>
-            <option value="EVDisconnected">EVDisconnected (차량 커넥터 분리)</option>
-            <option value="EmergencyStop">EmergencyStop (비상 정지)</option>
+            <option value="StatusNotification">StatusNotification (상태 통보)</option>
+            <option value="BootNotification">BootNotification (충전기 기동/부팅)</option>
+            <option value="Heartbeat">Heartbeat (생존 신호)</option>
+            <option value="Authorize">Authorize (RFID 회원 인증 요청)</option>
+            <option value="StartTransaction">StartTransaction (충전 시작 세션 개시)</option>
+            <option value="MeterValues">MeterValues (충전 계측 전력량 전송)</option>
+            <option value="StopTransaction">StopTransaction (충전 종료 및 정산)</option>
+            <option value="DataTransfer">DataTransfer (커스텀 데이터 전송)</option>
           </select>
         </div>
-      </div>
 
-      <!-- 2) Raw JSON 편집 모드 -->
-      <div v-else class="space-y-1.5">
-        <label class="block text-[11px] font-bold text-slate-700">JSON Payload 편집</label>
-        <textarea
-          v-model="rawPayloadText"
-          rows="8"
-          class="w-full bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-sky-500"
-        ></textarea>
-      </div>
+        <!-- 템플릿 폼 모드 -->
+        <div v-if="sendMode === 'template'" class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs">
+          <!-- StatusNotification 전용 파라미터 -->
+          <div v-if="selectedAction === 'StatusNotification'" class="space-y-2">
+            <label class="block text-[11px] font-bold text-slate-700">변경할 충전기 상태 (Status)</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono text-[11px]">
+              <button
+                v-for="st in (['Available', 'Preparing', 'Charging', 'Finishing', 'Faulted', 'Unavailable'] as const)"
+                :key="st"
+                @click="manualStatus = st"
+                class="px-2 py-1 rounded border transition-colors cursor-pointer text-center"
+                :class="manualStatus === st ? 'bg-sky-600 text-white font-bold border-sky-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
+              >
+                {{ st }}
+              </button>
+            </div>
+          </div>
 
-      <!-- 발송 버튼 -->
-      <button
-        @click="sendManualCall"
-        :disabled="!targetCharger.connected"
-        class="w-full py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-2xs"
-        :class="targetCharger.connected ? 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-        </svg>
-        <span>[{{ targetCharger.id }}] 로 {{ selectedAction }} CALL 전문 발송</span>
-      </button>
+          <!-- Authorize / StartTransaction / StopTransaction RFID -->
+          <div v-if="['Authorize', 'StartTransaction', 'StopTransaction'].includes(selectedAction)" class="space-y-2">
+            <label class="block text-[11px] font-bold text-slate-700">RFID 회원 카드번호 (idTag)</label>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button
+                v-for="p in rfidPresets"
+                :key="p.tag"
+                @click="manualRfid = p.tag"
+                class="px-2 py-1 text-[11px] font-mono rounded border transition-colors cursor-pointer"
+                :class="manualRfid === p.tag ? 'bg-sky-600 text-white font-bold border-sky-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
+              >
+                {{ p.label }}
+              </button>
+            </div>
+            <input
+              v-model="manualRfid"
+              class="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+            />
+          </div>
+
+          <!-- StartTransaction / MeterValues 전력량 (Wh) -->
+          <div v-if="['StartTransaction', 'MeterValues'].includes(selectedAction)" class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-700">계측 전력량 (meterValue Wh)</label>
+            <input
+              v-model.number="manualMeterWh"
+              type="number"
+              class="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+            />
+          </div>
+
+          <!-- StopTransaction 종료 사유 -->
+          <div v-if="selectedAction === 'StopTransaction'" class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-700">종료 사유 (Reason)</label>
+            <select
+              v-model="manualStopReason"
+              class="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-mono text-xs"
+            >
+              <option value="Local">Local (사용자 현장 종료)</option>
+              <option value="Remote">Remote (원격 정지)</option>
+              <option value="EVDisconnected">EVDisconnected (차량 커넥터 분리)</option>
+              <option value="EmergencyStop">EmergencyStop (비상 정지)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Raw JSON 편집 모드 -->
+        <div v-else class="space-y-1.5">
+          <label class="block text-[11px] font-bold text-slate-700">JSON Payload 편집</label>
+          <textarea
+            v-model="rawPayloadText"
+            rows="8"
+            class="w-full bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+          ></textarea>
+        </div>
+
+        <!-- 발송 버튼 -->
+        <button
+          @click="sendManualCall"
+          :disabled="!targetCharger.connected"
+          class="w-full py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-2xs"
+          :class="targetCharger.connected ? 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+          <span>[{{ targetCharger.id }}] 로 {{ selectedAction }} CALL 전문 발송</span>
+        </button>
+      </div>
     </div>
 
-    <!-- TAB 2: 충전 라이프사이클 시나리오 러너 -->
-    <div v-else-if="activeSubTab === 'scenario'" class="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
+    <!-- TAB 2: 충전 라이프사이클 시나리오 러너 (Scenario) -->
+    <div v-else-if="activeTab === 'scenario'" class="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
@@ -786,11 +787,67 @@ function handleAbortScenario() {
       </div>
     </div>
 
-    <!-- TAB 3: [3368] CSMS Lite WBS 과제 검증 스위트 -->
-    <TaskVerificationSuite
-      v-else
-      :charger-id="targetCharger.id"
-      :charger="store"
-    />
+    <!-- TAB 3: [3368] CSMS Lite WBS 과제 검증 스위트 (Task Verification) -->
+    <div v-else-if="activeTab === 'verify'">
+      <TaskVerificationSuite
+        :charger-id="targetCharger.id"
+        :charger="store"
+      />
+    </div>
+
+    <!-- TAB 4: 기기 스펙 & 커넥터 정보 (Spec) -->
+    <div v-else-if="activeTab === 'spec'" class="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <h3 class="text-xs font-bold text-slate-900">충전기 하드웨어 스펙 & 커넥터(충전건) 현황</h3>
+        </div>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold">
+          CSMS Lite 표준
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
+          <span class="text-[11px] font-bold text-slate-500">기기 식별자 체계</span>
+          <div class="font-mono text-xs text-slate-800 space-y-1">
+            <div>충전소 ID (ST_ID): <b>{{ targetCharger.stationId }}</b></div>
+            <div>충전기 ID (CP_ID): <b>{{ targetCharger.chargerId }}</b></div>
+            <div>결합 ID (chargeBoxId): <b class="text-sky-700">{{ targetCharger.id }}</b></div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
+          <span class="text-[11px] font-bold text-slate-500">엔드포인트 및 하드웨어</span>
+          <div class="font-mono text-xs text-slate-800 space-y-1 truncate">
+            <div>엔드포인트: <span class="text-slate-600">{{ targetCharger.wsUrl }}</span></div>
+            <div>제조사/모델: <b>{{ targetCharger.vendor }} / {{ targetCharger.model }}</b></div>
+            <div>정격 용량: <b class="text-emerald-700">{{ targetCharger.powerKw }} kW</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 커넥터 목록 -->
+      <div class="space-y-2">
+        <span class="text-[11px] font-bold text-slate-700">채널 커넥터 현황</span>
+        <div class="grid grid-cols-2 gap-2">
+          <div
+            v-for="conn in targetCharger.connectors"
+            :key="conn.connectorId"
+            class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between"
+          >
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center font-mono font-bold text-xs text-slate-700">
+                #{{ conn.connectorId }}
+              </span>
+              <span class="text-xs font-medium text-slate-800">커넥터 {{ conn.connectorId }}</span>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold" :class="conn.status === 'Charging' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'">
+              {{ conn.status }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
