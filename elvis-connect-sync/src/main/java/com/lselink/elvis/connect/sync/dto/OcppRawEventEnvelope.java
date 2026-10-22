@@ -16,6 +16,10 @@ public class OcppRawEventEnvelope {
     public OcppRawEventEnvelope() {
     }
 
+    public OcppRawEventEnvelope(String chargeBoxId, String rawPayload) {
+        this(chargeBoxId, null, null, rawPayload, Instant.now());
+    }
+
     public OcppRawEventEnvelope(String chargeBoxId, String sessionId, String remoteAddress, String rawPayload, Instant receivedAt) {
         this.chargeBoxId = chargeBoxId;
         this.sessionId = sessionId;

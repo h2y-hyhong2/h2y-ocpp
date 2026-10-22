@@ -30,6 +30,25 @@ public interface DltRecoveryService {
                         int retryCount);
 
     /**
+     * 실패한 메시지를 DLT 토픽으로 발행하고 MySQL 원장에 기록 (간이 오버로딩)
+     *
+     * @param chargeBoxId   충전기 ID
+     * @param action        OCPP Action 명
+     * @param rawPayload    수신 원본 전문
+     * @param errorClass    발생 예외 클래스명 또는 에러 코드
+     * @param errorMessage  오류 요약 메시지
+     * @param errorCategory 오류 분류 (NON_RETRYABLE, TRANSIENT, BUSINESS_LOGIC)
+     * @param retryCount    재시도 횟수
+     */
+    void isolateFailure(String chargeBoxId,
+                        String action,
+                        String rawPayload,
+                        String errorClass,
+                        String errorMessage,
+                        com.lselink.elvis.connect.sync.domain.ErrorCategory errorCategory,
+                        int retryCount);
+
+    /**
      * 운영자 수동 재처리: DLT 원장 메시지를 원본 인바운드 토픽으로 재주입
      *
      * @param dltId DLT 식별자

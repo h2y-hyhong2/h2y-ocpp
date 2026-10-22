@@ -39,10 +39,11 @@ public class DltProducer {
     public void sendToDlt(String chargeBoxId, DeadLetterEvent event) {
         String topicName = this.dltTopic;
         String dltId = event.dltId();
-        String partitionKey = chargeBoxId;
-        if (partitionKey == null || partitionKey.isBlank()) {
-            partitionKey = "UNKNOWN";
+        String targetKey = "UNKNOWN";
+        if (chargeBoxId != null && !chargeBoxId.isBlank()) {
+            targetKey = chargeBoxId;
         }
+        final String partitionKey = targetKey;
 
         log.warn("[DltProducer] DLT 격리 발행 시작: topic={}, key={}, dltId={}, errorCategory={}",
                 topicName, partitionKey, dltId, event.errorCategory());
@@ -68,10 +69,11 @@ public class DltProducer {
      */
     public void replayToInboundTopic(String chargeBoxId, String rawPayload) {
         String topicName = this.inboundTopic;
-        String partitionKey = chargeBoxId;
-        if (partitionKey == null || partitionKey.isBlank()) {
-            partitionKey = "REPLAY";
+        String targetKey = "REPLAY";
+        if (chargeBoxId != null && !chargeBoxId.isBlank()) {
+            targetKey = chargeBoxId;
         }
+        final String partitionKey = targetKey;
 
         OcppRawEventEnvelope envelope = new OcppRawEventEnvelope(chargeBoxId, rawPayload);
 

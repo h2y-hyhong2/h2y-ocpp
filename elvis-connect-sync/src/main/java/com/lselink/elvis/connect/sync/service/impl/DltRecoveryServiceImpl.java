@@ -101,6 +101,80 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
 
     @Override
     @Transactional
+    public void isolateFailure(String chargeBoxId,
+                               String action,
+                               String rawPayload,
+                               String errorClass,
+                               String errorMessage,
+                               ErrorCategory errorCategory,
+                               int retryCount) {
+        LocalDateTime failedTime = LocalDateTime.now();
+        String dltId = generateDltId(failedTime);
+        String sourceTopic = "ocpp-raw-events";
+        int sourcePartition = 0;
+        long sourceOffset = 0L;
+
+        ErrorCategory category = ErrorCategory.NON_RETRYABLE;
+        if (errorCategory != null) {
+            category = errorCategory;
+        }
+
+        String exceptionClass = "UnknownException";
+        if (errorClass != null && !errorClass.isBlank()) {
+            exceptionClass = errorClass;
+        }
+
+        String finalErrorMessage = "알 수 없는 오류";
+        if (errorMessage != null && !errorMessage.isBlank()) {
+            finalErrorMessage = errorMessage;
+        }
+
+        String finalPayload = "";
+        if (rawPayload != null) {
+            finalPayload = rawPayload;
+        }
+
+        // 1. MySQL tbl_dlt_history 원장 영속화
+        DltHistory history = DltHistory.builder()
+                .dltId(dltId)
+                .chargeBoxId(chargeBoxId)
+                .sourceTopic(sourceTopic)
+                .sourcePartition(sourcePartition)
+                .sourceOffset(sourceOffset)
+                .errorCategory(category)
+                .exceptionClass(exceptionClass)
+                .errorMessage(finalErrorMessage)
+                .rawPayload(finalPayload)
+                .retryCount(retryCount)
+                .failedDt(failedTime)
+                .build();
+
+        dltHistoryRepository.save(history);
+
+        log.warn("[DltRecovery] 결함 메시지 원장 격리 저장 완료: dltId={}, boxId={}, action={}, category={}, err={}",
+                dltId, chargeBoxId, action, category, finalErrorMessage);
+
+        // 2. Kafka ocpp-dlt 토픽으로 격리 이벤트 발행
+        DeadLetterEvent event = new DeadLetterEvent(
+                dltId,
+                chargeBoxId,
+                sourceTopic,
+                sourcePartition,
+                sourceOffset,
+                finalPayload,
+                category,
+                exceptionClass,
+                finalErrorMessage,
+                retryCount,
+                failedTime,
+                DltStatus.PENDING
+        );
+
+        dltProducer.sendToDlt(chargeBoxId, event);
+    }
+
+    @Override
+    @Transactional
     public boolean replayMessage(String dltId) {
         Optional<DltHistory> optHistory = dltHistoryRepository.findByDltId(dltId);
 

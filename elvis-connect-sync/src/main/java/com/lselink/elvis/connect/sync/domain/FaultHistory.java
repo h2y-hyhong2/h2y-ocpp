@@ -76,7 +76,7 @@ public class FaultHistory {
     private LocalDateTime resolvedDt;
 
     /** 해결 여부 (Y: 해결완료, N: 미해결/장애중) */
-    @Column(name = "is_resolved", length = 1, nullable = false)
+    @Column(name = "is_resolved", columnDefinition = "char(1)", length = 1, nullable = false)
     private String isResolved;
 
     /** 등록일시 */
