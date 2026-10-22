@@ -7,377 +7,215 @@ import {
   type VirtualChargerState
 } from '../types/ocpp'
 
-const STORAGE_KEY = 'elvis_tester_chargers_v3'
+const STORAGE_KEY = 'elvis_tester_chargers_mysql_v1'
+const API_BASE_URL = 'http://127.0.0.1:18082'
 
-const DEFAULT_PRESETS: ChargerInstance[] = [
-  {
-    id: '00000001',
-    name: '강남 테헤란 1호기 (350kW 초급속)',
-    stationId: '000000',
-    chargerId: '01',
+// ─────────────────────────────────────────────────────────────
+// MySQL DB 실시간 연동 및 동기화 상태
+// ─────────────────────────────────────────────────────────────
+const isMysqlSyncing = ref(false)
+const isMysqlConnected = ref(false)
+const mysqlError = ref<string | null>(null)
+const lastSyncedAt = ref<string | null>(null)
+
+// MySQL DTO -> 테스터 충전기 인스턴스 매핑 헬퍼
+function mapDtoToChargerInstance(dto: any): ChargerInstance {
+  const chargeBoxId = String(dto.chargeBoxId || dto.id || '00000001').trim()
+  const stId = String(dto.stId || '000000').trim()
+  const cpId = String(dto.cpId || '01').trim()
+  const powerKw = dto.powerKw && Number(dto.powerKw) > 0 ? Number(dto.powerKw) : 350
+
+  // 듀얼 커넥터 (기본 2개 보장: 커넥터 ID 1, 2)
+  let conns: any[] = []
+  if (Array.isArray(dto.connectors) && dto.connectors.length > 0) {
+    conns = dto.connectors.map((c: any) => ({
+      connectorId: Number(c.connectorId) || 1,
+      status: (c.status && c.status !== '연결안됨') ? c.status : 'Unavailable',
+      type: c.type || 'DC콤보1 (CCS1)',
+      maxPowerKw: Number(c.maxPowerKw) || Math.round(powerKw / 2),
+      voltageV: Number(c.voltageV) || 800,
+      currentA: Number(c.currentA) || 250,
+      socPercent: Number(c.socPercent) || 0,
+      batteryTempC: Number(c.batteryTempC) || 25,
+      carModel: c.carModel || (c.connectorId === 1 ? '아이오닉5 (현대)' : 'EV6 (기아)'),
+      userTag: c.userTag || (c.connectorId === 1 ? 'CARD-CORP-9901' : 'CARD-USER-1001'),
+      accumulatedKwh: Number(c.accumulatedKwh) || 0
+    }))
+  }
+
+  if (conns.length === 0) {
+    conns.push({
+      connectorId: 1,
+      status: 'Unavailable',
+      type: 'DC콤보1 (CCS1)',
+      maxPowerKw: Math.round(powerKw / 2),
+      voltageV: 800,
+      currentA: 250,
+      socPercent: 0,
+      batteryTempC: 25,
+      carModel: '아이오닉5 (현대)',
+      userTag: 'CARD-CORP-9901',
+      accumulatedKwh: 0
+    })
+  }
+  if (conns.length === 1) {
+    conns.push({
+      connectorId: 2,
+      status: 'Unavailable',
+      type: 'DC콤보1 (CCS1)',
+      maxPowerKw: Math.round(powerKw / 2),
+      voltageV: 800,
+      currentA: 250,
+      socPercent: 0,
+      batteryTempC: 25,
+      carModel: 'EV6 (기아)',
+      userTag: 'CARD-USER-1001',
+      accumulatedKwh: 0
+    })
+  }
+
+  return {
+    id: chargeBoxId,
+    name: dto.stationName ? `${dto.stationName} ${cpId}호기` : `충전소 ${cpId}호기`,
+    stationId: stId,
+    chargerId: cpId,
+    stationName: dto.stationName || '서울 강남 테헤란로 하이퍼차징 스테이션',
+    corpName: dto.corpName || '(주)LS E-Link (본사 직영)',
+    addr: dto.addr || '서울특별시 강남구 테헤란로 152',
+    spec: dto.spec || `${powerKw}kW 초급속 듀얼 (DC콤보1)`,
+    protocol: dto.protocol || 'OCPP 1.6-J',
+    firmwareVer: dto.firmwareVer || '1.0.0-RELEASE',
+    useYn: dto.useYn || 'Y',
     wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-HPC-350K',
-    powerKw: 350,
-    status: 'Unavailable',
+    vendor: dto.vendor || 'LS E-Link Power',
+    model: dto.model || 'ELVIS-HPC-350K',
+    powerKw: powerKw,
+    status: (dto.status && dto.status !== '연결안됨') ? dto.status : 'Unavailable',
     connected: false,
     connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
+    connectors: conns,
     activeConnectorId: 1,
     transactionId: null,
-    meterValueWh: 100000,
-    soc: 25,
-    voltage: 380.0,
-    current: 125.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000002',
-    name: '강남 테헤란 2호기 (350kW 초급속)',
-    stationId: '000000',
-    chargerId: '02',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-HPC-350K',
-    powerKw: 350,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 102000,
-    soc: 30,
-    voltage: 380.0,
-    current: 125.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000003',
-    name: '강남 테헤란 3호기 (200kW 급속)',
-    stationId: '000000',
-    chargerId: '03',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-QC-200K',
-    powerKw: 200,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 80500,
-    soc: 20,
-    voltage: 380.0,
-    current: 100.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000004',
-    name: '강남 테헤란 4호기 (200kW 급속)',
-    stationId: '000000',
-    chargerId: '04',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-QC-200K',
-    powerKw: 200,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 95000,
-    soc: 40,
-    voltage: 380.0,
-    current: 100.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000005',
-    name: '강남 테헤란 5호기 (100kW 급속)',
-    stationId: '000000',
-    chargerId: '05',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-QC-100K',
-    powerKw: 100,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 60000,
-    soc: 15,
-    voltage: 380.0,
-    current: 80.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000006',
-    name: '강남 테헤란 6호기 (100kW 급속)',
-    stationId: '000000',
-    chargerId: '06',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-QC-100K',
-    powerKw: 100,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 72000,
-    soc: 50,
-    voltage: 380.0,
-    current: 80.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000007',
-    name: '강남 테헤란 7호기 (100kW 급속)',
-    stationId: '000000',
-    chargerId: '07',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-QC-100K',
-    powerKw: 100,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 54000,
-    soc: 35,
-    voltage: 380.0,
-    current: 80.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000008',
-    name: '강남 테헤란 8호기 (50kW 중급속)',
-    stationId: '000000',
-    chargerId: '08',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-MC-50K',
-    powerKw: 50,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 43000,
-    soc: 60,
-    voltage: 380.0,
-    current: 40.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000009',
-    name: '강남 테헤란 9호기 (50kW 중급속)',
-    stationId: '000000',
-    chargerId: '09',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-MC-50K',
-    powerKw: 50,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 38000,
-    soc: 45,
-    voltage: 380.0,
-    current: 40.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
-    scenarioRunning: false,
-    scenarioStep: '',
-    scenarioProgress: 0
-  },
-  {
-    id: '00000010',
-    name: '강남 테헤란 10호기 (50kW 중급속)',
-    stationId: '000000',
-    chargerId: '10',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
-    vendor: 'LS E-Link',
-    model: 'ELVIS-MC-50K',
-    powerKw: 50,
-    status: 'Unavailable',
-    connected: false,
-    connecting: false,
-    connectors: [
-      { connectorId: 1, status: 'Unavailable' },
-      { connectorId: 2, status: 'Unavailable' }
-    ],
-    activeConnectorId: 1,
-    transactionId: null,
-    meterValueWh: 29000,
-    soc: 70,
-    voltage: 380.0,
-    current: 40.0,
-    autoHeartbeat: false,
-    autoMeterValues: false,
+    meterValueWh: dto.accumulatedKwh ? Math.round(Number(dto.accumulatedKwh) * 1000) : 100000,
+    soc: dto.socPercent || 25,
+    voltage: dto.voltageV || 380.0,
+    current: dto.currentA || 125.0,
+    heartbeatIntervalSec: 60,
+    autoHeartbeat: true,
+    autoBootOnConnect: true,
+    autoReply: true,
+    autoMeterValues: true,
+    autoMeterIntervalSec: 10,
     scenarioRunning: false,
     scenarioStep: '',
     scenarioProgress: 0
   }
-]
+}
 
-// ─────────────────────────────────────────────────────────────
-// 글로벌 싱글톤 상태 (전역 공유)
-// ─────────────────────────────────────────────────────────────
+// MySQL 초기 시드 폴백
+const FALLBACK_MYSQL_CHARGER: ChargerInstance = mapDtoToChargerInstance({
+  chargeBoxId: '00000001',
+  stId: '000000',
+  cpId: '01',
+  stationName: '서울 강남 테헤란로 하이퍼차징 스테이션',
+  corpName: '(주)LS E-Link (본사 직영)',
+  vendor: 'LS E-Link Power',
+  model: 'ELVIS-HPC-350K',
+  spec: '350kW 초급속',
+  protocol: 'OCPP 1.6-J',
+  powerKw: 350
+})
+
 function initChargers(): ChargerInstance[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((item: any) => ({
-          ...item,
-          stationName: item.stationName || '강남 테헤란 충전스테이션',
-          corpName: item.corpName || 'LS E-Link',
-          addr: item.addr || '서울특별시 강남구 테헤란로 128 지상 1층',
-          spec: item.spec || `${item.powerKw || 350}kW 급속 듀얼 (DC콤보1)`,
-          protocol: item.protocol || 'OCPP 1.6-J',
-          firmwareVer: item.firmwareVer || '1.0.0-RELEASE',
-          useYn: item.useYn || 'Y',
-          status: 'Unavailable',
-          connectors: (item.connectors && item.connectors.length >= 2)
-            ? item.connectors.map((cn: any) => ({
-                connectorId: cn.connectorId,
-                status: 'Unavailable',
-                type: cn.type || 'DC콤보1 (CCS1)',
-                maxPowerKw: cn.maxPowerKw || Math.round((item.powerKw || 350) / 2),
-                voltageV: cn.voltageV || 800,
-                currentA: cn.currentA || 250,
-                carModel: cn.carModel || (cn.connectorId === 1 ? 'IONIQ 5 (현대)' : 'EV6 (기아)'),
-                userTag: cn.userTag || (cn.connectorId === 1 ? 'CARD-CORP-9901' : 'CARD-USER-1001'),
-                accumulatedKwh: cn.accumulatedKwh || 5240.5
-              }))
-            : [
-                {
-                  connectorId: 1,
-                  status: 'Unavailable',
-                  type: 'DC콤보1 (CCS1)',
-                  maxPowerKw: Math.round((item.powerKw || 350) / 2),
-                  voltageV: 800,
-                  currentA: 250,
-                  carModel: 'IONIQ 5 (현대)',
-                  userTag: 'CARD-CORP-9901',
-                  accumulatedKwh: 5240.5
-                },
-                {
-                  connectorId: 2,
-                  status: 'Unavailable',
-                  type: 'DC콤보1 (CCS1)',
-                  maxPowerKw: Math.round((item.powerKw || 350) / 2),
-                  voltageV: 800,
-                  currentA: 250,
-                  carModel: 'EV6 (기아)',
-                  userTag: 'CARD-USER-1001',
-                  accumulatedKwh: 3410.2
-                }
-              ],
+        return parsed.map(c => ({
+          ...c,
           connected: false,
           connecting: false,
-          heartbeatIntervalSec: Number(item.heartbeatIntervalSec) || 60,
-          autoHeartbeat: item.autoHeartbeat !== undefined ? Boolean(item.autoHeartbeat) : true,
-          autoBootOnConnect: item.autoBootOnConnect !== undefined ? Boolean(item.autoBootOnConnect) : true,
-          autoReply: item.autoReply !== undefined ? Boolean(item.autoReply) : true,
-          autoMeterValues: item.autoMeterValues !== undefined ? Boolean(item.autoMeterValues) : true,
-          autoMeterIntervalSec: Number(item.autoMeterIntervalSec) || 10,
-          scenarioRunning: false,
-          scenarioStep: '',
-          scenarioProgress: 0
+          status: 'Unavailable',
+          scenarioRunning: false
         }))
       }
     }
   } catch (e) {
-    console.warn('Failed to parse cached chargers, falling back to defaults:', e)
+    console.warn('[MySQL Sync] 로컬 캐시 파싱 실패:', e)
   }
-  return DEFAULT_PRESETS.map(item => ({
-    ...item,
-    heartbeatIntervalSec: 60,
-    autoHeartbeat: true,
-    autoBootOnConnect: true,
-    autoReply: true,
-    autoMeterValues: true,
-    autoMeterIntervalSec: 10
-  }))
+  return [FALLBACK_MYSQL_CHARGER]
 }
 
 const chargers = reactive<ChargerInstance[]>(initChargers())
 const selectedChargerId = ref<string>(chargers[0]?.id || '00000001')
 const selectedIdTag = ref<string>('CARD-CORP-9901')
+
+// MySQL 백엔드 API(18082)에서 실제 DB 충전기 목록 동기화
+async function fetchChargersFromMysql(): Promise<boolean> {
+  isMysqlSyncing.value = true
+  mysqlError.value = null
+  try {
+    const resp = await fetch(`${API_BASE_URL}/api/v1/chargers`)
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`)
+    }
+    const json = await resp.json()
+    if (!json.success || !Array.isArray(json.data)) {
+      throw new Error(json.message || '유효하지 않은 MySQL 응답 포맷')
+    }
+
+    const fetchedList = json.data.map(mapDtoToChargerInstance)
+
+    // 기존 연결 상태 보존 병합
+    const mergedList = fetchedList.map(newC => {
+      const existing = chargers.find(c => c.id === newC.id)
+      if (existing) {
+        return {
+          ...newC,
+          connected: existing.connected,
+          connecting: existing.connecting,
+          status: existing.connected ? existing.status : newC.status,
+          activeConnectorId: existing.activeConnectorId || 1,
+          transactionId: existing.transactionId,
+          meterValueWh: existing.meterValueWh,
+          soc: existing.soc,
+          autoHeartbeat: existing.autoHeartbeat,
+          autoBootOnConnect: existing.autoBootOnConnect,
+          autoReply: existing.autoReply,
+          autoMeterValues: existing.autoMeterValues,
+          autoMeterIntervalSec: existing.autoMeterIntervalSec,
+          heartbeatIntervalSec: existing.heartbeatIntervalSec,
+          scenarioRunning: existing.scenarioRunning,
+          scenarioStep: existing.scenarioStep,
+          scenarioProgress: existing.scenarioProgress
+        }
+      }
+      return newC
+    })
+
+    chargers.splice(0, chargers.length, ...mergedList)
+    if (!chargers.some(c => c.id === selectedChargerId.value) && chargers.length > 0) {
+      selectedChargerId.value = chargers[0].id
+    }
+    isMysqlConnected.value = true
+    lastSyncedAt.value = formatTimestamp()
+    saveChargersToStorage()
+    console.log(`[MySQL Sync] MySQL에서 ${chargers.length}기의 충전기 데이터를 성공적으로 동기화했습니다.`)
+    return true
+  } catch (err: any) {
+    console.error('[MySQL Sync Failed]', err)
+    mysqlError.value = err.message || 'MySQL 백엔드 API(18082) 통신 오류'
+    isMysqlConnected.value = false
+    return false
+  } finally {
+    isMysqlSyncing.value = false
+  }
+}
+
+// 모듈 로드 시 즉시 백엔드 MySQL 동기화 시도
+fetchChargersFromMysql()
+
 const logs = ref<OcppLogEntry[]>([])
 const terminalSearchQuery = ref<string>('')
 
@@ -1579,6 +1417,11 @@ export function useVirtualCharger() {
     runFullChargeScenario,
     runBootSequence,
     abortScenario,
-    clearLogs
+    clearLogs,
+    fetchChargersFromMysql,
+    isMysqlSyncing,
+    isMysqlConnected,
+    mysqlError,
+    lastSyncedAt
   }
 }

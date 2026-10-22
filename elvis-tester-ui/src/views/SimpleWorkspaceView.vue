@@ -34,11 +34,11 @@ function handleOpenEditModal(charger: ChargerInstance) {
 const leftPanelWidth = ref(400)
 const isLeftResizing = ref(false)
 
-// 중앙 전문 제어 및 시나리오 패널 너비 (기본 500px)
-const centerPanelWidth = ref(500)
+// 중앙 전문 제어 및 시나리오 패널 너비 (기본 650px)
+const centerPanelWidth = ref(650)
 const isCenterResizing = ref(false)
 let centerResizeStartX = 0
-let centerResizeStartWidth = 500
+let centerResizeStartWidth = 650
 
 // 하단 마스터 데이터 도크 패널 (기본 접힘, 펼쳤을 때 높이 280px)
 const isMasterDataDockOpen = ref(false)
@@ -185,7 +185,7 @@ function stopDockResize() {
         v-if="isTerminalOpen"
         class="w-1.5 hover:w-2 bg-slate-200 hover:bg-sky-400 active:bg-sky-600 transition-colors cursor-col-resize flex items-center justify-center flex-shrink-0 z-20 group"
         @mousedown="startCenterResize"
-        title="드래그하여 중앙 패널 너비 조절 (기본 500px)"
+        title="드래그하여 중앙 패널 너비 조절 (기본 650px)"
       >
         <div class="w-0.5 h-6 bg-slate-400 group-hover:bg-white rounded-full"></div>
       </div>
