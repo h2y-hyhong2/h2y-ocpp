@@ -448,7 +448,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     docFileName: '✅ S25-API-0010-TE Spring Boot 프로젝트 스캐폴딩 검증.md',
     description: 'ApiResponse, PageResponse 공통 규격, 전역 예외 처리(GlobalExceptionHandler) 및 CORS 검증',
     sequenceSteps: [
-      'Spring Boot 3.4 / Java 21 기반 elvis-control-api 모듈 기동 및 포트 18082 수신 확인',
+      'Spring Boot 3.4 / Java 21 기반 elvis-control-api 모듈 기동 및 포트 9082 수신 확인',
       '전역 공통 응답 포맷(ApiResponse<T>) 및 에러 핸들러 정상 래핑 확인',
       'Tauri 데스크톱(http://localhost:1421, 1422) CORS 허용 헤더 검증'
     ],
@@ -828,7 +828,7 @@ async function executeInteractiveTsTest(endpoint: 'chart' | 'summary' | 'station
   tsTestLoading.value = true
   const cid = customTargetId || props.chargerId || '00000001'
   const stationId = cid.length >= 6 ? cid.substring(0, 6) : '000000'
-  const apiBase = 'http://localhost:18082/api/v1/metrics/timeseries'
+  const apiBase = 'http://localhost:9082/api/v1/metrics/timeseries'
   const startT = performance.now()
 
   let url = ''
@@ -857,7 +857,7 @@ async function executeInteractiveTsTest(endpoint: 'chart' | 'summary' | 'station
       endpoint: url,
       status: 0,
       elapsedMs: elapsed,
-      data: { error: err.message || '네트워크 연결 오류 (elvis-control-api:18082 확인 필요)' },
+      data: { error: err.message || '네트워크 연결 오류 (elvis-control-api:9082 확인 필요)' },
       testedAt: new Date().toLocaleTimeString('ko-KR')
     }
   } finally {
@@ -879,7 +879,7 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
 
   // [S27-DATA-0020-TE] ClickHouse 시계열 통계 API 실제 백엔드 호출 검증
   if (task.id === 'S27-DATA-0020-TE') {
-    const apiBase = 'http://localhost:18082/api/v1/metrics/timeseries'
+    const apiBase = 'http://localhost:9082/api/v1/metrics/timeseries'
     const stationId = targetId.length >= 6 ? targetId.substring(0, 6) : '000000'
 
     try {
@@ -914,7 +914,7 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
       const isLiveSuccess = chartRes?.ok && summaryRes?.ok
       task.status = 'pass'
       task.resultSummary = isLiveSuccess
-        ? `✅ PASS: [${task.id}] elvis-control-api(18082) 실시간 통신 및 24h/5m 다운샘플링 정상 검증 (${elapsed}ms)`
+        ? `✅ PASS: [${task.id}] elvis-control-api(9082) 실시간 통신 및 24h/5m 다운샘플링 정상 검증 (${elapsed}ms)`
         : `✅ PASS: [${task.id}] ClickHouse 미가동 Graceful Degradation 회복성(200 OK) 방어 검증 (${elapsed}ms)`
 
       task.responsePayload = JSON.stringify(
@@ -929,7 +929,7 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
           testedChargerId: targetId,
           testedStationId: stationId,
           backendApiUrl: apiBase,
-          serverPort: 18082,
+          serverPort: 9082,
           httpStatus: chartRes?.status || 200,
           elapsedMs: elapsed,
           testedAt: new Date().toISOString(),
@@ -983,7 +983,7 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
 
   // [S26-API-0020-TE] 자산 및 실시간 상태 API 실제 백엔드 호출 검증
   if (task.id === 'S26-API-0020-TE') {
-    const apiBase = 'http://localhost:18082/api/v1/chargers'
+    const apiBase = 'http://localhost:9082/api/v1/chargers'
     try {
       const chargerRes = await fetch(`${apiBase}/${targetId}`, { headers: { Accept: 'application/json' } }).catch(() => null)
       const summaryRes = await fetch(`${apiBase}/summary`, { headers: { Accept: 'application/json' } }).catch(() => null)
@@ -1013,7 +1013,7 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
   // [S25-API-0010-TE] REST API 스캐폴딩 검증
   if (task.id === 'S25-API-0010-TE') {
     try {
-      const healthRes = await fetch('http://localhost:18082/actuator/health', { headers: { Accept: 'application/json' } }).catch(() => null)
+      const healthRes = await fetch('http://localhost:9082/actuator/health', { headers: { Accept: 'application/json' } }).catch(() => null)
       const elapsed = Math.round(performance.now() - startTime)
       task.elapsedMs = elapsed
       task.testedAt = new Date().toLocaleTimeString('ko-KR')
@@ -1400,7 +1400,7 @@ function copyPayload(payload?: string) {
               <div class="flex items-center gap-1.5">
                 <span class="text-sm">⚡</span>
                 <span class="text-xs font-bold text-indigo-900">ClickHouse 시계열 API 실시간 인터랙티브 테스터</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold">Port 18082</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold">Port 9082</span>
               </div>
               <span class="text-[10px] text-slate-500 font-mono">대상 단말: {{ props.chargerId || '00000001' }}</span>
             </div>

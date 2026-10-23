@@ -1,6 +1,7 @@
 package com.lselink.elvis.control.controller;
 
 import com.lselink.elvis.control.common.ApiResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,12 +17,15 @@ import java.util.Map;
 @RequestMapping("/api/v1/health")
 public class HealthCheckController {
 
+    @Value("${server.port:9082}")
+    private int serverPort;
+
     @GetMapping
     public ApiResponse<Map<String, Object>> checkHealth() {
         Map<String, Object> statusMap = new LinkedHashMap<>();
         statusMap.put("status", "UP");
         statusMap.put("service", "elvis-control-api");
-        statusMap.put("port", 18082);
+        statusMap.put("port", serverPort);
         statusMap.put("version", "1.0.0-poc");
         statusMap.put("systemTime", Instant.now().toString());
 

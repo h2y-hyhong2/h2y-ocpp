@@ -29,9 +29,9 @@ fn check_single_port(port: u16) -> bool {
 fn check_all_service_ports() -> (bool, bool, bool, bool, bool, usize) {
     let mysql = check_single_port(13306);
     let kafka = check_single_port(19092);
-    let ws = check_single_port(18080);
-    let sync = check_single_port(18081);
-    let api = check_single_port(18082);
+    let ws = check_single_port(9080);
+    let sync = check_single_port(9081);
+    let api = check_single_port(9082);
     let mut count = 0;
     if mysql { count += 1; }
     if kafka { count += 1; }
@@ -152,22 +152,22 @@ fn update_tray_status_view(
     if p_ws == 1 {
         if ws {
             PENDING_WS.store(0, Ordering::Relaxed);
-            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:18080) [ON]");
+            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:9080) [ON]");
         } else {
-            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:18080) [기동 중...]");
+            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:9080) [기동 중...]");
         }
     } else if p_ws == 2 {
         if !ws {
             PENDING_WS.store(0, Ordering::Relaxed);
-            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:18080) [OFF]");
+            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:9080) [OFF]");
         } else {
-            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:18080) [종료 중...]");
+            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:9080) [종료 중...]");
         }
     } else {
         if ws {
-            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:18080) [ON]");
+            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:9080) [ON]");
         } else {
-            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:18080) [OFF]");
+            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:9080) [OFF]");
         }
     }
 
@@ -176,22 +176,22 @@ fn update_tray_status_view(
     if p_sync == 1 {
         if sync {
             PENDING_SYNC.store(0, Ordering::Relaxed);
-            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:18081) [ON]");
+            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:9081) [ON]");
         } else {
-            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:18081) [기동 중...]");
+            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:9081) [기동 중...]");
         }
     } else if p_sync == 2 {
         if !sync {
             PENDING_SYNC.store(0, Ordering::Relaxed);
-            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:18081) [OFF]");
+            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:9081) [OFF]");
         } else {
-            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:18081) [종료 중...]");
+            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:9081) [종료 중...]");
         }
     } else {
         if sync {
-            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:18081) [ON]");
+            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:9081) [ON]");
         } else {
-            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:18081) [OFF]");
+            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:9081) [OFF]");
         }
     }
 
@@ -200,22 +200,22 @@ fn update_tray_status_view(
     if p_api == 1 {
         if api {
             PENDING_API.store(0, Ordering::Relaxed);
-            let _ = api_item.set_text("● [코어] elvis-control-api (:18082) [ON]");
+            let _ = api_item.set_text("● [코어] elvis-control-api (:9082) [ON]");
         } else {
-            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18082) [기동 중...]");
+            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:9082) [기동 중...]");
         }
     } else if p_api == 2 {
         if !api {
             PENDING_API.store(0, Ordering::Relaxed);
-            let _ = api_item.set_text("○ [코어] elvis-control-api (:18082) [OFF]");
+            let _ = api_item.set_text("○ [코어] elvis-control-api (:9082) [OFF]");
         } else {
-            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:18082) [종료 중...]");
+            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:9082) [종료 중...]");
         }
     } else {
         if api {
-            let _ = api_item.set_text("● [코어] elvis-control-api (:18082) [ON]");
+            let _ = api_item.set_text("● [코어] elvis-control-api (:9082) [ON]");
         } else {
-            let _ = api_item.set_text("○ [코어] elvis-control-api (:18082) [OFF]");
+            let _ = api_item.set_text("○ [코어] elvis-control-api (:9082) [OFF]");
         }
     }
 
@@ -306,11 +306,11 @@ fn check_middleware_status(
 ) -> serde_json::Value {
     let p_mysql = mysql_port.unwrap_or(13306);
     let p_kafka = kafka_port.unwrap_or(19092);
-    let p_api = api_port.unwrap_or(18082);
-    let p_ws = ws_port.unwrap_or(18080);
-    let p_sync = sync_port.unwrap_or(18081);
+    let p_api = api_port.unwrap_or(9082);
+    let p_ws = ws_port.unwrap_or(9080);
+    let p_sync = sync_port.unwrap_or(9081);
     let p_clickhouse = clickhouse_port.unwrap_or(8123);
-    let p_clickhouse_data = clickhouse_data_port.unwrap_or(18083);
+    let p_clickhouse_data = clickhouse_data_port.unwrap_or(9083);
 
     let kafka = check_single_port(p_kafka);
     let mysql = check_single_port(p_mysql);
@@ -375,35 +375,31 @@ fn execute_bat_script(script_file: &str, service_name: &str) -> Result<String, S
     {
         use std::os::windows::process::CommandExt;
         use std::process::Command;
+        // CREATE_NO_WINDOW: GUI 앱(Tauri)에서 powershell 기동 시 콘솔 창 깜빡임 방지
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-        const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
+        let daemon_script = find_script_file("run-daemon.ps1")?;
+        let cwd = daemon_script.parent().unwrap();
 
-        let target_bat = find_script_file(script_file)?;
-        let cwd = target_bat.parent().unwrap();
-
-        let log_dir = std::path::PathBuf::from("D:\\elvis-lite\\logs");
-        if !log_dir.exists() {
-            let _ = std::fs::create_dir_all(&log_dir);
-        }
-        let log_file_path = log_dir.join(format!("{}.log", service_name));
-
-        let bat_str = target_bat.to_str().ok_or("배치 스크립트 경로 변환 실패")?;
-        let log_str = log_file_path.to_str().ok_or("로그 경로 변환 실패")?;
-
-        // 런처(vite.config.ts)의 무창 백그라운드 기동 방식과 100% 동일하게 구성:
-        // cmd.exe /c start /b cmd /c "call \"bat_path\" >> \"log_path\" 2>&1"
-        // Rust의 자동 따옴표 이스케이프 문제를 피하기 위해 Windows raw_arg 사용
-        let raw_cmd = format!(
-            "/c start /b cmd /c \"call \"{}\" >> \"{}\" 2>&1\"",
-            bat_str, log_str
-        );
-
-        Command::new("cmd")
-            .raw_arg(&raw_cmd)
+        // run-daemon.ps1 (WMI Win32_Process.Create)를 통해 런처(Tauri) 프로세스 트리와 완전히 분리된 무창 독립 데몬으로 기동
+        // 런처 창을 닫거나 런처 앱이 종료되어도 MySQL, Kafka, ClickHouse 및 코어 프로세스가 종료되지 않고 유지됨
+        Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-WindowStyle",
+                "Hidden",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                daemon_script.to_str().unwrap(),
+                "-BatName",
+                script_file,
+                "-ServiceName",
+                service_name,
+            ])
             .current_dir(cwd)
             .env("NO_PAUSE", "1")
-            .creation_flags(CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP)
+            .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("프로세스 기동 실패: {}", e))?;
 
@@ -432,24 +428,27 @@ fn start_all_services_sequence() {
 fn stop_service_processes(service: &str) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
         use std::process::Command;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         let cmd = match service {
             "kafka" => "Get-NetTCPConnection -LocalPort 19092,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache Kafka*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
             "mysql" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,3306 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null",
-            "ws" => "Get-NetTCPConnection -LocalPort 18080 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect WS*\" 2>$null",
-            "sync" => "Get-NetTCPConnection -LocalPort 18081 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect Sync*\" 2>$null",
-            "api" => "Get-NetTCPConnection -LocalPort 18082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control API*\" 2>$null",
+            "ws" => "Get-NetTCPConnection -LocalPort 9080 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect WS*\" 2>$null",
+            "sync" => "Get-NetTCPConnection -LocalPort 9081 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect Sync*\" 2>$null",
+            "api" => "Get-NetTCPConnection -LocalPort 9082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control API*\" 2>$null",
             "clickhouse" => "Get-NetTCPConnection -LocalPort 8123 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null",
-            "clickhouse-data" => "Get-NetTCPConnection -LocalPort 18083 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse Bulk*\" 2>$null",
-            "all-extensions" => "Get-NetTCPConnection -LocalPort 8123,18083 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null",
-            "all-services" => "Get-NetTCPConnection -LocalPort 18080,18081,18082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null",
+            "clickhouse-data" => "Get-NetTCPConnection -LocalPort 9083 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse Bulk*\" 2>$null",
+            "all-extensions" => "Get-NetTCPConnection -LocalPort 8123,9083 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null",
+            "all-services" => "Get-NetTCPConnection -LocalPort 9080,9081,9082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null",
             "all-infra" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache Kafka*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
-            "all" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,18080,18081,18082,8123,18083,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+            "all" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,9080,9081,9082,8123,9083,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
             _ => return Err("지원되지 않는 서비스입니다.".to_string()),
         };
 
         let _ = Command::new("powershell")
             .args(["-Command", cmd])
+            .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("중지 실패: {}", e))?;
 
@@ -523,12 +522,12 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
         let (mut log_file_name, display_name) = match svc.as_str() {
             "mysql" => ("mysql.log".to_string(), "MySQL 9.71 (:13306)"),
             "kafka" => ("kafka.log".to_string(), "Apache Kafka (:19092)"),
-            "ws" => ("ws.log".to_string(), "elvis-connect-ws (:18080)"),
-            "sync" => ("sync.log".to_string(), "elvis-connect-sync (:18081)"),
-            "api" => ("api.log".to_string(), "elvis-control-api (:18082)"),
+            "ws" => ("ws.log".to_string(), "elvis-connect-ws (:9080)"),
+            "sync" => ("sync.log".to_string(), "elvis-connect-sync (:9081)"),
+            "api" => ("api.log".to_string(), "elvis-control-api (:9082)"),
             "clickhouse" => ("clickhouse.log".to_string(), "ClickHouse v26.7 (:8123)"),
-            "clickhouse-data" => ("clickhouse-data.log".to_string(), "elvis-data-clickhouse (:18083)"),
-            "tester" => ("tester.log".to_string(), "elvis-tester (:8085)"),
+            "clickhouse-data" => ("clickhouse-data.log".to_string(), "elvis-data-clickhouse (:9083)"),
+            "tester" => ("tester.log".to_string(), "elvis-tester (:9085)"),
             _ => ("mysql.log".to_string(), "서비스"),
         };
 
@@ -692,7 +691,7 @@ fn open_process_status_window(target: Option<String>) -> Result<String, String> 
         let target_arg = target.unwrap_or_else(|| "all".to_string());
         let cwd = target_bat.parent().unwrap();
         Command::new("cmd")
-            .args(["/c", "start", win_title, target_bat.to_str().unwrap(), &target_arg])
+            .args(["/c", "start", win_title, "cmd", "/c", "call", target_bat.to_str().unwrap(), &target_arg])
             .current_dir(cwd)
             .spawn()
             .map_err(|e| format!("프로세스 진단창 실행 실패: {}", e))?;
@@ -753,9 +752,9 @@ pub fn run() {
             let sep_infra = PredefinedMenuItem::separator(app)?;
 
             // 2. 코어 백엔드 엔진 상태 (클릭 시 단독 기동/종료 토글)
-            let ws_i = MenuItem::with_id(app, "status_ws", "○ [코어] elvis-connect-ws (:18080) [OFF]", true, None::<&str>)?;
-            let sync_i = MenuItem::with_id(app, "status_sync", "○ [코어] elvis-connect-sync (:18081) [OFF]", true, None::<&str>)?;
-            let api_i = MenuItem::with_id(app, "status_api", "○ [코어] elvis-control-api (:18082) [OFF]", true, None::<&str>)?;
+            let ws_i = MenuItem::with_id(app, "status_ws", "○ [코어] elvis-connect-ws (:9080) [OFF]", true, None::<&str>)?;
+            let sync_i = MenuItem::with_id(app, "status_sync", "○ [코어] elvis-connect-sync (:9081) [OFF]", true, None::<&str>)?;
+            let api_i = MenuItem::with_id(app, "status_api", "○ [코어] elvis-control-api (:9082) [OFF]", true, None::<&str>)?;
 
             let sep2 = PredefinedMenuItem::separator(app)?;
 
@@ -858,11 +857,11 @@ pub fn run() {
                             let (_, _, ws, ..) = check_all_service_ports();
                             if ws {
                                 PENDING_WS.store(2, Ordering::Relaxed);
-                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:18080) [종료 중...]");
+                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:9080) [종료 중...]");
                                 trigger_ui_command(app, "stop", "ws");
                             } else {
                                 PENDING_WS.store(1, Ordering::Relaxed);
-                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:18080) [기동 중...]");
+                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:9080) [기동 중...]");
                                 trigger_ui_command(app, "start", "ws");
                             }
                         }
@@ -870,11 +869,11 @@ pub fn run() {
                             let (_, _, _, sync, ..) = check_all_service_ports();
                             if sync {
                                 PENDING_SYNC.store(2, Ordering::Relaxed);
-                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:18081) [종료 중...]");
+                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:9081) [종료 중...]");
                                 trigger_ui_command(app, "stop", "sync");
                             } else {
                                 PENDING_SYNC.store(1, Ordering::Relaxed);
-                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:18081) [기동 중...]");
+                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:9081) [기동 중...]");
                                 trigger_ui_command(app, "start", "sync");
                             }
                         }
@@ -882,11 +881,11 @@ pub fn run() {
                             let (_, _, _, _, api, ..) = check_all_service_ports();
                             if api {
                                 PENDING_API.store(2, Ordering::Relaxed);
-                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18082) [종료 중...]");
+                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:9082) [종료 중...]");
                                 trigger_ui_command(app, "stop", "api");
                             } else {
                                 PENDING_API.store(1, Ordering::Relaxed);
-                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:18082) [기동 중...]");
+                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:9082) [기동 중...]");
                                 trigger_ui_command(app, "start", "api");
                             }
                         }

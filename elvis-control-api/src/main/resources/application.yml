@@ -1,5 +1,5 @@
 server:
-  port: 18082
+  port: ${API_PORT:9082}
 
 spring:
   application:

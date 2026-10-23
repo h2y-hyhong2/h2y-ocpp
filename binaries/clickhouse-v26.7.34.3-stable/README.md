@@ -44,7 +44,7 @@ chmod +x clickhouse
 
 ### Step 3. ClickHouse Server 기동 (Windows 호스트 바인딩)
 
-Windows 호스트의 Spring Boot(`elvis-data-clickhouse`, 포트 18083) 또는 호스트 브라우저에서 접근하려면 반드시 `--listen_host=0.0.0.0` 인자를 전달해야 합니다.
+Windows 호스트의 Spring Boot(`elvis-data-clickhouse`, 포트 9083) 또는 호스트 브라우저에서 접근하려면 반드시 `--listen_host=0.0.0.0` 인자를 전달해야 합니다.
 
 ```bash
 # 포어그라운드(Foreground) 실행 (로그 실시간 확인)
@@ -137,7 +137,7 @@ ClickHouse 서버가 정상 기동되면 백엔드 모듈을 실행합니다.
 ./gradlew :elvis-data-clickhouse:bootRun
 ```
 
-- **모듈 포트:** `18083`
+- **모듈 포트:** `9083`
 - **JDBC 연결 URL:** `jdbc:ch://localhost:8123/elvis_poc`
 - **Kafka 입력 토픽:** `meter-values.raw` (Kafka 19092 포트 기동 필요)
 

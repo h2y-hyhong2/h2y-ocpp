@@ -8,7 +8,7 @@ import {
 } from '../types/ocpp'
 
 const STORAGE_KEY = 'elvis_tester_chargers_mysql_v1'
-const API_BASE_URL = 'http://127.0.0.1:18082'
+const API_BASE_URL = 'http://127.0.0.1:9082'
 
 // ─────────────────────────────────────────────────────────────
 // MySQL DB 실시간 연동 및 동기화 상태
@@ -86,7 +86,7 @@ function mapDtoToChargerInstance(dto: any): ChargerInstance {
     protocol: dto.protocol || 'OCPP 1.6-J',
     firmwareVer: dto.firmwareVer || '1.0.0-RELEASE',
     useYn: dto.useYn || 'Y',
-    wsUrl: 'ws://127.0.0.1:18080/ocpp',
+    wsUrl: 'ws://127.0.0.1:9080/ocpp',
     vendor: dto.vendor || 'LS E-Link Power',
     model: dto.model || 'ELVIS-HPC-350K',
     powerKw: powerKw,
@@ -151,7 +151,7 @@ const chargers = reactive<ChargerInstance[]>(initChargers())
 const selectedChargerId = ref<string>(chargers[0]?.id || '00000001')
 const selectedIdTag = ref<string>('CARD-CORP-9901')
 
-// MySQL 백엔드 API(18082)에서 실제 DB 충전기 목록 동기화
+// MySQL 백엔드 API(9082)에서 실제 DB 충전기 목록 동기화
 async function fetchChargersFromMysql(): Promise<boolean> {
   isMysqlSyncing.value = true
   mysqlError.value = null
@@ -205,7 +205,7 @@ async function fetchChargersFromMysql(): Promise<boolean> {
     return true
   } catch (err: any) {
     console.error('[MySQL Sync Failed]', err)
-    mysqlError.value = err.message || 'MySQL 백엔드 API(18082) 통신 오류'
+    mysqlError.value = err.message || 'MySQL 백엔드 API(9082) 통신 오류'
     isMysqlConnected.value = false
     return false
   } finally {
@@ -337,7 +337,7 @@ export function useVirtualCharger() {
       name: item.name || `${stId} 충전소 ${cpId}호기`,
       stationId: stId,
       chargerId: cpId,
-      wsUrl: item.wsUrl || 'ws://127.0.0.1:18080/ocpp',
+      wsUrl: item.wsUrl || 'ws://127.0.0.1:9080/ocpp',
       vendor: item.vendor || 'LS E-Link',
       model: item.model || 'ELVIS-HPC-350K',
       powerKw: item.powerKw || 350,

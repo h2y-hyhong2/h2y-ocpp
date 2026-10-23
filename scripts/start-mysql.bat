@@ -1,6 +1,7 @@
 @echo off
 setlocal
 chcp 65001 > nul
+if "%NO_PAUSE%"=="" set NO_PAUSE=1
 
 set SCRIPT_DIR=%~dp0
 set MYSQL_HOME=%SCRIPT_DIR%..\binaries\mysql-9.7.1-winx64
@@ -42,7 +43,7 @@ if exist "%MYSQL_INI%" (
     "%MYSQL_HOME%\bin\mysqld.exe" --defaults-file="%MYSQL_INI%" --console
 ) else (
     echo [WARN] my.ini 파일이 없어 기본 CLI 인자로 기동합니다.
-    "%MYSQL_HOME%\bin\mysqld.exe" --basedir="%MYSQL_HOME%" --datadir="%DATA_DIR%" --port=3306 --console
+    "%MYSQL_HOME%\bin\mysqld.exe" --basedir="%MYSQL_HOME%" --datadir="%DATA_DIR%" --port=%MYSQL_PORT% --console
 )
 
 if not "%NO_PAUSE%"=="1" pause

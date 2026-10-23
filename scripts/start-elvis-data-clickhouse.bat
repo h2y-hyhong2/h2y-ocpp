@@ -20,7 +20,7 @@ if exist "D:\jdk\windows\jdk-21.0.12.1+1" (
     set "PATH=d:\project\lselink\ocpp\jdk\jdk-17.0.20.1+1\bin;%PATH%"
 )
 
-set CH_DATA_PORT=18083
+set CH_DATA_PORT=9083
 if exist "%PROJECT_ROOT%\config\paths.env" (
     for /f "usebackq tokens=1,2 delims==" %%A in ("%PROJECT_ROOT%\config\paths.env") do (
         if "%%A"=="ELVIS_DATA_CH_PORT" set CH_DATA_PORT=%%B

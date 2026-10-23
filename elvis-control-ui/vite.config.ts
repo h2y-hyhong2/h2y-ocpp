@@ -54,8 +54,8 @@ function infraControlPlugin(): Plugin {
             logDir: 'D:\\elvis-lite\\logs',
             mysqlPort: 13306,
             kafkaPort: 19092,
-            apiPort: 18081,
-            wsPort: 18080
+            apiPort: 9082,
+            wsPort: 9080
           }
           if (fs.existsSync(envPath)) {
             const content = fs.readFileSync(envPath, 'utf-8')
@@ -65,8 +65,8 @@ function infraControlPlugin(): Plugin {
               if (trimmed.startsWith('ELVIS_LOG_DIR=')) result.logDir = trimmed.substring('ELVIS_LOG_DIR='.length).trim()
               if (trimmed.startsWith('ELVIS_MYSQL_PORT=')) result.mysqlPort = parseInt(trimmed.substring('ELVIS_MYSQL_PORT='.length).trim(), 10) || 13306
               if (trimmed.startsWith('ELVIS_KAFKA_PORT=')) result.kafkaPort = parseInt(trimmed.substring('ELVIS_KAFKA_PORT='.length).trim(), 10) || 19092
-              if (trimmed.startsWith('ELVIS_API_PORT=')) result.apiPort = parseInt(trimmed.substring('ELVIS_API_PORT='.length).trim(), 10) || 18081
-              if (trimmed.startsWith('ELVIS_WS_PORT=')) result.wsPort = parseInt(trimmed.substring('ELVIS_WS_PORT='.length).trim(), 10) || 18080
+              if (trimmed.startsWith('ELVIS_API_PORT=')) result.apiPort = parseInt(trimmed.substring('ELVIS_API_PORT='.length).trim(), 10) || 9082
+              if (trimmed.startsWith('ELVIS_WS_PORT=')) result.wsPort = parseInt(trimmed.substring('ELVIS_WS_PORT='.length).trim(), 10) || 9080
             }
           }
           return result
@@ -135,8 +135,8 @@ function infraControlPlugin(): Plugin {
               const parsed = JSON.parse(body || '{}')
               const mysqlPort = parseInt(parsed.mysql, 10) || 13306
               const kafkaPort = parseInt(parsed.kafka, 10) || 19092
-              const apiPort = parseInt(parsed.api, 10) || 18081
-              const wsPort = parseInt(parsed.ws, 10) || 18080
+              const apiPort = parseInt(parsed.api, 10) || 9082
+              const wsPort = parseInt(parsed.ws, 10) || 9080
 
               const portList = [mysqlPort, kafkaPort, apiPort, wsPort]
               for (const p of portList) {
@@ -576,11 +576,11 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:18082',
+        target: 'http://127.0.0.1:9082',
         changeOrigin: true
       },
       '/ws': {
-        target: 'ws://127.0.0.1:18080',
+        target: 'ws://127.0.0.1:9080',
         ws: true
       }
     }

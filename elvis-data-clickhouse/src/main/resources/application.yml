@@ -1,5 +1,5 @@
 server:
-  port: 18083
+  port: ${CH_DATA_PORT:9083}
 
 spring:
   application:

@@ -20,7 +20,7 @@ if exist "D:\jdk\windows\jdk-21.0.12.1+1" (
     set "PATH=d:\project\lselink\ocpp\jdk\jdk-17.0.20.1+1\bin;%PATH%"
 )
 
-set WS_PORT=18080
+set WS_PORT=9080
 if exist "%PROJECT_ROOT%\config\paths.env" (
     for /f "usebackq tokens=1,2 delims==" %%A in ("%PROJECT_ROOT%\config\paths.env") do (
         if "%%A"=="ELVIS_WS_PORT" set WS_PORT=%%B

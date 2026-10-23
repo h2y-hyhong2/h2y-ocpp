@@ -1,6 +1,7 @@
 @echo off
 setlocal
 chcp 65001 > nul
+if "%NO_PAUSE%"=="" set NO_PAUSE=1
 
 set SCRIPT_DIR=%~dp0
 set KAFKA_HOME=%SCRIPT_DIR%..\binaries\kafka_2.13-4.3.1

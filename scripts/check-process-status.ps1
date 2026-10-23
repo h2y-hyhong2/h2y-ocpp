@@ -7,7 +7,15 @@
 chcp 65001 > $null
 
 $targetMode = if ($Target) { $Target.ToLower() } else { "all" }
-$scopeName = if ($targetMode -eq "infra") { "인프라 미들웨어" } elseif ($targetMode -eq "core") { "코어 백엔드 엔진" } else { "전체 시스템" }
+$scopeName = if ($targetMode -eq "infra") {
+    "인프라 미들웨어 (MySQL, Kafka)"
+} elseif ($targetMode -eq "core") {
+    "코어 백엔드 엔진 (WS, Sync, API)"
+} elseif ($targetMode -eq "extension" -or $targetMode -eq "extensions") {
+    "확장 기능 엔진 (ClickHouse, Data Engine)"
+} else {
+    "전체 시스템"
+}
 
 if ($host.UI.RawUI) {
     $host.UI.RawUI.WindowTitle = "ELVIS - [$scopeName] 프로세스 및 포트 점유 실시간 진단"
@@ -25,9 +33,11 @@ function Show-Dashboard {
         @{ Category = "런처UI"; Name = "elvis-launcher (통합 제어)"; Port = 1420; Group = "launcher" },
         @{ Category = "인프라"; Name = "MySQL 9.71"; Port = 13306; Group = "infra" },
         @{ Category = "인프라"; Name = "Apache Kafka KRaft"; Port = 19092; Group = "infra" },
-        @{ Category = "코어엔진"; Name = "elvis-connect-ws"; Port = 18080; Group = "core" },
-        @{ Category = "코어엔진"; Name = "elvis-connect-sync"; Port = 18081; Group = "core" },
-        @{ Category = "코어엔진"; Name = "elvis-control-api"; Port = 18082; Group = "core" },
+        @{ Category = "코어엔진"; Name = "elvis-connect-ws"; Port = 9080; Group = "core" },
+        @{ Category = "코어엔진"; Name = "elvis-connect-sync"; Port = 9081; Group = "core" },
+        @{ Category = "코어엔진"; Name = "elvis-control-api"; Port = 9082; Group = "core" },
+        @{ Category = "확장기능"; Name = "ClickHouse v26.7 (WSL2)"; Port = 8123; Group = "extension" },
+        @{ Category = "확장기능"; Name = "elvis-data-clickhouse"; Port = 9083; Group = "extension" },
         @{ Category = "관제웹UI"; Name = "elvis-control-ui"; Port = 1421; Group = "ui" },
         @{ Category = "독립테스터"; Name = "elvis-tester-ui"; Port = 1422; Group = "tester" }
     )
@@ -36,11 +46,13 @@ function Show-Dashboard {
         $allTargets | Where-Object { $_["Group"] -eq "infra" }
     } elseif ($targetMode -eq "core") {
         $allTargets | Where-Object { $_["Group"] -eq "core" }
+    } elseif ($targetMode -eq "extension" -or $targetMode -eq "extensions") {
+        $allTargets | Where-Object { $_["Group"] -eq "extension" }
     } else {
         $allTargets
     }
 
-    $header = ("{0,-8} | {1,-24} | {2,-7} | {3,-12} | {4,-8} | {5,-16} | {6,-10}" -f "[구분]", "[서비스명]", "[포트]", "[상태]", "[PID]", "[프로세스명]", "[메모리]")
+    $header = ("{0,-8} | {1,-26} | {2,-7} | {3,-12} | {4,-8} | {5,-16} | {6,-10}" -f "[구분]", "[서비스명]", "[포트]", "[상태]", "[PID]", "[프로세스명]", "[메모리]")
     Write-Host $header -ForegroundColor Yellow
     Write-Host ("-" * 96) -ForegroundColor DarkGray
 
@@ -56,11 +68,11 @@ function Show-Dashboard {
                 $pName = if ($proc) { $proc.ProcessName } else { "Unknown" }
                 $mem = if ($proc) { [math]::Round($proc.WorkingSet64 / 1MB, 1) } else { 0 }
                 
-                $line = ("{0,-8} | {1,-24} | :{2,-6} | {3,-12} | {4,-8} | {5,-16} | {6,-10}" -f $item["Category"], $item["Name"], $port, "[RUNNING]", $p, $pName, ($mem.ToString() + " MB"))
+                $line = ("{0,-8} | {1,-26} | :{2,-6} | {3,-12} | {4,-8} | {5,-16} | {6,-10}" -f $item["Category"], $item["Name"], $port, "[RUNNING]", $p, $pName, ($mem.ToString() + " MB"))
                 Write-Host $line -ForegroundColor Green
             }
         } else {
-            $line = ("{0,-8} | {1,-24} | :{2,-6} | {3,-12} | {4,-8} | {5,-16} | {6,-10}" -f $item["Category"], $item["Name"], $port, "[STOPPED]", "-", "-", "-")
+            $line = ("{0,-8} | {1,-26} | :{2,-6} | {3,-12} | {4,-8} | {5,-16} | {6,-10}" -f $item["Category"], $item["Name"], $port, "[STOPPED]", "-", "-", "-")
             Write-Host $line -ForegroundColor DarkGray
         }
     }
@@ -70,7 +82,7 @@ function Show-Dashboard {
     Write-Host (" [요약] " + $scopeName + " (" + $totalTarget + "개 대상) 중 " + $activeCount + "개 포트가 정상 활성화(LISTEN)되어 있습니다.") -ForegroundColor Cyan
     Write-Host ""
 
-    Write-Host "▶ 실행 중인 서비스 프로세스 세부 PID 현황 (MySQL / Kafka / Core / Web / Tester):" -ForegroundColor Yellow
+    Write-Host "▶ 실행 중인 서비스 프로세스 세부 PID 현황:" -ForegroundColor Yellow
     $detectedProcs = @()
 
     # 1) MySQL 데이터베이스 프로세스 감지
@@ -91,7 +103,7 @@ function Show-Dashboard {
         }
     }
 
-    # 2) Java 프로세스 감지 (Kafka 및 코어 백엔드)
+    # 2) Java 프로세스 감지 (Kafka, 코어 백엔드, 확장 기능)
     $javaProcs = Get-CimInstance Win32_Process -Filter "Name = 'java.exe'" -ErrorAction SilentlyContinue
     if ($javaProcs) {
         foreach ($jp in $javaProcs) {
@@ -109,17 +121,22 @@ function Show-Dashboard {
                 $tag = "elvis-connect-ws Gateway"
                 $grp = "core"
                 $cat = "코어엔진"
-                $pStr = ":18080"
+                $pStr = ":9080"
             } elseif ($cmd -match "elvis-connect-sync") {
                 $tag = "elvis-connect-sync Engine"
                 $grp = "core"
                 $cat = "코어엔진"
-                $pStr = ":18081"
+                $pStr = ":9081"
             } elseif ($cmd -match "elvis-control-api") {
                 $tag = "elvis-control-api Server"
                 $grp = "core"
                 $cat = "코어엔진"
-                $pStr = ":18082"
+                $pStr = ":9082"
+            } elseif ($cmd -match "elvis-data-clickhouse") {
+                $tag = "elvis-data-clickhouse Engine"
+                $grp = "extension"
+                $cat = "확장기능"
+                $pStr = ":9083"
             } elseif ($cmd -match "GradleDaemon") {
                 $tag = "Gradle Build Daemon"
                 $grp = "build"
@@ -143,7 +160,25 @@ function Show-Dashboard {
         }
     }
 
-    # 3) Node.js 프로세스 감지 (관제 UI, 테스터 UI, 런처)
+    # 3) ClickHouse (WSL2 / Relay) 감지
+    $chConn = Get-NetTCPConnection -LocalPort 8123 -State Listen -ErrorAction SilentlyContinue
+    if ($chConn) {
+        $chPid = ($chConn | Select-Object -ExpandProperty OwningProcess -Unique)[0]
+        $pObj = Get-Process -Id $chPid -ErrorAction SilentlyContinue
+        $memMb = if ($pObj) { [math]::Round($pObj.WorkingSet64 / 1MB, 1) } else { 0 }
+        $pName = if ($pObj) { $pObj.ProcessName } else { "wsl.exe" }
+        $detectedProcs += [PSCustomObject]@{
+            Group = "extension"
+            Category = "확장기능"
+            Name = "ClickHouse v26.7 Server"
+            PID = $chPid
+            ProcessName = $pName
+            PortStr = ":8123"
+            Memory = $memMb
+        }
+    }
+
+    # 4) Node.js 프로세스 감지 (관제 UI, 테스터 UI, 런처)
     $nodeProcs = Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue
     if ($nodeProcs) {
         foreach ($np in $nodeProcs) {
@@ -189,6 +224,7 @@ function Show-Dashboard {
     $filteredProcs = $detectedProcs | Where-Object {
         if ($targetMode -eq "infra") { $_.Group -eq "infra" }
         elseif ($targetMode -eq "core") { $_.Group -eq "core" }
+        elseif ($targetMode -eq "extension" -or $targetMode -eq "extensions") { $_.Group -eq "extension" }
         else { $true }
     }
 
@@ -226,7 +262,7 @@ while ($true) {
         continue
     } elseif ($key.Character -eq "k" -or $key.Character -eq "K") {
         Write-Host ""
-        $targetPort = Read-Host " 종료할 포트 번호를 입력하세요 (예: 18080, 취소는 Enter)"
+        $targetPort = Read-Host " 종료할 포트 번호를 입력하세요 (예: 8123, 취소는 Enter)"
         if ($targetPort) {
             $conns = Get-NetTCPConnection -LocalPort $targetPort -State Listen -ErrorAction SilentlyContinue
             if ($conns) {

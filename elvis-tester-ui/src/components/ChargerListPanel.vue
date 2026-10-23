@@ -370,7 +370,7 @@ function getChargerListCardClass(c: ChargerInstance) {
           <div
             class="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors shrink-0"
             :class="store.isMysqlConnected.value ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'"
-            :title="store.isMysqlConnected.value ? 'MySQL DB 실데이터 연동 중 (Port 18082)' : (store.mysqlError.value || 'MySQL 연결 대기')"
+            :title="store.isMysqlConnected.value ? 'MySQL DB 실데이터 연동 중 (Port 9082)' : (store.mysqlError.value || 'MySQL 연결 대기')"
           >
             <span
               class="w-1.5 h-1.5 rounded-full"
@@ -390,7 +390,7 @@ function getChargerListCardClass(c: ChargerInstance) {
             @click="store.fetchChargersFromMysql()"
             :disabled="store.isMysqlSyncing.value"
             class="px-2 py-0.5 text-[11px] font-bold rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 shadow-2xs transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
-            title="MySQL 백엔드 API(18082)에서 충전기 마스터 목록 최신화"
+            title="MySQL 백엔드 API(9082)에서 충전기 마스터 목록 최신화"
           >
             <span :class="store.isMysqlSyncing.value ? 'animate-spin' : ''">🔄</span>
             <span class="hidden md:inline">{{ store.isMysqlSyncing.value ? '동기화중' : 'DB 동기화' }}</span>

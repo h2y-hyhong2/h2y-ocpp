@@ -105,7 +105,7 @@ watch(
       protocol.value = c.protocol || 'OCPP 1.6-J'
       firmwareVer.value = c.firmwareVer || '1.0.0-RELEASE'
 
-      wsUrl.value = c.wsUrl || 'ws://127.0.0.1:18080/ocpp'
+      wsUrl.value = c.wsUrl || 'ws://127.0.0.1:9080/ocpp'
       heartbeatIntervalSec.value = c.heartbeatIntervalSec || 60
       autoHeartbeat.value = c.autoHeartbeat !== false
       autoBootOnConnect.value = c.autoBootOnConnect !== false
@@ -156,7 +156,7 @@ function handleResetDefaults() {
   protocol.value = 'OCPP 1.6-J'
   firmwareVer.value = '1.0.0-RELEASE'
   useYn.value = 'Y'
-  wsUrl.value = 'ws://127.0.0.1:18080/ocpp'
+  wsUrl.value = 'ws://127.0.0.1:9080/ocpp'
   heartbeatIntervalSec.value = 60
   autoHeartbeat.value = true
   autoBootOnConnect.value = true
@@ -631,10 +631,10 @@ function handleSave() {
               <div class="flex items-center gap-1.5">
                 <button
                   type="button"
-                  @click="wsUrl = 'ws://127.0.0.1:18080/ocpp'"
+                  @click="wsUrl = 'ws://127.0.0.1:9080/ocpp'"
                   class="text-[10px] px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-mono transition-colors cursor-pointer"
                 >
-                  로컬 18080
+                  로컬 9080
                 </button>
                 <button
                   type="button"

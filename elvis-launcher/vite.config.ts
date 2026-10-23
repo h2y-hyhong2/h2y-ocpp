@@ -67,12 +67,12 @@ function infraLauncherPlugin(): Plugin {
             logDir: 'D:\\elvis-lite\\logs',
             mysqlPort: 13306,
             kafkaPort: 19092,
-            apiPort: 18082,
-            wsPort: 18080,
-            syncPort: 18081,
-            testerPort: 8085,
+            apiPort: 9082,
+            wsPort: 9080,
+            syncPort: 9081,
+            testerPort: 9085,
             clickhousePort: 8123,
-            clickhouseDataPort: 18083
+            clickhouseDataPort: 9083
           }
           if (fs.existsSync(envPath)) {
             const lines = fs.readFileSync(envPath, 'utf-8').split(/\r?\n/)
@@ -104,11 +104,19 @@ function infraLauncherPlugin(): Plugin {
             try { fs.mkdirSync(logDir, { recursive: true }) } catch (_) {}
           }
 
-          if (isBackground) {
-            const logFile = path.resolve(logDir, `${serviceName}.log`)
-            console.log(`[ELVIS-Launcher] 백그라운드 무창 기동 -> service: ${serviceName}, bat: ${batPath}, log: ${logFile}`)
-            exec(`start /b cmd /c "call \"${batPath}\" >> \"${logFile}\" 2>&1"`, {
+          // 모든 백엔드 엔진(mysql, kafka, clickhouse, ws, sync, api, clickhouse-data, tester)은
+          // 완전한 무창(100% Hidden) 백그라운드 독립 데몬으로 실행되며 런처 생명주기와 완전히 분리됩니다.
+          const isPersistentEngine = ['mysql', 'kafka', 'clickhouse', 'ws', 'sync', 'api', 'clickhouse-data', 'tester'].includes(serviceName)
+          const forceBackground = isPersistentEngine || isBackground
+
+          if (forceBackground) {
+            console.log(`[ELVIS-Launcher] WMI 기반 완전 독립 백그라운드 데몬 기동 -> service: ${serviceName}, bat: ${batFileName}`)
+            // run-daemon.ps1 (WMI Win32_Process.Create)를 호출하여 부모 콘솔 및 런처 프로세스 트리와 100% 분리된 독립 OS 데몬으로 기동
+            const daemonScript = path.resolve(scriptsDir, 'run-daemon.ps1')
+            const psCmd = `powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "${daemonScript}" -BatName "${batFileName}" -ServiceName "${serviceName}"`
+            exec(psCmd, {
               cwd: scriptsDir,
+              windowsHide: true,
               env: { ...process.env, NO_PAUSE: '1' }
             })
           } else {
@@ -192,8 +200,8 @@ function infraLauncherPlugin(): Plugin {
               const parsed = JSON.parse(body)
               const mysqlPort = parseInt(parsed.mysql, 10) || 13306
               const kafkaPort = parseInt(parsed.kafka, 10) || 19092
-              const apiPort = parseInt(parsed.api, 10) || 18082
-              const wsPort = parseInt(parsed.ws, 10) || 18080
+              const apiPort = parseInt(parsed.api, 10) || 9082
+              const wsPort = parseInt(parsed.ws, 10) || 9080
 
               const portList = [mysqlPort, kafkaPort, apiPort, wsPort]
               for (const p of portList) {
@@ -540,7 +548,7 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 9-1. 프로세스 및 포트 점유 실시간 진단 콘솔 기동 (POST /api/infra/open-process-monitor?target=all|infra|core)
+        // 9-1. 프로세스 및 포트 점유 실시간 진단 콘솔 기동 (POST /api/infra/open-process-monitor?target=all|infra|core|extension)
         if (pathname === '/api/infra/open-process-monitor') {
           const target = url.searchParams.get('target') || 'all'
           const batPath = path.resolve(scriptsDir, 'check-status.bat')
@@ -664,12 +672,12 @@ function infraLauncherPlugin(): Plugin {
           const titles: Record<string, string> = {
             mysql: 'MySQL 9.71 (:13306)',
             kafka: 'Apache Kafka (:19092)',
-            ws: 'elvis-connect-ws (:18080)',
-            sync: 'elvis-connect-sync (:18081)',
-            api: 'elvis-control-api (:18082)',
+            ws: 'elvis-connect-ws (:9080)',
+            sync: 'elvis-connect-sync (:9081)',
+            api: 'elvis-control-api (:9082)',
             clickhouse: 'ClickHouse v26.7 (:8123)',
-            'clickhouse-data': 'elvis-data-clickhouse (:18083)',
-            tester: 'elvis-tester (:8085)'
+            'clickhouse-data': 'elvis-data-clickhouse (:9083)',
+            tester: 'elvis-tester (:9085)'
           }
           const display = titles[service] || service
 

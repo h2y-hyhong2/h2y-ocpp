@@ -1,5 +1,5 @@
 server:
-  port: 18081
+  port: ${SYNC_PORT:9081}
 
 spring:
   application:

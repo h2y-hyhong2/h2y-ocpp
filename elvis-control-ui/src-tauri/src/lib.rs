@@ -17,7 +17,7 @@ fn check_middleware_status(mysql_port: Option<u16>, kafka_port: Option<u16>, api
 
     let p_mysql = mysql_port.unwrap_or(13306);
     let p_kafka = kafka_port.unwrap_or(19092);
-    let p_api = api_port.unwrap_or(18081);
+    let p_api = api_port.unwrap_or(9082);
 
     let kafka = check_port(p_kafka);
     let mysql = check_port(p_mysql);

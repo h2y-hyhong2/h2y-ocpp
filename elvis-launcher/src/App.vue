@@ -300,7 +300,7 @@
             <button
               @click="openProcessStatus('core')"
               class="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-2xs transition-all cursor-pointer flex items-center gap-0.5"
-              title="코어 엔진 포트(18080, 18081, 18082) 및 Java PID 진단"
+              title="코어 엔진 포트(9080, 9081, 9082, 9083) 및 Java PID 진단"
             >
               <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               <span>프로세스</span>
@@ -582,6 +582,14 @@
               <svg v-if="pendingAction.extensions === 'restart'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
               <span>{{ pendingAction.extensions === 'restart' ? '재기동중...' : '재기동' }}</span>
             </button>
+            <button
+              @click="openProcessStatus('extension')"
+              class="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/90 shadow-2xs transition-all cursor-pointer flex items-center gap-0.5"
+              title="확장 기능 포트(8123, 9083) 및 프로세스 진단"
+            >
+              <svg class="w-2.5 h-2.5 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <span>프로세스</span>
+            </button>
           </div>
         </div>
 
@@ -825,11 +833,11 @@ const infra = reactive({
 const ports = reactive({
   mysql: 13306,
   kafka: 19092,
-  ws: 18080,
-  sync: 18081,
-  api: 18082,
+  ws: 9080,
+  sync: 9081,
+  api: 9082,
   clickhouse: 8123,
-  clickhouseData: 18083
+  clickhouseData: 9083
 })
 
 const isChecking = ref(false)
@@ -1432,9 +1440,9 @@ async function restartBackground() {
   }
 }
 
-// 8. 프로세스 및 포트 점유 실시간 진단 콘솔 열기 (all | infra | core)
+// 8. 프로세스 및 포트 점유 실시간 진단 콘솔 열기 (all | infra | core | extension)
 async function openProcessStatus(target: string = 'all') {
-  const targetLabel = target === 'infra' ? '인프라' : target === 'core' ? '코어 엔진' : '전체'
+  const targetLabel = target === 'infra' ? '인프라' : target === 'core' ? '코어 엔진' : (target === 'extension' || target === 'extensions') ? '확장 기능' : '전체'
   try {
     // 1) Tauri 데스크톱 환경: Rust 커맨드로 전용 진단 터미널 기동
     await invoke('open_process_status_window', { target })
