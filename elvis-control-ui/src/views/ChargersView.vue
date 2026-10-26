@@ -185,78 +185,79 @@ function sendRemoteCommand(action: string) {
       </div>
     </aside>
 
-    <!-- CENTER: 메인 충전기 데이터 테이블 영역 -->
-    <main class="flex-1 flex flex-col gap-2 md:gap-3 overflow-hidden min-w-0">
+    <!-- CENTER: 메인 충전기 데이터 테이블 영역 (화면 전체 뷰포트 극대화) -->
+    <main class="flex-1 flex flex-col overflow-hidden min-w-0">
       
-      <!-- 1. 중앙 상단 실시간 상태 요약 카드 바 -->
-      <section class="bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 space-y-2 flex-shrink-0 shadow-xs">
+      <!-- 중앙 풀 뷰포트 데이터 그리드 (단일 모던 테이블) -->
+      <section class="flex-1 bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex flex-col overflow-hidden shadow-xs">
         
-        <!-- 충전소 타이틀 바 -->
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-glass)] pb-2">
-          <div class="flex items-center gap-1.5 min-w-0">
-            <span class="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
-              {{ currentStationInfo.corpName }}
-            </span>
+        <!-- 1. 충전소 정보 및 검색 헤더 바 -->
+        <div class="flex flex-wrap items-center justify-between pb-2 border-b border-[var(--border-glass)] gap-2 flex-shrink-0">
+          <!-- 좌측: 현재 충전소 컨텍스트 & 건수 -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-[var(--text-bright)]">충전기 관제 목록</span>
+            <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+              <span class="text-[10px] font-bold text-slate-700 truncate max-w-[200px]">
+                {{ currentStationInfo.name }}
+              </span>
+              <span class="text-[10px] font-mono font-bold text-sky-600">
+                ({{ filteredChargers.length }} / {{ currentStationChargers.length }}기)
+              </span>
+            </div>
+          </div>
+
+          <!-- 우측: 검색창 -->
+          <div class="flex items-center gap-1.5">
+            <input
+              v-model="searchQuery"
+              placeholder="단말ID, 충전소, 모델 검색..."
+              class="w-48 lg:w-56 bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg px-2.5 py-1 text-xs outline-hidden focus:border-sky-500 placeholder:text-slate-400"
+            />
             <button
-              v-if="currentStationInfo.id !== 'ALL'"
-              type="button"
-              @click="copyStationId(currentStationInfo.id)"
-              class="text-[10px] font-mono font-black text-sky-700 bg-[var(--bg-surface-2)] px-1.5 py-0.2 rounded border border-[var(--border-glass)] cursor-pointer"
-            >
-              {{ currentStationInfo.id }}
-            </button>
-            <h2 class="text-xs md:text-sm font-black text-[var(--text-bright)] truncate">
-              {{ currentStationInfo.name }}
-            </h2>
-            <span class="text-[11px] text-slate-500 font-medium hidden sm:inline">
-              (총 {{ currentStationInfo.count }}기)
-            </span>
+              v-if="searchQuery"
+              @click="searchQuery = ''"
+              class="text-[10px] text-slate-400 hover:text-slate-700 px-1 py-1 font-bold cursor-pointer"
+              title="검색어 초기화"
+            >✕</button>
           </div>
         </div>
 
-        <!-- 상태 칩 바 (클릭 시 즉시 해당 상태 필터링) -->
-        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+        <!-- 2. 실시간 상태별 1-Click 필터 칩 바 (슬림 높이 최적화) -->
+        <div class="flex flex-wrap items-center gap-1.5 py-2 border-b border-[var(--border-glass)] flex-shrink-0">
+          <!-- 전체 보기 칩 -->
           <button
             @click="store.setStatusFilter('ALL')"
-            class="px-2.5 py-1 rounded-lg border text-xs font-bold transition-all cursor-pointer"
-            :class="store.curStatusFilter === 'ALL' ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+            class="px-2.5 py-1 rounded-lg border text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
+            :class="store.curStatusFilter === 'ALL' 
+              ? 'bg-slate-900 text-white border-slate-900' 
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
           >
-            전체 ({{ currentStationChargers.length }})
+            <span>전체</span>
+            <span class="font-mono text-[11px] opacity-90">{{ currentStationChargers.length }}</span>
           </button>
 
+          <!-- 세부 11종 상태 칩 버튼 목록 -->
           <button
             v-for="(info, key) in STATUS_MAP"
             :key="key"
             @click="store.setStatusFilter(key)"
-            class="px-2.5 py-1 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer"
-            :class="store.curStatusFilter === key ? 'ring-2 ring-sky-500 font-bold ' + info.badgeClass : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+            class="px-2.5 py-1 rounded-lg border text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            :class="[
+              store.curStatusFilter === key 
+                ? 'ring-2 ring-sky-500 font-bold ' + info.badgeClass 
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
+              (statusCounts[key] || 0) === 0 ? 'opacity-65' : 'font-semibold'
+            ]"
           >
             <span class="w-1.5 h-1.5 rounded-full" :class="info.dotClass"></span>
             <span>{{ key }}</span>
-            <span class="font-mono font-bold text-[11px]">{{ statusCounts[key] || 0 }}</span>
-          </button>
-        </div>
-      </section>
-
-      <!-- 2. 중앙 하단 데이터 그리드 (단일 모던 테이블) -->
-      <section class="flex-1 bg-[var(--bg-surface-1)] border border-[var(--border-glass)] rounded-xl p-3 flex flex-col overflow-hidden shadow-xs">
-        
-        <!-- 검색 및 건수 요약 바 -->
-        <div class="flex items-center justify-between pb-2 border-b border-[var(--border-glass)] gap-2 flex-shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-[var(--text-bright)]">충전기 목록</span>
-            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
-              {{ filteredChargers.length }}기
+            <span 
+              class="font-mono text-[11px] px-1 py-0.2 rounded"
+              :class="(statusCounts[key] || 0) > 0 ? 'bg-slate-100 font-bold text-slate-800' : 'text-slate-400'"
+            >
+              {{ statusCounts[key] || 0 }}
             </span>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <input
-              v-model="searchQuery"
-              placeholder="단말ID, 충전소명 검색..."
-              class="w-48 bg-[var(--bg-surface-2)] border border-[var(--border-glass)] rounded-lg px-2.5 py-1 text-xs outline-hidden focus:border-sky-500 placeholder:text-slate-400"
-            />
-          </div>
+          </button>
         </div>
 
         <!-- 단일 고성능 데이터 테이블 -->

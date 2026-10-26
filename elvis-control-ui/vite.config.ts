@@ -332,19 +332,24 @@ function infraControlPlugin(): Plugin {
 
         // 4-1. 데이터베이스 전체 클리어 (POST /api/infra/db-clear)
         if (pathname === '/api/infra/db-clear' && req.method === 'POST') {
-          try {
-            await executeMySqlQuery(
-              "SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE tb_transaction_cdr; TRUNCATE TABLE tb_connector_status; TRUNCATE TABLE tb_charger; TRUNCATE TABLE tb_station; TRUNCATE TABLE tb_corp; SET FOREIGN_KEY_CHECKS = 1; SELECT 1;"
-            )
+          const batPath = path.resolve(scriptsDir, 'clear-mysql-data.bat')
+          if (!fs.existsSync(batPath)) {
+            res.statusCode = 404
+            res.end(JSON.stringify({ success: false, message: 'clear-mysql-data.bat 파일을 찾을 수 없습니다.' }))
+            return
+          }
+
+          exec(`cmd.exe /c "${batPath}"`, { cwd: scriptsDir }, (err) => {
+            if (err) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ success: false, message: 'DB 클리어 실패: ' + err.message }))
+              return
+            }
             res.end(JSON.stringify({
               success: true,
-              message: 'MySQL (elvis-lite) 5대 테이블 데이터가 모두 초기화(Clear)되었습니다.'
+              message: 'MySQL (elvis-lite) 8대 테이블 데이터가 모두 초기화(Clear)되었습니다.'
             }))
-          } catch (err: any) {
-            console.error('[ELVIS-Infra-Debug] DB 클리어 오류:', err.message)
-            res.statusCode = 500
-            res.end(JSON.stringify({ success: false, message: 'DB 클리어 실패: ' + err.message }))
-          }
+          })
           return
         }
 
