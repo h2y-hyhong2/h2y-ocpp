@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ChargersView from '@/views/ChargersView.vue'
 import BillingCdrView from '@/views/BillingCdrView.vue'
 
+/**
+ * CSMS Lite 관제 라우터 테이블 (심플 2대 핵심 메뉴 체계)
+ */
 const routes = [
   {
     path: '/',

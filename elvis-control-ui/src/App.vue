@@ -47,7 +47,7 @@
 
         <div class="h-4 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
-        <!-- 관제 메뉴 탭 -->
+        <!-- 관제 메뉴 탭 (심플 2대 메뉴) -->
         <nav class="hidden sm:flex items-center gap-1 text-xs">
           <router-link
             to="/"
@@ -55,7 +55,9 @@
             class="px-2.5 py-1 rounded-lg border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all flex items-center gap-1.5 cursor-pointer"
             title="실시간 충전기 통합 관제"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
             <span>충전기 관제</span>
           </router-link>
 
@@ -65,7 +67,9 @@
             class="px-2.5 py-1 rounded-lg border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all flex items-center gap-1.5 cursor-pointer"
             title="충전 거래 세션 및 과금 원장"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
             <span>과금 원장</span>
           </router-link>
         </nav>
