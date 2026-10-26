@@ -24,7 +24,7 @@ spring:
     hibernate:
       ddl-auto: none
 
-  # Kafka Consumer 설정 (Sprint 28: S28-API-0060-CO)
+  # Kafka Consumer & Producer 설정 (Sprint 28 / Sprint 31: S31-API-0050-CO)
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
     consumer:
@@ -32,12 +32,18 @@ spring:
       auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: 1
+      retries: 3
 
-# CSMS Lite 관제 알림 및 ClickHouse 설정
+# CSMS Lite 관제 알림, 하향 커맨드 및 ClickHouse 설정
 elvis:
   control:
     kafka:
       notification-topic: ${KAFKA_NOTIFICATION_TOPIC:ocpp-ui-notifications}
+      outbound-topic: ${KAFKA_OUTBOUND_TOPIC:ocpp-outbound-commands}
     notification:
       buffer-size: ${NOTIFICATION_BUFFER_SIZE:50}
   clickhouse:
