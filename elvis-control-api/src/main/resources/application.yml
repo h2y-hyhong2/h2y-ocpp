@@ -24,8 +24,22 @@ spring:
     hibernate:
       ddl-auto: none
 
-# ClickHouse OLAP 시계열 집계 DB 설정
+  # Kafka Consumer 설정 (Sprint 28: S28-API-0060-CO)
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:elvis-control-group}
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+# CSMS Lite 관제 알림 및 ClickHouse 설정
 elvis:
+  control:
+    kafka:
+      notification-topic: ${KAFKA_NOTIFICATION_TOPIC:ocpp-ui-notifications}
+    notification:
+      buffer-size: ${NOTIFICATION_BUFFER_SIZE:50}
   clickhouse:
     enabled: ${CLICKHOUSE_ENABLED:false}
     url: jdbc:ch://${CLICKHOUSE_HOST:localhost}:${CLICKHOUSE_PORT:8123}/${CLICKHOUSE_DB:elvis_poc}

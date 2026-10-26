@@ -5,8 +5,12 @@ plugins {
 dependencies {
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Spring Kafka (Sprint 28: S28-API-0060-CO)
+    implementation 'org.springframework.kafka:spring-kafka'
 
     // MySQL 9.x Connector/J JDBC Driver
     implementation 'com.mysql:mysql-connector-j:9.1.0'
