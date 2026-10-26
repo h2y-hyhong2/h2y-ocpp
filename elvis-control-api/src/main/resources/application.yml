@@ -38,7 +38,7 @@ spring:
       acks: 1
       retries: 3
 
-# CSMS Lite 관제 알림, 하향 커맨드 및 ClickHouse 설정
+# CSMS Lite 관제 알림, 하향 커맨드 및 JWT 보안 설정
 elvis:
   control:
     kafka:
@@ -46,6 +46,10 @@ elvis:
       outbound-topic: ${KAFKA_OUTBOUND_TOPIC:ocpp-outbound-commands}
     notification:
       buffer-size: ${NOTIFICATION_BUFFER_SIZE:50}
+    jwt:
+      secret: ${JWT_SECRET:c2VjdXJlLWVsdmlzLWNzbXMtbGl0ZS1qd3Qta2V5LTIwMjYtMjU2Yml0LXNlY3JldA==}
+      access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY:3600}
+      refresh-token-validity-seconds: ${JWT_REFRESH_TOKEN_VALIDITY:604800}
   clickhouse:
     enabled: ${CLICKHOUSE_ENABLED:false}
     url: jdbc:ch://${CLICKHOUSE_HOST:localhost}:${CLICKHOUSE_PORT:8123}/${CLICKHOUSE_DB:elvis_poc}
