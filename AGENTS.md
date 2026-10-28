@@ -110,3 +110,19 @@
     * 기본 리포지토리: `XxxRepository extends JpaRepository<Xxx, ID>, XxxRepositoryCustom`
     * 커스텀 인터페이스: `XxxRepositoryCustom`
     * 커스텀 구현체: `XxxRepositoryImpl implements XxxRepositoryCustom` (`JPAQueryFactory` 주입)
+
+---
+
+## 6. 🗄️ 데이터베이스 및 테이블 명명 표준 (DB Conventions)
+
+* **소문자 스네이크 표기법 (`lower_snake_case`) 및 단수형 명사 사용**:
+  * 복수형(`-s`)을 금지하고 단수형 명사를 사용합니다 (예: `tb_charger` O, `tb_chargers` X).
+  * 표준 기본 구조: `[접두사]_[엔티티명]_[역할/유형]`
+* **객체 유형별 2글자 표준 접두사 (Prefix)**:
+  * **`tb_`**: 일반 물리 테이블 (`tb_corp`, `tb_station`, `tb_charger`, `tb_connector_status`, `tb_transaction_cdr`)
+  * **`vi_`**: 뷰 (`vi_charger_summary`)
+  * **`ht_`**: 이력 테이블 (`ht_connector_status`)
+  * **`if_`**: 대외 연계 인터페이스 테이블 (`if_kme_card`)
+  * **`tmp_`**: 임시/배치 테이블
+* **SQL 작성 및 JOIN 풀네이밍 표준**:
+  * `INNER JOIN`, `LEFT OUTER JOIN`, `RIGHT OUTER JOIN`, `FULL OUTER JOIN` 풀네이밍을 사용하며, `WHERE`, `AND`, `OR`, `GROUP BY`는 좌측 열 기준선에 맞춰 정렬합니다.
