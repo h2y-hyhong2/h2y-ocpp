@@ -110,3 +110,16 @@
     * 기본 리포지토리: `XxxRepository extends JpaRepository<Xxx, ID>, XxxRepositoryCustom`
     * 커스텀 인터페이스: `XxxRepositoryCustom`
     * 커스텀 구현체: `XxxRepositoryImpl implements XxxRepositoryCustom` (`JPAQueryFactory` 주입)
+---
+
+## 6. 🗄️ 데이터베이스 및 테이블 명명 표준 (DB Conventions)
+* **기본 명명 원칙**:
+  1. **소문자 스네이크 표기법 (`lower_snake_case`)**: 리눅스/윈도우 배포 환경 간의 `lower_case_table_names` 설정 충돌 방지 및 JPA Entity 기본 네이밍 전략과의 100% 호환성 보장.
+  2. **단수형 명사 사용 (Singular)**: 테이블의 각 행(Row)은 엔티티 인스턴스 1건을 의미하므로 복수형(`-s`)을 금지합니다 (예: `tb_charger` O, `tb_chargers` X).
+  3. **표준 기본 구조**: `[접두사]_[엔티티명]_[역할/유형]`
+* **객체 유형별 표준 접두사 (Prefix)**:
+  * **`tb_`**: 일반 물리 테이블 (`tb_charger`, `tb_station`, `tb_corp`, `tb_connector_status`, `tb_transaction_cdr`)
+  * **`vi_`**: 뷰 (`vi_charger_summary`)
+  * **`ht_`**: 이력 테이블 (`ht_connector_status`)
+  * **`if_`**: 인터페이스 (`if_kme_card`)
+  * **`tmp_`**: 임시/배치 테이블
