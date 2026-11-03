@@ -27,7 +27,21 @@ public class ApiResponse<T> {
     }
 
     /**
-     * 성공 응답 (데이터 포함)
+     * 성공 응답 (데이터 포함) - ok(data) 표준
+     */
+    public static <T> ApiResponse<T> ok(T data) {
+        return new ApiResponse<>(true, 200, "성공", data, Instant.now());
+    }
+
+    /**
+     * 성공 응답 (데이터 없음) - ok()
+     */
+    public static <T> ApiResponse<T> ok() {
+        return new ApiResponse<>(true, 200, "성공", null, Instant.now());
+    }
+
+    /**
+     * 성공 응답 (데이터 포함) - success(data)
      */
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(true, 200, "성공", data, Instant.now());
@@ -41,16 +55,24 @@ public class ApiResponse<T> {
     }
 
     /**
-     * 성공 응답 (메시지만 포함, 데이터 없음)
-     */
-    public static <T> ApiResponse<T> ok(String message) {
-        return new ApiResponse<>(true, 200, message, null, Instant.now());
-    }
-
-    /**
      * 에러 응답 (상태 코드 및 에러 메시지)
      */
     public static <T> ApiResponse<T> error(int code, String message) {
+        return new ApiResponse<>(false, code, message, null, Instant.now());
+    }
+
+    /**
+     * 에러 응답 (문자열 에러 코드 및 에러 메시지)
+     */
+    public static <T> ApiResponse<T> error(String errorCode, String message) {
+        int code = 400;
+        if ("UNAUTHORIZED".equalsIgnoreCase(errorCode)) {
+            code = 401;
+        } else if ("FORBIDDEN".equalsIgnoreCase(errorCode)) {
+            code = 403;
+        } else if ("NOT_FOUND".equalsIgnoreCase(errorCode)) {
+            code = 404;
+        }
         return new ApiResponse<>(false, code, message, null, Instant.now());
     }
 

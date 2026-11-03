@@ -32,16 +32,31 @@
 
 CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하기 위해 `binaries/` 디렉토리에 주요 미들웨어 바이너리를 내장/관리합니다.
 
-| 미들웨어 | 버전 | 실행 환경 | 전용 포트 | 설치 및 실행 상세 가이드 |
-| :--- | :--- | :--- | :--- | :--- |
-| **ClickHouse** | `v26.7.34.3-stable` (amd64) | WSL2 (Ubuntu 24.04 LTS) | HTTP `8123` / Native `9000` | [ClickHouse 설치 가이드](binaries/clickhouse-v26.7.34.3-stable/README.md) |
-| **Apache Kafka** | `2.13-4.3.1` (KRaft) | Windows / JVM | `19092` | `binaries/kafka_2.13-4.3.1/` |
-| **MySQL** | `9.7.1-winx64` | Windows x64 | `13306` | `binaries/mysql-9.7.1-winx64/` |
+| 미들웨어         | 버전                        | 실행 환경               | 전용 포트                   | 설치 및 실행 상세 가이드                                                  |
+| :--------------- | :-------------------------- | :---------------------- | :-------------------------- | :------------------------------------------------------------------------ |
+| **ClickHouse**   | `v26.7.34.3-stable` (amd64) | WSL2 (Ubuntu 24.04 LTS) | HTTP `8123` / Native `9000` | [ClickHouse 설치 가이드](binaries/clickhouse-v26.7.34.3-stable/README.md) |
+| **Apache Kafka** | `2.13-4.3.1` (KRaft)        | Windows / JVM           | `19092`                     | `binaries/kafka_2.13-4.3.1/`                                              |
+| **MySQL**        | `9.7.1-winx64`              | Windows x64             | `13306`                     | `binaries/mysql-9.7.1-winx64/`                                            |
 
 ### 주요 마이크로서비스 모듈
+
 - **`elvis-core`**: OCPP 1.6J WebSocket 수신 및 핵심 비즈니스 로직 처리
 - **`elvis-data-clickhouse`**: Kafka 계측 데이터를 ClickHouse로 고속 벌크 적재하는 OLAP 전용 엔진 ([모듈 가이드](elvis-data-clickhouse/README.md))
+- **`elvis-control-api`**: 관제 REST API 및 Spring Security JWT 관리자 인증 백엔드 (`:9082`)
+- **`elvis-control-ui`**: ELVIS-CSMS 관제 데스크톱 센터 (Tauri 2.0 / Vue 3, `:1420`)
 - **`elvis-tester-ui`**: 가상 충전기(EVSE) 에뮬레이터 및 관제 프로토타입 UI (Tauri/Vue 3)
+
+---
+
+## 🔐 관제 센터 기본 관리자 계정 (Initial Seed Accounts)
+
+관제 센터(`elvis-control-ui`) 로그인 및 API 호출 시 백엔드(`elvis-control-api`)에 사전 탑재된 아래 기본 시드 계정을 사용합니다.
+
+| 권한 역할                | **아이디 (Username)** | **비밀번호 (Password)** | 권한 등급       | 주요 기능 및 제어 권한                                             |
+| :----------------------- | :-------------------: | :---------------------: | :-------------- | :----------------------------------------------------------------- |
+| **시스템 최고관리자**    |        `admin`        |       `admin123!`       | `ROLE_ADMIN`    | 충전기 원격제어(리셋/언락/중지/시작) 및 전체 관리 권한 (기본 권장) |
+| **충전 관제 운영자**     |      `operator`       |     `operator123!`      | `ROLE_OPERATOR` | 충전기 원격제어 및 실시간 관제 권한                                |
+| **관제 대시보드 조회자** |       `viewer`        |      `viewer123!`       | `ROLE_VIEWER`   | 대시보드 및 통계 단순 모니터링 조회 전용 권한                      |
 
 ---
 

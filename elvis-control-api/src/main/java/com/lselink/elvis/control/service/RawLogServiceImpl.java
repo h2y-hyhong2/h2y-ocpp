@@ -4,7 +4,8 @@ import com.lselink.elvis.control.common.PageResponse;
 import com.lselink.elvis.control.dto.RawLogResponseDto;
 import com.lselink.elvis.control.dto.RawLogSearchCondition;
 import com.lselink.elvis.control.repository.rawlog.RawLogRepository;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,12 @@ import java.util.List;
 
 /**
  * ClickHouse 원본 통신로그 조회 서비스 구현체 (Graceful Degradation & Clean Code 표준 준수)
+ * [전사 코딩 표준 준수: Lombok 전면 배제, 명시적 생성자 주입 및 SLF4J 로거 선언]
  */
-@Slf4j
 @Service
 public class RawLogServiceImpl implements RawLogService {
+
+    private static final Logger log = LoggerFactory.getLogger(RawLogServiceImpl.class);
 
     private final RawLogRepository rawLogRepository;
 

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { authFetch } from '@/utils/apiClient'
 
 // 1. 커넥터 상태 매핑 상수 (UI 색상 및 배지 스타일)
 export const STATUS_MAP = {
@@ -160,10 +161,10 @@ export const useCsmsStore = defineStore('csms', {
       try {
         console.log('%c[CSMS UI] 📡 REST API 데이터 조회 쿼리 실행: GET /api/v1/{corps, stations, chargers, cdr}', 'color: #3b82f6; font-weight: bold')
         const [corpRes, stRes, chgRes, cdrRes] = await Promise.all([
-          fetch('/api/v1/corps'),
-          fetch('/api/v1/stations'),
-          fetch('/api/v1/chargers'),
-          fetch('/api/v1/cdr')
+          authFetch('/api/v1/corps'),
+          authFetch('/api/v1/stations'),
+          authFetch('/api/v1/chargers'),
+          authFetch('/api/v1/cdr')
         ])
 
         if (stRes.ok && chgRes.ok) {
@@ -266,7 +267,7 @@ export const useCsmsStore = defineStore('csms', {
       if (!this.selectedCharger) return
 
       try {
-        const res = await fetch(`/api/v1/chargers/${this.selectedCharger.chargeBoxId}/remote-command`, {
+        const res = await authFetch(`/api/v1/chargers/${this.selectedCharger.chargeBoxId}/remote-command`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action })

@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCsmsStore } from '@/stores/csmsStore'
+import { authFetch } from '@/utils/apiClient'
 
 const store = useCsmsStore()
 const searchQuery = ref('')
@@ -137,7 +138,7 @@ const dbSummary = ref<any>({
 
 async function loadCdrRecords() {
   try {
-    const res = await fetch('/api/v1/cdr')
+    const res = await authFetch('/api/v1/cdr')
     if (res.ok) {
       const data = await res.json()
       if (Array.isArray(data.records)) {

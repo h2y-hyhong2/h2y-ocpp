@@ -5,6 +5,8 @@ import com.lselink.elvis.control.dto.auth.AdminUserDto;
 import com.lselink.elvis.control.dto.auth.AuthTokenDto;
 import com.lselink.elvis.control.dto.auth.LoginRequest;
 import com.lselink.elvis.control.dto.auth.TokenRefreshRequest;
+import com.lselink.elvis.control.entity.AdminUser;
+import com.lselink.elvis.control.repository.AdminUserRepository;
 import com.lselink.elvis.control.security.JwtTokenProvider;
 import com.lselink.elvis.control.service.impl.AuthServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,7 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 /**
  * [S33-API-0070-TE] AuthService 단위 테스트
@@ -22,6 +31,7 @@ class AuthServiceTest {
 
     private AuthServiceImpl authService;
     private JwtTokenProvider jwtTokenProvider;
+    private AdminUserRepository adminUserRepository;
 
     @BeforeEach
     void setUp() {
@@ -33,7 +43,24 @@ class AuthServiceTest {
                 604800
         );
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        authService = new AuthServiceImpl(jwtTokenProvider, passwordEncoder);
+        adminUserRepository = mock(AdminUserRepository.class);
+
+        Map<String, AdminUser> dbMap = new HashMap<>();
+        when(adminUserRepository.save(any(AdminUser.class))).thenAnswer(invocation -> {
+            AdminUser u = invocation.getArgument(0);
+            dbMap.put(u.getUsername(), u);
+            return u;
+        });
+        when(adminUserRepository.findByUsername(anyString())).thenAnswer(invocation -> {
+            String u = invocation.getArgument(0);
+            return Optional.ofNullable(dbMap.get(u));
+        });
+        when(adminUserRepository.existsByUsername(anyString())).thenAnswer(invocation -> {
+            String u = invocation.getArgument(0);
+            return dbMap.containsKey(u);
+        });
+
+        authService = new AuthServiceImpl(jwtTokenProvider, passwordEncoder, adminUserRepository);
         authService.initSeedAdmins();
     }
 

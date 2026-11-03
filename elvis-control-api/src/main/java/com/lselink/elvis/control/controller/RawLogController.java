@@ -5,8 +5,8 @@ import com.lselink.elvis.control.common.PageResponse;
 import com.lselink.elvis.control.dto.RawLogResponseDto;
 import com.lselink.elvis.control.dto.RawLogSearchCondition;
 import com.lselink.elvis.control.service.RawLogService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,14 +16,19 @@ import java.util.List;
 
 /**
  * ClickHouse 원본 통신로그 조회 REST 컨트롤러 (Sprint 30: S30-DATA-0030-CO)
+ * [전사 코딩 표준 준수: Lombok 전면 배제, 명시적 생성자 주입 및 SLF4J 로거 선언]
  */
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/logs/raw")
-@RequiredArgsConstructor
 public class RawLogController {
 
+    private static final Logger log = LoggerFactory.getLogger(RawLogController.class);
+
     private final RawLogService rawLogService;
+
+    public RawLogController(RawLogService rawLogService) {
+        this.rawLogService = rawLogService;
+    }
 
     /**
      * 원본 통신로그 다차원 조건 검색 및 서버사이드 페이징

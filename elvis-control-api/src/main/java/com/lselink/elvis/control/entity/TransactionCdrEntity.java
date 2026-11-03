@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tbl_transaction_cdr")
+@Table(name = "transaction_cdr")
 public class TransactionCdrEntity {
 
     @Id
@@ -52,48 +52,117 @@ public class TransactionCdrEntity {
     @Column(name = "REG_DT")
     private LocalDateTime regDt;
 
-    public TransactionCdrEntity() {
+    public TransactionCdrEntity() {}
+
+    public Long getTransactionId() {
+        return transactionId;
     }
 
-    public Long getTransactionId() { return transactionId; }
-    public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
+    public void setTransactionId(Long transactionId) {
+        this.transactionId = transactionId;
+    }
 
-    public String getChargeBoxId() { return chargeBoxId; }
-    public void setChargeBoxId(String chargeBoxId) { this.chargeBoxId = chargeBoxId; }
+    public String getChargeBoxId() {
+        return chargeBoxId;
+    }
 
-    public Integer getConnectorId() { return connectorId; }
-    public void setConnectorId(Integer connectorId) { this.connectorId = connectorId; }
+    public void setChargeBoxId(String chargeBoxId) {
+        this.chargeBoxId = chargeBoxId;
+    }
 
-    public String getUserTag() { return userTag; }
-    public void setUserTag(String userTag) { this.userTag = userTag; }
+    public Integer getConnectorId() {
+        return connectorId;
+    }
 
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public void setConnectorId(Integer connectorId) {
+        this.connectorId = connectorId;
+    }
 
-    public LocalDateTime getStopTime() { return stopTime; }
-    public void setStopTime(LocalDateTime stopTime) { this.stopTime = stopTime; }
+    public String getUserTag() {
+        return userTag;
+    }
 
-    public Long getMeterStartWh() { return meterStartWh; }
-    public void setMeterStartWh(Long meterStartWh) { this.meterStartWh = meterStartWh; }
+    public void setUserTag(String userTag) {
+        this.userTag = userTag;
+    }
 
-    public Long getMeterStopWh() { return meterStopWh; }
-    public void setMeterStopWh(Long meterStopWh) { this.meterStopWh = meterStopWh; }
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
 
-    public BigDecimal getTotalKwh() { return totalKwh; }
-    public void setTotalKwh(BigDecimal totalKwh) { this.totalKwh = totalKwh; }
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
 
-    public BigDecimal getUnitPrice() { return unitPrice; }
-    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+    public LocalDateTime getStopTime() {
+        return stopTime;
+    }
 
-    public BigDecimal getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+    public void setStopTime(LocalDateTime stopTime) {
+        this.stopTime = stopTime;
+    }
 
-    public String getPaymentStatus() { return paymentStatus; }
-    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    public Long getMeterStartWh() {
+        return meterStartWh;
+    }
 
-    public String getStopReason() { return stopReason; }
-    public void setStopReason(String stopReason) { this.stopReason = stopReason; }
+    public void setMeterStartWh(Long meterStartWh) {
+        this.meterStartWh = meterStartWh;
+    }
 
-    public LocalDateTime getRegDt() { return regDt; }
-    public void setRegDt(LocalDateTime regDt) { this.regDt = regDt; }
+    public Long getMeterStopWh() {
+        return meterStopWh;
+    }
+
+    public void setMeterStopWh(Long meterStopWh) {
+        this.meterStopWh = meterStopWh;
+    }
+
+    public BigDecimal getTotalKwh() {
+        return totalKwh;
+    }
+
+    public void setTotalKwh(BigDecimal totalKwh) {
+        this.totalKwh = totalKwh;
+    }
+
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
+    }
+
+    public void setUnitPrice(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
+    }
+
+    public BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getStopReason() {
+        return stopReason;
+    }
+
+    public void setStopReason(String stopReason) {
+        this.stopReason = stopReason;
+    }
+
+    public LocalDateTime getRegDt() {
+        return regDt;
+    }
+
+    public void setRegDt(LocalDateTime regDt) {
+        this.regDt = regDt;
+    }
 }

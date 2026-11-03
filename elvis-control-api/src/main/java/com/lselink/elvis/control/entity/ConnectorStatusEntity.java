@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tbl_connector_status")
+@Table(name = "connector_status")
 @IdClass(ConnectorStatusId.class)
 public class ConnectorStatusEntity {
 

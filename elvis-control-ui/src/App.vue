@@ -4,8 +4,8 @@
     <!-- LS E-LINK 마스터 브랜드 시그니처 악센트 라인 -->
     <div class="h-[2.5px] w-full bg-gradient-to-r from-[#0A1E5A] via-[#FA002D] to-[#E96600] flex-shrink-0 z-40"></div>
 
-    <!-- GNB 컴팩트 상단 헤더 (48px) -->
-    <header class="window-titlebar flex items-center justify-between px-3 md:px-4 h-12 min-h-[48px] bg-white/95 backdrop-blur-md border-b border-slate-200/90 z-30 flex-shrink-0 shadow-2xs gap-3">
+    <!-- GNB 컴팩트 상단 헤더 (48px) - 로그인 화면이 아닐 때만 표시 -->
+    <header v-if="route.path !== '/login'" class="window-titlebar flex items-center justify-between px-3 md:px-4 h-12 min-h-[48px] bg-white/95 backdrop-blur-md border-b border-slate-200/90 z-30 flex-shrink-0 shadow-2xs gap-3">
       
       <!-- Left: 로고 및 타이틀 & 관제 메뉴 네비게이션 -->
       <div class="flex items-center gap-3 flex-shrink-0">
@@ -139,6 +139,26 @@
 
         <!-- 시계 -->
         <div class="font-mono text-slate-500 text-[11px] hidden md:inline">{{ currentTime }}</div>
+
+        <!-- 로그인 사용자 프로필 및 로그아웃 -->
+        <div v-if="authStore.isAuthenticated" class="flex items-center gap-2 pl-2 border-l border-slate-200">
+          <div class="hidden lg:flex items-center gap-1.5 text-xs">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <span class="font-mono font-bold text-slate-700">{{ authStore.username }}</span>
+            <span v-if="authStore.role" class="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-100 text-slate-500 border border-slate-200">
+              {{ authStore.role.replace('ROLE_', '') }}
+            </span>
+          </div>
+          <button
+            @click="handleLogout"
+            class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+            title="로그아웃"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
         
         <!-- Tauri Window Controls -->
         <div class="window-controls flex items-center gap-1 ml-1">
@@ -150,7 +170,7 @@
     </header>
 
     <!-- 메인 컨테이너 -->
-    <main class="flex-1 overflow-hidden p-2 md:p-3 bg-[var(--bg-base)] relative">
+    <main class="flex-1 overflow-hidden bg-[var(--bg-base)] relative" :class="route.path === '/login' ? 'p-0' : 'p-2 md:p-3'">
       <router-view />
     </main>
 
@@ -193,10 +213,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useCsmsStore } from '@/stores/csmsStore'
+import { useAuthStore } from '@/stores/authStore'
 
+const route = useRoute()
+const router = useRouter()
 const store = useCsmsStore()
+const authStore = useAuthStore()
 const currentTime = ref('')
 let timer: number | null = null
 
@@ -208,6 +233,11 @@ function updateTime() {
 function onThemeChange(theme: string) {
   store.setTheme(theme)
   document.documentElement.setAttribute('data-theme', theme)
+}
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
 }
 
 function handleMinimize() {
@@ -240,12 +270,24 @@ onMounted(() => {
   updateTime()
   timer = window.setInterval(updateTime, 1000)
   document.documentElement.setAttribute('data-theme', store.currentTheme)
-  store.fetchInitialData()
 
-  // 3초 주기 실시간 DB 데이터 자동 동기화 (Polling)
+  if (authStore.isAuthenticated) {
+    store.fetchInitialData()
+  }
+
+  // 3초 주기 실시간 DB 데이터 자동 동기화 (인증 상태일 때만 수행)
   syncTimer = window.setInterval(() => {
-    store.fetchInitialData(true)
+    if (authStore.isAuthenticated && route.path !== '/login') {
+      store.fetchInitialData(true)
+    }
   }, 3000)
+
+  // 로그인 감지 시 초기 데이터 자동 로드
+  watch(() => authStore.isAuthenticated, (isAuth) => {
+    if (isAuth) {
+      store.fetchInitialData()
+    }
+  })
 
   // 단축키 Ctrl+K 글로벌 검색 포커스
   window.addEventListener('keydown', (e) => {

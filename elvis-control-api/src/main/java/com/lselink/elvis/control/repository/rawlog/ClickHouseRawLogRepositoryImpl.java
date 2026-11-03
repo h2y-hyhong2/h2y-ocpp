@@ -3,7 +3,8 @@ package com.lselink.elvis.control.repository.rawlog;
 import com.lselink.elvis.control.config.ClickHouseAvailableCondition;
 import com.lselink.elvis.control.dto.RawLogResponseDto;
 import com.lselink.elvis.control.dto.RawLogSearchCondition;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.jdbc.core.RowMapper;
@@ -21,11 +22,13 @@ import java.util.List;
 
 /**
  * ClickHouse 원본 통신로그 조회 Repository 구현체 (지연 인출 & Late Materialization 최적화)
+ * [전사 코딩 표준 준수: Lombok 전면 배제, 명시적 생성자 주입 및 SLF4J 로거 선언]
  */
-@Slf4j
 @Repository
 @Conditional(ClickHouseAvailableCondition.class)
 public class ClickHouseRawLogRepositoryImpl implements RawLogRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(ClickHouseRawLogRepositoryImpl.class);
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -60,20 +63,20 @@ public class ClickHouseRawLogRepositoryImpl implements RawLogRepository {
     public List<RawLogResponseDto> findPagedByCondition(RawLogSearchCondition condition) {
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("""
-            SELECT 
-                event_time,
-                charge_box_id,
-                connector_id,
-                transaction_id,
-                voltage,
-                current_import,
-                power_active,
-                energy_active,
-                soc,
-                raw_json
-            FROM elvis_poc.meter_value_history
-            WHERE 1 = 1
-            """);
+                SELECT
+                    event_time,
+                    charge_box_id,
+                    connector_id,
+                    transaction_id,
+                    voltage,
+                    current_import,
+                    power_active,
+                    energy_active,
+                    soc,
+                    raw_json
+                FROM elvis_poc.meter_value_history
+                WHERE 1 = 1
+                """);
 
         MapSqlParameterSource params = new MapSqlParameterSource();
         appendWhereConditions(sqlBuilder, params, condition);
@@ -89,7 +92,8 @@ public class ClickHouseRawLogRepositoryImpl implements RawLogRepository {
 
         String sql = sqlBuilder.toString();
         try {
-            List<RawLogResponseDto> resultList = jdbcTemplate.query(sql, params, new RawLogRowMapper());
+            List<RawLogResponseDto> resultList =
+                    jdbcTemplate.query(sql, params, new RawLogRowMapper());
             if (resultList == null) {
                 return Collections.emptyList();
             }
@@ -103,35 +107,37 @@ public class ClickHouseRawLogRepositoryImpl implements RawLogRepository {
     @Override
     public List<RawLogResponseDto> findLatestByChargeBoxId(String chargeBoxId, int limit) {
         String sql = """
-            SELECT 
-                event_time,
-                charge_box_id,
-                connector_id,
-                transaction_id,
-                voltage,
-                current_import,
-                power_active,
-                energy_active,
-                soc,
-                raw_json
-            FROM elvis_poc.meter_value_history
-            WHERE charge_box_id = :chargeBoxId
-            ORDER BY event_time DESC
-            LIMIT :limit
-            """;
+                SELECT
+                    event_time,
+                    charge_box_id,
+                    connector_id,
+                    transaction_id,
+                    voltage,
+                    current_import,
+                    power_active,
+                    energy_active,
+                    soc,
+                    raw_json
+                FROM elvis_poc.meter_value_history
+                WHERE charge_box_id = :chargeBoxId
+                ORDER BY event_time DESC
+                LIMIT :limit
+                """;
 
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("chargeBoxId", chargeBoxId);
         params.addValue("limit", limit);
 
         try {
-            List<RawLogResponseDto> resultList = jdbcTemplate.query(sql, params, new RawLogRowMapper());
+            List<RawLogResponseDto> resultList =
+                    jdbcTemplate.query(sql, params, new RawLogRowMapper());
             if (resultList == null) {
                 return Collections.emptyList();
             }
             return resultList;
         } catch (Exception ex) {
-            log.error("❌ [ClickHouse] 최근 통신로그 조회 실패 - chargeBoxId: {}, 에러: {}", chargeBoxId, ex.getMessage());
+            log.error("❌ [ClickHouse] 최근 통신로그 조회 실패 - chargeBoxId: {}, 에러: {}", chargeBoxId,
+                    ex.getMessage());
             throw ex;
         }
     }
@@ -140,7 +146,8 @@ public class ClickHouseRawLogRepositoryImpl implements RawLogRepository {
      * 다차원 검색 조건절 동적 바인딩 (거버넌스 9조 Clean Code 표준)
      */
     private void appendWhereConditions(
-            StringBuilder sqlBuilder, MapSqlParameterSource params, RawLogSearchCondition condition) {
+            StringBuilder sqlBuilder, MapSqlParameterSource params,
+            RawLogSearchCondition condition) {
         if (condition == null) {
             return;
         }
