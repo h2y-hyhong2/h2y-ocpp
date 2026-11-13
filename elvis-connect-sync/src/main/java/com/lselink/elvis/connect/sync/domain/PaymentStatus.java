@@ -1,13 +1,9 @@
 package com.lselink.elvis.connect.sync.domain;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
 /**
  * 결제 및 과금 상태 Enum
+ * [전사 코딩 표준 준수: Lombok 배제, 명시적 생성자 및 Getter 구현]
  */
-@Getter
-@RequiredArgsConstructor
 public enum PaymentStatus {
 
     PENDING("결제 대기"),
@@ -16,4 +12,12 @@ public enum PaymentStatus {
     CANCELLED("과금 취소");
 
     private final String description;
+
+    PaymentStatus(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
 }

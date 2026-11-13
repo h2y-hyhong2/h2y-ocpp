@@ -5,7 +5,7 @@ import com.lselink.elvis.connect.sync.domain.LoadType;
 import com.lselink.elvis.connect.sync.domain.PricingTouRule;
 import com.lselink.elvis.connect.sync.domain.SeasonType;
 import com.lselink.elvis.connect.sync.dto.CdrBreakdownItem;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -25,34 +25,36 @@ import java.util.Map;
  * 각 시간대별(경/중/최대부하) 전력량을 가중 배분하고 누적 오차를 제로화(Zero-Sum)합니다.
  * </p>
  */
-@Slf4j
 @Component
 public class TouTimeSlicer {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final BigDecimal DEFAULT_UNIT_PRICE = new BigDecimal("255.70"); // 기본 폴백 단가 (원/kWh)
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    // 기본 폴백 단가 (원/kWh)
+    private static final BigDecimal DEFAULT_UNIT_PRICE = new BigDecimal("255.70");
 
     /**
      * 타임 슬라이스 분할 및 시간대별 전력량/요금 계산
      *
-     * @param startTime       충전 시작 일시
-     * @param stopTime        충전 종료 일시
-     * @param totalEnergyKwh  총 충전 전력량 (kWh, 소수점 3자리)
-     * @param ruleCache       (SeasonType + "_" + DayType) -> List<PricingTouRule> 룰 캐시 맵
+     * @param startTime 충전 시작 일시
+     * @param stopTime 충전 종료 일시
+     * @param totalEnergyKwh 총 충전 전력량 (kWh, 소수점 3자리)
+     * @param ruleCache (SeasonType + "_" + DayType) -> List<PricingTouRule> 룰 캐시 맵
      * @return 시간대별 분할 상세 내역 리스트
      */
     public List<CdrBreakdownItem> sliceAndRate(
             LocalDateTime startTime,
             LocalDateTime stopTime,
             BigDecimal totalEnergyKwh,
-            Map<String, List<PricingTouRule>> ruleCache
-    ) {
+            Map<String, List<PricingTouRule>> ruleCache) {
         List<CdrBreakdownItem> breakdownItems = new ArrayList<>();
 
         if (startTime == null || stopTime == null || !stopTime.isAfter(startTime)) {
             // 비정상 시간(시작>=종료)의 경우 단일 슬롯 0원 처리
             LocalDateTime safeStart = (startTime != null) ? startTime : LocalDateTime.now();
-            LocalDateTime safeStop = (stopTime != null && stopTime.isAfter(safeStart)) ? stopTime : safeStart;
+            LocalDateTime safeStop =
+                    (stopTime != null && stopTime.isAfter(safeStart)) ? stopTime : safeStart;
             long dur = Math.max(1L, Duration.between(safeStart, safeStop).toSeconds());
 
             PricingTouRule rule = findRule(safeStart, ruleCache);
@@ -106,7 +108,8 @@ public class TouTimeSlicer {
 
             if (isLastSlot) {
                 // 마지막 슬롯: 소수점 오차 보정을 위해 (전체 전력량 - 누적 전력량) 적용
-                slotKwh = totalEnergyKwh.subtract(accumulatedKwh).max(BigDecimal.ZERO).setScale(3, RoundingMode.HALF_UP);
+                slotKwh = totalEnergyKwh.subtract(accumulatedKwh).max(BigDecimal.ZERO).setScale(3,
+                        RoundingMode.HALF_UP);
             } else {
                 // 가중 비율 계산: (slotSeconds / totalSeconds) * totalEnergyKwh
                 slotKwh = totalEnergyKwh.multiply(BigDecimal.valueOf(slotSeconds))
@@ -154,7 +157,8 @@ public class TouTimeSlicer {
     /**
      * 특정 시각(시작 시각 기준)에 매칭되는 TOU 단가 규칙 검색
      */
-    private PricingTouRule findRule(LocalDateTime time, Map<String, List<PricingTouRule>> ruleCache) {
+    private PricingTouRule findRule(LocalDateTime time,
+            Map<String, List<PricingTouRule>> ruleCache) {
         if (ruleCache == null || ruleCache.isEmpty()) {
             return null;
         }

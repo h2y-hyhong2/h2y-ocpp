@@ -5,8 +5,17 @@ chcp 65001 > nul
 set SCRIPT_DIR=%~dp0
 for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_ROOT=%%~fI"
 
-rem 1순위: JDK 21 LTS 우선 강제 지정 (Gradle 8.11 및 Spring Boot 3.4 안정화 버전)
-if exist "D:\jdk\windows\jdk-21.0.12.1+1" (
+rem 1순위: 워크스페이스 전용 JDK 25 우선 지정 (Spring Boot 4.1.2 및 Gradle 9.8.2)
+rem Gradle 9.8.2 로컬 설치 경로 우선 지정
+if exist "D:\project\lselink\ocpp-lite\gradle\gradle-9.8.2" (
+    set "GRADLE_HOME=D:\project\lselink\ocpp-lite\gradle\gradle-9.8.2"
+    set "PATH=D:\project\lselink\ocpp-lite\gradle\gradle-9.8.2\bin;%PATH%"
+)
+
+if exist "D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1" (
+    set "JAVA_HOME=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1"
+    set "PATH=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1\bin;%PATH%"
+) else if exist "D:\jdk\windows\jdk-21.0.12.1+1" (
     set "JAVA_HOME=D:\jdk\windows\jdk-21.0.12.1+1"
     set "PATH=D:\jdk\windows\jdk-21.0.12.1+1\bin;%PATH%"
 ) else if exist "D:\jdk\windows\jdk-25.0.4.1+1" (

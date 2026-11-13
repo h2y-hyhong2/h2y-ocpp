@@ -17,7 +17,6 @@ Docker 없이 `binaries/` 폴더에 위치한 포터블 바이너리와 Gradle �
 | **`start-elvis-connect-ws.bat`** | OCPP 1.6 WebSocket 게이트웨이 기동 | 9080 (HTTP/WS) |
 | **`start-elvis-connect-sync.bat`** | Kafka 이벤트 수신 및 상태 동기화 엔진 기동 | 9081 (Actuator/HTTP) |
 | **`start-elvis-control-api.bat`** | 관제 어드민 REST API 서버 기동 | 9082 (HTTP) |
-| **`start-elvis-data-clickhouse.bat`** | ClickHouse 시계열 대용량 적재 엔진 기동 | 9083 (HTTP) |
 
 ---
 

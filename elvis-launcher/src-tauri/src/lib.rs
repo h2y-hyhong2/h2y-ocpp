@@ -301,24 +301,18 @@ fn check_middleware_status(
     api_port: Option<u16>,
     ws_port: Option<u16>,
     sync_port: Option<u16>,
-    clickhouse_port: Option<u16>,
-    clickhouse_data_port: Option<u16>,
 ) -> serde_json::Value {
     let p_mysql = mysql_port.unwrap_or(13306);
     let p_kafka = kafka_port.unwrap_or(19092);
     let p_api = api_port.unwrap_or(9082);
     let p_ws = ws_port.unwrap_or(9080);
     let p_sync = sync_port.unwrap_or(9081);
-    let p_clickhouse = clickhouse_port.unwrap_or(8123);
-    let p_clickhouse_data = clickhouse_data_port.unwrap_or(9083);
 
     let kafka = check_single_port(p_kafka);
     let mysql = check_single_port(p_mysql);
     let api = check_single_port(p_api);
     let ws = check_single_port(p_ws);
     let sync = check_single_port(p_sync);
-    let clickhouse = check_single_port(p_clickhouse);
-    let clickhouse_data = check_single_port(p_clickhouse_data);
 
     serde_json::json!({
         "kafka": kafka,
@@ -326,16 +320,12 @@ fn check_middleware_status(
         "controlApi": api,
         "connectWs": ws,
         "connectSync": sync,
-        "clickhouse": clickhouse,
-        "clickhouseData": clickhouse_data,
         "ports": {
             "mysql": p_mysql,
             "kafka": p_kafka,
             "api": p_api,
             "ws": p_ws,
-            "sync": p_sync,
-            "clickhouse": p_clickhouse,
-            "clickhouseData": p_clickhouse_data
+            "sync": p_sync
         }
     })
 }
@@ -382,7 +372,7 @@ fn execute_bat_script(script_file: &str, service_name: &str) -> Result<String, S
         let cwd = daemon_script.parent().unwrap();
 
         // run-daemon.ps1 (WMI Win32_Process.Create)를 통해 런처(Tauri) 프로세스 트리와 완전히 분리된 무창 독립 데몬으로 기동
-        // 런처 창을 닫거나 런처 앱이 종료되어도 MySQL, Kafka, ClickHouse 및 코어 프로세스가 종료되지 않고 유지됨
+        // 런처 창을 닫거나 런처 앱이 종료되어도 MySQL, Kafka 및 코어 프로세스가 종료되지 않고 유지됨
         Command::new("powershell")
             .args([
                 "-NoProfile",
@@ -437,12 +427,9 @@ fn stop_service_processes(service: &str) -> Result<String, String> {
             "ws" => "Get-NetTCPConnection -LocalPort 9080 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect WS*\" 2>$null",
             "sync" => "Get-NetTCPConnection -LocalPort 9081 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect Sync*\" 2>$null",
             "api" => "Get-NetTCPConnection -LocalPort 9082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control API*\" 2>$null",
-            "clickhouse" => "Get-NetTCPConnection -LocalPort 8123 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null",
-            "clickhouse-data" => "Get-NetTCPConnection -LocalPort 9083 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse Bulk*\" 2>$null",
-            "all-extensions" => "Get-NetTCPConnection -LocalPort 8123,9083 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null",
             "all-services" => "Get-NetTCPConnection -LocalPort 9080,9081,9082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null",
             "all-infra" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache Kafka*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
-            "all" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,9080,9081,9082,8123,9083,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - ClickHouse*\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+            "all" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,9080,9081,9082,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
             _ => return Err("지원되지 않는 서비스입니다.".to_string()),
         };
 
@@ -485,21 +472,11 @@ fn start_middleware_detached(service: String) -> Result<String, String> {
             });
             Ok("코어 백엔드(WS, Sync, API)가 순차적으로 백그라운드 기동됩니다.".to_string())
         }
-        "all-extensions" => {
-            std::thread::spawn(|| {
-                let _ = execute_bat_script("start-clickhouse.bat", "clickhouse");
-                std::thread::sleep(std::time::Duration::from_millis(3000));
-                let _ = execute_bat_script("start-elvis-data-clickhouse.bat", "clickhouse-data");
-            });
-            Ok("확장 기능(ClickHouse, elvis-data-clickhouse)이 순차적으로 백그라운드 기동됩니다.".to_string())
-        }
         "kafka" => execute_bat_script("start-kafka-kraft.bat", "kafka"),
         "mysql" => execute_bat_script("start-mysql.bat", "mysql"),
         "ws" => execute_bat_script("start-elvis-connect-ws.bat", "ws"),
         "sync" => execute_bat_script("start-elvis-connect-sync.bat", "sync"),
         "api" => execute_bat_script("start-elvis-control-api.bat", "api"),
-        "clickhouse" => execute_bat_script("start-clickhouse.bat", "clickhouse"),
-        "clickhouse-data" => execute_bat_script("start-elvis-data-clickhouse.bat", "clickhouse-data"),
         "tester" => execute_bat_script("start-all-tester.bat", "tester"),
         "topics" => execute_bat_script("create-kafka-topics.bat", "topics"),
         _ => Err("알 수 없는 서비스 이름입니다.".to_string()),
@@ -525,15 +502,9 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
             "ws" => ("ws.log".to_string(), "elvis-connect-ws (:9080)"),
             "sync" => ("sync.log".to_string(), "elvis-connect-sync (:9081)"),
             "api" => ("api.log".to_string(), "elvis-control-api (:9082)"),
-            "clickhouse" => ("clickhouse.log".to_string(), "ClickHouse v26.7 (:8123)"),
-            "clickhouse-data" => ("clickhouse-data.log".to_string(), "elvis-data-clickhouse (:9083)"),
             "tester" => ("tester.log".to_string(), "elvis-tester (:9085)"),
             _ => ("mysql.log".to_string(), "서비스"),
         };
-
-        if is_error_mode && svc == "clickhouse" {
-            log_file_name = "clickhouse-err.log".to_string();
-        }
 
         let log_dir = "D:\\elvis-lite\\logs";
         let full_log_path = format!("{}\\{}", log_dir, log_file_name);
@@ -564,61 +535,32 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
 
         // 2) 열려 있지 않은 경우 신규 창 기동 (에러 모드 vs 일반 모드 분기)
         let ps_cmd = if is_error_mode {
-            if svc == "clickhouse" {
-                format!(
-                    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
-                     chcp 65001 >$null; \
-                     $host.UI.RawUI.WindowTitle = '{title}'; \
+            format!(
+                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
+                 chcp 65001 >$null; \
+                 $host.UI.RawUI.WindowTitle = '{title}'; \
+                 Clear-Host; \
+                 Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
+                 Write-Host '  ELVIS CSMS Lite - {display_name} 실시간 [에러/예외] 필터 스트림' -ForegroundColor Red; \
+                 Write-Host '  감시 대상: {path} (ERROR | Exception | FATAL | 실패 필터링)' -ForegroundColor DarkGray; \
+                 Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; \
+                 Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
+                 Write-Host ''; \
+                 if (Test-Path '{path}') {{ \
+                     Write-Host '[실시간 필터] ERROR/Exception 발생 이벤트를 대기 및 모니터링합니다...' -ForegroundColor DarkYellow; \
+                     Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }} \
+                 }} else {{ \
+                     Write-Host '[안내] 원본 로그 파일({log_file_name}) 대기 중...' -ForegroundColor Yellow; \
+                     while (-not (Test-Path '{path}')) {{ Start-Sleep -Seconds 2 }}; \
                      Clear-Host; \
-                     Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
-                     Write-Host '  ELVIS CSMS Lite - {display_name} 실시간 [에러] 콘솔 로그' -ForegroundColor Red; \
-                     Write-Host '  에러 로그 경로: {path}' -ForegroundColor DarkGray; \
-                     Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; \
-                     Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
-                     Write-Host ''; \
-                     if (Test-Path '{path}') {{ \
-                         Write-Host '[모니터링] {display_name} 전용 에러 로그 스트림을 감시합니다.' -ForegroundColor Red; \
-                         Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8 \
-                     }} else {{ \
-                         Write-Host '[안내] 에러 로그 파일({log_file_name}) 대기 중...' -ForegroundColor Yellow; \
-                         while (-not (Test-Path '{path}')) {{ Start-Sleep -Seconds 2 }}; \
-                         Clear-Host; \
-                         Write-Host '[연결됨] 에러 로그 감시를 시작합니다.' -ForegroundColor Red; \
-                         Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8 \
-                     }}",
-                    title = win_title,
-                    display_name = display_name,
-                    path = full_log_path,
-                    log_file_name = log_file_name
-                )
-            } else {
-                format!(
-                    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
-                     chcp 65001 >$null; \
-                     $host.UI.RawUI.WindowTitle = '{title}'; \
-                     Clear-Host; \
-                     Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
-                     Write-Host '  ELVIS CSMS Lite - {display_name} 실시간 [에러/예외] 필터 스트림' -ForegroundColor Red; \
-                     Write-Host '  감시 대상: {path} (ERROR | Exception | FATAL | 실패 필터링)' -ForegroundColor DarkGray; \
-                     Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; \
-                     Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
-                     Write-Host ''; \
-                     if (Test-Path '{path}') {{ \
-                         Write-Host '[실시간 필터] ERROR/Exception 발생 이벤트를 대기 및 모니터링합니다...' -ForegroundColor DarkYellow; \
-                         Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }} \
-                     }} else {{ \
-                         Write-Host '[안내] 원본 로그 파일({log_file_name}) 대기 중...' -ForegroundColor Yellow; \
-                         while (-not (Test-Path '{path}')) {{ Start-Sleep -Seconds 2 }}; \
-                         Clear-Host; \
-                         Write-Host '[연결됨] 에러 필터 감시를 시작합니다.' -ForegroundColor Red; \
-                         Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }} \
-                     }}",
-                    title = win_title,
-                    display_name = display_name,
-                    path = full_log_path,
-                    log_file_name = log_file_name
-                )
-            }
+                     Write-Host '[연결됨] 에러 필터 감시를 시작합니다.' -ForegroundColor Red; \
+                     Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }} \
+                 }}",
+                title = win_title,
+                display_name = display_name,
+                path = full_log_path,
+                log_file_name = log_file_name
+            )
         } else {
             format!(
                 "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \

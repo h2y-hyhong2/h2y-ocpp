@@ -46,7 +46,7 @@
     <!-- 메인 컨텐츠 영역 (창 세로 꽉 채움 레이아웃) -->
     <main class="flex-1 min-h-0 max-w-2xl w-full mx-auto p-2 flex flex-col gap-1.5 overflow-hidden">
       <!-- 서비스 통합 리스트 카드 (5개 서비스) -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col flex-[5] min-h-0 overflow-hidden">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col flex-1 min-h-0 overflow-hidden">
         
         <!-- A. 인프라 미들웨어 그룹 -->
         <div class="flex-shrink-0 px-3.5 py-1 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
@@ -538,217 +538,6 @@
           </div>
         </div>
       </div>
-
-      <!-- C. 확장 기능 (시계열 분석 & OLAP) 독립 카드 -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col flex-[2] min-h-0 overflow-hidden">
-        <div class="flex-shrink-0 px-3.5 py-1 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
-            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-700">확장 기능 (시계열 분석 & OLAP)</span>
-            <span
-              class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-medium border"
-              :class="extensionRunningCount > 0 ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-slate-100 text-slate-500 border-slate-200'"
-            >
-              {{ extensionRunningCount }}/2
-            </span>
-          </div>
-
-          <!-- 확장 기능 헤더 제어 버튼군: 시작 / 종료 / 재기동 -->
-          <div class="flex items-center gap-1">
-            <button
-              @click="startExtensions"
-              :disabled="isExecuting || (infra.clickhouse && infra.clickhouseData)"
-              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
-              title="확장 기능(ClickHouse, Bulk 엔진) 순차 시작"
-            >
-              <svg v-if="pendingAction.extensions === 'start'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-              <span>{{ pendingAction.extensions === 'start' ? '기동중...' : '시작' }}</span>
-            </button>
-            <button
-              @click="stopExtensions"
-              :disabled="isExecuting || (!infra.clickhouse && !infra.clickhouseData)"
-              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
-              title="확장 기능(ClickHouse, Bulk 엔진) 일괄 종료"
-            >
-              <svg v-if="pendingAction.extensions === 'stop'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-              <span>{{ pendingAction.extensions === 'stop' ? '종료중...' : '종료' }}</span>
-            </button>
-            <button
-              @click="restartExtensions"
-              :disabled="isExecuting"
-              class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
-              title="확장 기능 순차 재기동"
-            >
-              <svg v-if="pendingAction.extensions === 'restart'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-              <span>{{ pendingAction.extensions === 'restart' ? '재기동중...' : '재기동' }}</span>
-            </button>
-            <button
-              @click="openProcessStatus('extension')"
-              class="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/90 shadow-2xs transition-all cursor-pointer flex items-center gap-0.5"
-              title="확장 기능 포트(8123, 9083) 및 프로세스 진단"
-            >
-              <svg class="w-2.5 h-2.5 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              <span>프로세스</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="flex-1 min-h-0 flex flex-col divide-y divide-slate-100">
-          <!-- 6) ClickHouse Server -->
-          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
-            <div class="flex items-center gap-2.5">
-              <span
-                class="w-2 h-2 rounded-full flex-shrink-0"
-                :class="pendingAction.clickhouse ? 'bg-amber-400 ring-2 ring-amber-200 animate-ping' : (infra.clickhouse ? 'bg-emerald-500 ring-2 ring-emerald-100 animate-pulse' : 'bg-slate-300')"
-              ></span>
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900">ClickHouse v26.7</span>
-                  <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.clickhouse }}</span>
-                  <span
-                    class="text-[9px] font-mono font-medium"
-                    :class="pendingAction.clickhouse ? 'text-amber-600' : (infra.clickhouse ? 'text-emerald-600' : 'text-slate-400')"
-                  >
-                    {{ pendingAction.clickhouse === 'start' ? 'STARTING...' : pendingAction.clickhouse === 'stop' ? 'STOPPING...' : pendingAction.clickhouse === 'restart' ? 'RESTARTING...' : (infra.clickhouse ? 'ONLINE' : 'OFFLINE') }}
-                  </span>
-                </div>
-                <p class="text-[10.5px] text-slate-500 leading-tight">대용량 1초 미터값 및 시계열 분석 OLAP DB (WSL2)</p>
-              </div>
-            </div>
-
-            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
-              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
-              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
-                <button
-                  @click="openLogWindow('clickhouse', 'all')"
-                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
-                  title="ClickHouse 전체 통합 로그 열기"
-                >
-                  로그
-                </button>
-                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
-                <button
-                  @click="openLogWindow('clickhouse', 'error')"
-                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
-                  title="ClickHouse 실시간 에러 전용 로그(clickhouse-err.log) 창 열기"
-                >
-                  에러로그
-                </button>
-              </div>
-
-              <!-- 서비스 제어: 시작 / 종료 -->
-              <button
-                v-if="!infra.clickhouse"
-                @click="control('start', 'clickhouse', true)"
-                :disabled="isExecuting || pendingAction.clickhouse !== null"
-                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-              >
-                <svg v-if="pendingAction.clickhouse === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span>{{ pendingAction.clickhouse === 'start' ? '기동중' : '시작' }}</span>
-              </button>
-              <button
-                v-else
-                @click="control('stop', 'clickhouse')"
-                :disabled="isExecuting || pendingAction.clickhouse !== null"
-                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-              >
-                <svg v-if="pendingAction.clickhouse === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span>{{ pendingAction.clickhouse === 'stop' ? '종료중' : '종료' }}</span>
-              </button>
-
-              <!-- 재기동 -->
-              <button
-                @click="restartService('clickhouse')"
-                :disabled="isExecuting || pendingAction.clickhouse !== null"
-                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                title="ClickHouse 재기동"
-              >
-                <svg v-if="pendingAction.clickhouse === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span>{{ pendingAction.clickhouse === 'restart' ? '재기동중' : '재기동' }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 7) elvis-data-clickhouse -->
-          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
-            <div class="flex items-center gap-2.5">
-              <span
-                class="w-2 h-2 rounded-full flex-shrink-0"
-                :class="pendingAction.clickhouseData ? 'bg-amber-400 ring-2 ring-amber-200 animate-ping' : (infra.clickhouseData ? 'bg-emerald-500 ring-2 ring-emerald-100 animate-pulse' : 'bg-slate-300')"
-              ></span>
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900">elvis-data-clickhouse</span>
-                  <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.clickhouseData }}</span>
-                  <span
-                    class="text-[9px] font-mono font-medium"
-                    :class="pendingAction.clickhouseData ? 'text-amber-600' : (infra.clickhouseData ? 'text-emerald-600' : 'text-slate-400')"
-                  >
-                    {{ pendingAction.clickhouseData === 'start' ? 'STARTING...' : pendingAction.clickhouseData === 'stop' ? 'STOPPING...' : pendingAction.clickhouseData === 'restart' ? 'RESTARTING...' : (infra.clickhouseData ? 'ONLINE' : 'OFFLINE') }}
-                  </span>
-                </div>
-                <p class="text-[10.5px] text-slate-500 leading-tight">Kafka 미터값 컨슘 및 ClickHouse 1초/1,000건 벌크 적재 엔진</p>
-              </div>
-            </div>
-
-            <!-- 정돈된 액션 버튼군: [로그/에러 세그먼트] + [시작/종료] + [재기동] -->
-            <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
-              <!-- 로그 세그먼트 뷰어 (통합 로그 / 실시간 에러) -->
-              <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-2xs">
-                <button
-                  @click="openLogWindow('clickhouse-data', 'all')"
-                  class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
-                  title="ClickHouse Bulk 적재 전체 통합 로그 열기"
-                >
-                  로그
-                </button>
-                <div class="w-px h-2.5 bg-slate-200 mx-0.5"></div>
-                <button
-                  @click="openLogWindow('clickhouse-data', 'error')"
-                  class="px-2 py-0.5 rounded text-[10px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer"
-                  title="ClickHouse Bulk 적재 실시간 에러/예외 로그 전용 창 열기"
-                >
-                  에러로그
-                </button>
-              </div>
-
-              <!-- 서비스 제어: 시작 / 종료 -->
-              <button
-                v-if="!infra.clickhouseData"
-                @click="control('start', 'clickhouse-data', true)"
-                :disabled="isExecuting || pendingAction.clickhouseData !== null"
-                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-              >
-                <svg v-if="pendingAction.clickhouseData === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span>{{ pendingAction.clickhouseData === 'start' ? '기동중' : '시작' }}</span>
-              </button>
-              <button
-                v-else
-                @click="control('stop', 'clickhouse-data')"
-                :disabled="isExecuting || pendingAction.clickhouseData !== null"
-                class="min-w-[48px] px-2.5 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-              >
-                <svg v-if="pendingAction.clickhouseData === 'stop'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span>{{ pendingAction.clickhouseData === 'stop' ? '종료중' : '종료' }}</span>
-              </button>
-
-              <!-- 재기동 -->
-              <button
-                @click="restartService('clickhouse-data')"
-                :disabled="isExecuting || pendingAction.clickhouseData !== null"
-                class="min-w-[46px] px-2 py-0.5 rounded-md text-center text-[11px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                title="ClickHouse Bulk 적재 재기동"
-              >
-                <svg v-if="pendingAction.clickhouseData === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span>{{ pendingAction.clickhouseData === 'restart' ? '재기동중' : '재기동' }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
     </main>
 
     <!-- 토스트 알림 컨테이너 -->
@@ -798,7 +587,7 @@ function addToast(title: string, message: string, type: 'success' | 'error' | 'i
   }, 3500)
 }
 
-type LogServiceType = 'mysql' | 'kafka' | 'ws' | 'sync' | 'api' | 'clickhouse' | 'clickhouse-data'
+type LogServiceType = 'mysql' | 'kafka' | 'ws' | 'sync' | 'api'
 
 // 1. 현재 창의 역할 판별 (URL 쿼리스트링 및 Tauri 창 라벨 상호 검증)
 const urlParams = new URLSearchParams(window.location.search)
@@ -810,7 +599,7 @@ try {
   if (currentWin && currentWin.label && currentWin.label.startsWith('log_')) {
     detectedView = 'logs'
     const labelSvc = currentWin.label.replace('log_', '') as LogServiceType
-    if (['mysql', 'kafka', 'ws', 'sync', 'api', 'clickhouse', 'clickhouse-data'].includes(labelSvc)) {
+    if (['mysql', 'kafka', 'ws', 'sync', 'api'].includes(labelSvc)) {
       detectedService = labelSvc
     }
   }
@@ -819,15 +608,13 @@ try {
 const currentView = ref(detectedView)
 const selectedLogService = ref<LogServiceType>(detectedService)
 
-// 핵심 서비스 및 확장 기능 점유 상태
+// 핵심 서비스 점유 상태
 const infra = reactive({
   mysql: false,
   kafka: false,
   connectWs: false,
   connectSync: false,
-  controlApi: false,
-  clickhouse: false,
-  clickhouseData: false
+  controlApi: false
 })
 
 const ports = reactive({
@@ -835,9 +622,7 @@ const ports = reactive({
   kafka: 19092,
   ws: 9080,
   sync: 9081,
-  api: 9082,
-  clickhouse: 8123,
-  clickhouseData: 9083
+  api: 9082
 })
 
 const isChecking = ref(false)
@@ -850,26 +635,21 @@ const pendingAction = reactive<Record<string, string | null>>({
   ws: null,
   sync: null,
   api: null,
-  clickhouse: null,
-  clickhouseData: null,
   infra: null,
   services: null,
-  extensions: null,
   all: null
 })
 
-const totalCount = computed(() => 7)
+const totalCount = computed(() => 5)
 
-// 가동 중인 전체 서비스 수 계산 (총 7개 기준)
+// 가동 중인 전체 서비스 수 계산 (총 5개 기준)
 const runningCount = computed(() => {
   return [
     infra.mysql,
     infra.kafka,
     infra.connectWs,
     infra.connectSync,
-    infra.controlApi,
-    infra.clickhouse,
-    infra.clickhouseData
+    infra.controlApi
   ].filter(Boolean).length
 })
 
@@ -883,13 +663,8 @@ const coreRunningCount = computed(() => {
   return [infra.connectWs, infra.connectSync, infra.controlApi].filter(Boolean).length
 })
 
-// 확장 기능 가동 수 (2개 기준)
-const extensionRunningCount = computed(() => {
-  return [infra.clickhouse, infra.clickhouseData].filter(Boolean).length
-})
-
 const isAllRunning = computed(() => {
-  return infra.mysql && infra.kafka && infra.connectWs && infra.connectSync && infra.controlApi && infra.clickhouse && infra.clickhouseData
+  return infra.mysql && infra.kafka && infra.connectWs && infra.connectSync && infra.controlApi
 })
 const logLines = ref<string[]>([])
 const searchKeyword = ref('')
@@ -920,8 +695,6 @@ function getServiceStatus(service: string): boolean {
   if (service === 'ws') return !!infra.connectWs
   if (service === 'sync') return !!infra.connectSync
   if (service === 'api') return !!infra.controlApi
-  if (service === 'clickhouse') return !!infra.clickhouse
-  if (service === 'clickhouse-data') return !!infra.clickhouseData
   return false
 }
 
@@ -955,8 +728,6 @@ async function checkStatus() {
     infra.controlApi = !!data.controlApi
     infra.connectWs = !!data.connectWs
     infra.connectSync = !!data.connectSync
-    infra.clickhouse = !!data.clickhouse
-    infra.clickhouseData = !!data.clickhouseData
 
     if (data.ports) {
       ports.mysql = data.ports.mysql || ports.mysql
@@ -964,8 +735,6 @@ async function checkStatus() {
       ports.api = data.ports.api || ports.api
       ports.ws = data.ports.ws || ports.ws
       ports.sync = data.ports.sync || ports.sync
-      ports.clickhouse = data.ports.clickhouse || ports.clickhouse
-      ports.clickhouseData = data.ports.clickhouseData || ports.clickhouseData
     }
 
     // 서비스가 완전히 기동되거나 종료되면 개별 pending 상태 자동 해제
@@ -983,12 +752,6 @@ async function checkStatus() {
 
     if (infra.controlApi && pendingAction.api === 'start') pendingAction.api = null
     if (!infra.controlApi && pendingAction.api === 'stop') pendingAction.api = null
-
-    if (infra.clickhouse && pendingAction.clickhouse === 'start') pendingAction.clickhouse = null
-    if (!infra.clickhouse && pendingAction.clickhouse === 'stop') pendingAction.clickhouse = null
-
-    if (infra.clickhouseData && pendingAction.clickhouseData === 'start') pendingAction.clickhouseData = null
-    if (!infra.clickhouseData && pendingAction.clickhouseData === 'stop') pendingAction.clickhouseData = null
   } catch (e: any) {
     console.warn('[Status-Check-Error]', e.message)
   } finally {
@@ -1117,7 +880,7 @@ async function restartInfra() {
   }
 }
 
-// 3-3. 개별 단일 서비스 재기동 (MySQL, Kafka, WS, Sync, API, ClickHouse, Bulk)
+// 3-3. 개별 단일 서비스 재기동 (MySQL, Kafka, WS, Sync, API)
 async function restartService(service: string) {
   isExecuting.value = true
   pendingAction[service] = 'restart'
@@ -1126,9 +889,7 @@ async function restartService(service: string) {
     kafka: 'Kafka',
     ws: 'WS 게이트웨이',
     sync: 'Sync 엔진',
-    api: 'Control API',
-    clickhouse: 'ClickHouse OLAP',
-    'clickhouse-data': 'ClickHouse Bulk 적재'
+    api: 'Control API'
   }
   const svcName = serviceNames[service] || service.toUpperCase()
 
@@ -1263,71 +1024,6 @@ async function restartServices() {
   }
 }
 
-// 4-3. 확장 기능만 시작 (ClickHouse & elvis-data-clickhouse)
-async function startExtensions() {
-  isExecuting.value = true
-  pendingAction.extensions = 'start'
-  if (!infra.clickhouse) pendingAction.clickhouse = 'start'
-  if (!infra.clickhouseData) pendingAction.clickhouseData = 'start'
-  try {
-    const res = await fetch('/api/infra/start?service=all-extensions&background=true', { method: 'POST' })
-    const data = await res.json()
-    if (data.success) {
-      addToast('확장 기능 기동', 'ClickHouse -> elvis-data-clickhouse 순차 기동 중입니다...', 'info')
-      const ok = await waitForCondition(() => infra.clickhouse && infra.clickhouseData, 60000, 1000)
-      if (ok) {
-        addToast('확장 기능 기동 완료', 'ClickHouse 및 Bulk 적재 엔진이 모두 정상 기동되었습니다.', 'success')
-      }
-    } else {
-      addToast('기동 실패', data.message, 'error')
-    }
-  } catch (err: any) {
-    addToast('기동 실패', err.message, 'error')
-  } finally {
-    pendingAction.extensions = null
-    pendingAction.clickhouse = null
-    pendingAction.clickhouseData = null
-    isExecuting.value = false
-    await checkStatus()
-  }
-}
-
-// 4-4. 확장 기능만 중지
-async function stopExtensions() {
-  isExecuting.value = true
-  pendingAction.extensions = 'stop'
-  if (infra.clickhouse) pendingAction.clickhouse = 'stop'
-  if (infra.clickhouseData) pendingAction.clickhouseData = 'stop'
-  try {
-    const res = await fetch('/api/infra/stop?service=all-extensions', { method: 'POST' })
-    const data = await res.json()
-    if (data.success) {
-      addToast('확장 기능 중지', '확장 기능 서비스 중지 중입니다...', 'info')
-      const ok = await waitForCondition(() => !infra.clickhouse && !infra.clickhouseData, 15000, 500)
-      if (ok) {
-        addToast('확장 기능 중지 완료', 'ClickHouse 및 Bulk 적재 엔진이 모두 완전히 중지되었습니다.', 'success')
-      }
-    } else {
-      addToast('중지 실패', data.message, 'error')
-    }
-  } catch (err: any) {
-    addToast('중지 실패', err.message, 'error')
-  } finally {
-    pendingAction.extensions = null
-    pendingAction.clickhouse = null
-    pendingAction.clickhouseData = null
-    isExecuting.value = false
-    await checkStatus()
-  }
-}
-
-// 4-5. 확장 기능 재기동
-async function restartExtensions() {
-  await stopExtensions()
-  await new Promise((r) => setTimeout(r, 1500))
-  await startExtensions()
-}
-
 // 5. 전체 기동 (인프라 + 코어 서비스 일괄 순차 부팅: 5대 모두 뜰 때까지 대기)
 async function startAll(isBackground = true) {
   isExecuting.value = true
@@ -1440,9 +1136,9 @@ async function restartBackground() {
   }
 }
 
-// 8. 프로세스 및 포트 점유 실시간 진단 콘솔 열기 (all | infra | core | extension)
+// 8. 프로세스 및 포트 점유 실시간 진단 콘솔 열기 (all | infra | core)
 async function openProcessStatus(target: string = 'all') {
-  const targetLabel = target === 'infra' ? '인프라' : target === 'core' ? '코어 엔진' : (target === 'extension' || target === 'extensions') ? '확장 기능' : '전체'
+  const targetLabel = target === 'infra' ? '인프라' : target === 'core' ? '코어 엔진' : '전체'
   try {
     // 1) Tauri 데스크톱 환경: Rust 커맨드로 전용 진단 터미널 기동
     await invoke('open_process_status_window', { target })

@@ -440,7 +440,7 @@ config/
 ├── connect-ws/
 │   └── application.yml        # WebSocket Gateway (포트 8080, UI의 /ws 프록시 대상)
 ├── connect-sync/
-│   └── application.yml        # Parser & Sync Engine (Kafka/ClickHouse 연동)
+│   └── application.yml        # Parser & Sync Engine (Kafka/MySQL 연동)
 ├── mysql/
 │   └── my.ini                 # MySQL 9.71 인코딩, 타임존(KST), 포트(3306)
 └── kafka/

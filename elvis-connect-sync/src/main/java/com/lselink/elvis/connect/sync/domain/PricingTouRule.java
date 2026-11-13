@@ -9,11 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -21,6 +16,7 @@ import java.time.LocalDateTime;
 
 /**
  * TOU 계절/요일/시간대별 단가 상세 규칙 엔티티 (Sprint 21: S21-SYNC-0080-CO)
+ * [전사 코딩 표준 준수: Lombok 배제, 순수 자바 엔티티 및 Builder 패턴 구현]
  */
 @Entity
 @Table(
@@ -29,10 +25,6 @@ import java.time.LocalDateTime;
                 @Index(name = "IX_TOU_RULE_LOOKUP", columnList = "POLICY_ID, SEASON_TYPE, DAY_TYPE, START_HOUR, END_HOUR")
         }
 )
-@Getter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class PricingTouRule {
 
     @Id
@@ -89,10 +81,127 @@ public class PricingTouRule {
     @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
+    protected PricingTouRule() {
+    }
+
+    public PricingTouRule(Long id, String policyId, SeasonType seasonType, DayType dayType,
+                          LoadType loadType, int startHour, int endHour, BigDecimal unitPrice, LocalDateTime regDt) {
+        this.id = id;
+        this.policyId = policyId;
+        this.seasonType = seasonType;
+        this.dayType = dayType;
+        this.loadType = loadType;
+        this.startHour = startHour;
+        this.endHour = endHour;
+        this.unitPrice = unitPrice;
+        this.regDt = regDt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getPolicyId() {
+        return policyId;
+    }
+
+    public SeasonType getSeasonType() {
+        return seasonType;
+    }
+
+    public DayType getDayType() {
+        return dayType;
+    }
+
+    public LoadType getLoadType() {
+        return loadType;
+    }
+
+    public int getStartHour() {
+        return startHour;
+    }
+
+    public int getEndHour() {
+        return endHour;
+    }
+
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
+    }
+
+    public LocalDateTime getRegDt() {
+        return regDt;
+    }
+
     /**
      * 특정 시간(hour)이 본 규칙의 적용 시간 범위에 속하는지 여부
      */
     public boolean matchesHour(int hour) {
         return hour >= startHour && hour < endHour;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Long id;
+        private String policyId;
+        private SeasonType seasonType;
+        private DayType dayType;
+        private LoadType loadType;
+        private int startHour;
+        private int endHour;
+        private BigDecimal unitPrice;
+        private LocalDateTime regDt;
+
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder policyId(String policyId) {
+            this.policyId = policyId;
+            return this;
+        }
+
+        public Builder seasonType(SeasonType seasonType) {
+            this.seasonType = seasonType;
+            return this;
+        }
+
+        public Builder dayType(DayType dayType) {
+            this.dayType = dayType;
+            return this;
+        }
+
+        public Builder loadType(LoadType loadType) {
+            this.loadType = loadType;
+            return this;
+        }
+
+        public Builder startHour(int startHour) {
+            this.startHour = startHour;
+            return this;
+        }
+
+        public Builder endHour(int endHour) {
+            this.endHour = endHour;
+            return this;
+        }
+
+        public Builder unitPrice(BigDecimal unitPrice) {
+            this.unitPrice = unitPrice;
+            return this;
+        }
+
+        public Builder regDt(LocalDateTime regDt) {
+            this.regDt = regDt;
+            return this;
+        }
+
+        public PricingTouRule build() {
+            return new PricingTouRule(id, policyId, seasonType, dayType, loadType, startHour, endHour, unitPrice, regDt);
+        }
     }
 }

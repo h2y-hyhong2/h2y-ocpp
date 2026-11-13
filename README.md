@@ -19,10 +19,10 @@
 
 ## 🛠️ 핵심 기술 스택 (Core Tech Stack)
 
-- **Backend Core:** Java 25 (Virtual Threads), Spring Boot 3.x/4.x
+- **Backend Core:** Java 25 (Temurin OpenJDK, Virtual Threads, No-Lombok), Spring Boot 4.1.2, Gradle 9.8.2
 - **Enterprise Integration:** Spring-Kafka (제 2안 채택 적용 기준)
 - **Message Broker:** Apache Kafka (KRaft Mode)
-- **Databases:** MySQL 9.71 (OLTP[^OLTP], 정산/자산 마스터) & ClickHouse (OLAP[^OLAP], 미터값/원본로그 시계열)
+- **Databases:** MySQL 9.71 (OLTP[^OLTP], 정산/자산 마스터)
 - **In-Memory Cache:** Redis (분산 세션 및 명령 라우팅 Pub/Sub)
 - **Frontend / Desktop App:** Vue 3 (Composition API[^API], Pinia, Pure Tailwind CSS, ECharts) & **Tauri 2.0 (Rust 기반 초경량 Standalone 데스크톱 앱, pnpm)**
 
@@ -34,14 +34,12 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 
 | 미들웨어         | 버전                        | 실행 환경               | 전용 포트                   | 설치 및 실행 상세 가이드                                                  |
 | :--------------- | :-------------------------- | :---------------------- | :-------------------------- | :------------------------------------------------------------------------ |
-| **ClickHouse**   | `v26.7.34.3-stable` (amd64) | WSL2 (Ubuntu 24.04 LTS) | HTTP `8123` / Native `9000` | [ClickHouse 설치 가이드](binaries/clickhouse-v26.7.34.3-stable/README.md) |
 | **Apache Kafka** | `2.13-4.3.1` (KRaft)        | Windows / JVM           | `19092`                     | `binaries/kafka_2.13-4.3.1/`                                              |
 | **MySQL**        | `9.7.1-winx64`              | Windows x64             | `13306`                     | `binaries/mysql-9.7.1-winx64/`                                            |
 
 ### 주요 마이크로서비스 모듈
 
 - **`elvis-core`**: OCPP 1.6J WebSocket 수신 및 핵심 비즈니스 로직 처리
-- **`elvis-data-clickhouse`**: Kafka 계측 데이터를 ClickHouse로 고속 벌크 적재하는 OLAP 전용 엔진 ([모듈 가이드](elvis-data-clickhouse/README.md))
 - **`elvis-control-api`**: 관제 REST API 및 Spring Security JWT 관리자 인증 백엔드 (`:9082`)
 - **`elvis-control-ui`**: ELVIS-CSMS 관제 데스크톱 센터 (Tauri 2.0 / Vue 3, `:1420`)
 - **`elvis-tester-ui`**: 가상 충전기(EVSE) 에뮬레이터 및 관제 프로토타입 UI (Tauri/Vue 3)
@@ -64,7 +62,7 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 
 1. **Phase 1 (Standalone 단독 배포 모드 - 6개월)**
    - 단일 서버 기동 환경 최적화
-   - OCPP[^OCPP] 1.6J 필수 메시지 수집 및 ClickHouse 벌크 적재
+   - OCPP[^OCPP] 1.6J 필수 메시지 수집 및 데이터 파이프라인 처리
    - 기본 정산 원장 계산 및 대시보드 관제 구축
    - 완전 폐쇄망(Air-Gapped) 배포 패키지 구성 및 Zero-Dependency 실행 보장
 

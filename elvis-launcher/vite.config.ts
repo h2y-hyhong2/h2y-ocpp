@@ -70,9 +70,7 @@ function infraLauncherPlugin(): Plugin {
             apiPort: 9082,
             wsPort: 9080,
             syncPort: 9081,
-            testerPort: 9085,
-            clickhousePort: 8123,
-            clickhouseDataPort: 9083
+            testerPort: 9085
           }
           if (fs.existsSync(envPath)) {
             const lines = fs.readFileSync(envPath, 'utf-8').split(/\r?\n/)
@@ -88,8 +86,6 @@ function infraLauncherPlugin(): Plugin {
               if (key === 'ELVIS_WS_PORT' && val) env.wsPort = parseInt(val.trim(), 10) || env.wsPort
               if (key === 'ELVIS_SYNC_PORT' && val) env.syncPort = parseInt(val.trim(), 10) || env.syncPort
               if (key === 'ELVIS_TESTER_PORT' && val) env.testerPort = parseInt(val.trim(), 10) || env.testerPort
-              if (key === 'ELVIS_CLICKHOUSE_HTTP_PORT' && val) env.clickhousePort = parseInt(val.trim(), 10) || env.clickhousePort
-              if (key === 'ELVIS_DATA_CH_PORT' && val) env.clickhouseDataPort = parseInt(val.trim(), 10) || env.clickhouseDataPort
             }
           }
           return env
@@ -104,9 +100,9 @@ function infraLauncherPlugin(): Plugin {
             try { fs.mkdirSync(logDir, { recursive: true }) } catch (_) {}
           }
 
-          // 모든 백엔드 엔진(mysql, kafka, clickhouse, ws, sync, api, clickhouse-data, tester)은
+          // 모든 백엔드 엔진(mysql, kafka, ws, sync, api, tester)은
           // 완전한 무창(100% Hidden) 백그라운드 독립 데몬으로 실행되며 런처 생명주기와 완전히 분리됩니다.
-          const isPersistentEngine = ['mysql', 'kafka', 'clickhouse', 'ws', 'sync', 'api', 'clickhouse-data', 'tester'].includes(serviceName)
+          const isPersistentEngine = ['mysql', 'kafka', 'ws', 'sync', 'api', 'tester'].includes(serviceName)
           const forceBackground = isPersistentEngine || isBackground
 
           if (forceBackground) {
@@ -131,14 +127,12 @@ function infraLauncherPlugin(): Plugin {
         // 1. 미들웨어 및 전체 서비스 헬스체크 (GET /api/infra/status)
         if (pathname === '/api/infra/status') {
           const currentEnv = readEnv()
-          const [isKafka, isMysql, isControlApi, isConnectWs, isConnectSync, isClickhouse, isClickhouseData] = await Promise.all([
+          const [isKafka, isMysql, isControlApi, isConnectWs, isConnectSync] = await Promise.all([
             checkPort(currentEnv.kafkaPort),
             checkPort(currentEnv.mysqlPort),
             checkPort(currentEnv.apiPort),
             checkPort(currentEnv.wsPort),
-            checkPort(currentEnv.syncPort),
-            checkPort(currentEnv.clickhousePort),
-            checkPort(currentEnv.clickhouseDataPort)
+            checkPort(currentEnv.syncPort)
           ])
 
           res.end(JSON.stringify({
@@ -147,16 +141,12 @@ function infraLauncherPlugin(): Plugin {
             controlApi: isControlApi,
             connectWs: isConnectWs,
             connectSync: isConnectSync,
-            clickhouse: isClickhouse,
-            clickhouseData: isClickhouseData,
             ports: {
               mysql: currentEnv.mysqlPort,
               kafka: currentEnv.kafkaPort,
               api: currentEnv.apiPort,
               ws: currentEnv.wsPort,
-              sync: currentEnv.syncPort,
-              clickhouse: currentEnv.clickhousePort,
-              clickhouseData: currentEnv.clickhouseDataPort
+              sync: currentEnv.syncPort
             }
           }))
           return
@@ -297,16 +287,6 @@ function infraLauncherPlugin(): Plugin {
             runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
           } else if (service === 'tester') {
             runServiceProcess('tester', 'start-elvis-tester.bat', 'ELVIS - Tester Harness', isBackground)
-          } else if (service === 'clickhouse') {
-            runServiceProcess('clickhouse', 'start-clickhouse.bat', 'ELVIS - ClickHouse v26.7 Server', isBackground)
-          } else if (service === 'clickhouse-data') {
-            runServiceProcess('clickhouse-data', 'start-elvis-data-clickhouse.bat', 'ELVIS - ClickHouse Bulk Engine', isBackground)
-          } else if (service === 'all-extensions') {
-            // 확장 기능 전체 기동: ClickHouse Server -> elvis-data-clickhouse
-            runServiceProcess('clickhouse', 'start-clickhouse.bat', 'ELVIS - ClickHouse v26.7 Server', isBackground)
-            setTimeout(() => {
-              runServiceProcess('clickhouse-data', 'start-elvis-data-clickhouse.bat', 'ELVIS - ClickHouse Bulk Engine', isBackground)
-            }, 3000)
           } else if (service === 'all-infra') {
             // 인프라 전체 기동: Kafka -> MySQL
             if (isBackground) {
@@ -365,7 +345,7 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 7. 서비스 중지 (POST /api/infra/stop?service=mysql|kafka|ws|sync|api|clickhouse|clickhouse-data|all-extensions|tester|all-infra|all-services|all)
+        // 7. 서비스 중지 (POST /api/infra/stop?service=mysql|kafka|ws|sync|api|tester|all-infra|all-services|all)
         if (pathname === '/api/infra/stop') {
           const currentEnv = readEnv()
           const service = url.searchParams.get('service')
@@ -379,12 +359,6 @@ function infraLauncherPlugin(): Plugin {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.syncPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect Sync*\\" 2>$null"`)
           } else if (service === 'api') {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control API*\\" 2>$null"`)
-          } else if (service === 'clickhouse') {
-            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhousePort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null"`)
-          } else if (service === 'clickhouse-data') {
-            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse Bulk*\\" 2>$null"`)
-          } else if (service === 'all-extensions') {
-            exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhousePort}, ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null"`)
           } else if (service === 'tester') {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.testerPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Tester Harness*\\" 2>$null"`)
           } else if (service === 'all-infra') {
@@ -392,7 +366,7 @@ function infraLauncherPlugin(): Plugin {
           } else if (service === 'all-services') {
             exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null"`)
           } else if (service === 'all') {
-            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort}, ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort}, ${currentEnv.clickhousePort}, ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`)
+            exec(`taskkill /f /im mysqld.exe & powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.kafkaPort}, ${currentEnv.mysqlPort}, ${currentEnv.wsPort}, ${currentEnv.syncPort}, ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Apache*\\" 2>$null; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - MySQL*\\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`)
           }
           res.end(JSON.stringify({ success: true, message: `${service} 중지 명령이 전송되었습니다.` }))
           return
@@ -487,10 +461,6 @@ function infraLauncherPlugin(): Plugin {
               exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.syncPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Connect Sync*\\" 2>$null"`, onStopped)
             } else if (svc === 'api') {
               exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.apiPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - Control API*\\" 2>$null"`, onStopped)
-            } else if (svc === 'clickhouse') {
-              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhousePort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse*\\" 2>$null; wsl.exe -d Ubuntu-24.04 -u root pkill -f 'clickhouse server' 2>$null"`, onStopped)
-            } else if (svc === 'clickhouse-data') {
-              exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${currentEnv.clickhouseDataPort} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \\"WINDOWTITLE eq ELVIS - ClickHouse Bulk*\\" 2>$null"`, onStopped)
             } else {
               onStopped()
             }
@@ -507,10 +477,6 @@ function infraLauncherPlugin(): Plugin {
               runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
             } else if (svc === 'api') {
               runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
-            } else if (svc === 'clickhouse') {
-              runServiceProcess('clickhouse', 'start-clickhouse.bat', 'ELVIS - ClickHouse v26.7 Server', isBackground)
-            } else if (svc === 'clickhouse-data') {
-              runServiceProcess('clickhouse-data', 'start-elvis-data-clickhouse.bat', 'ELVIS - ClickHouse Bulk Engine', isBackground)
             }
           }
 
@@ -563,7 +529,7 @@ function infraLauncherPlugin(): Plugin {
           return
         }
 
-        // 10. 콘솔 로그 조회 (GET /api/infra/logs?service=mysql|clickhouse&tail=250&type=all|error)
+        // 10. 콘솔 로그 조회 (GET /api/infra/logs?service=mysql|kafka|ws|sync|api&tail=250&type=all|error)
         if (pathname === '/api/infra/logs' && req.method === 'GET') {
           const currentEnv = readEnv()
           const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
@@ -675,8 +641,6 @@ function infraLauncherPlugin(): Plugin {
             ws: 'elvis-connect-ws (:9080)',
             sync: 'elvis-connect-sync (:9081)',
             api: 'elvis-control-api (:9082)',
-            clickhouse: 'ClickHouse v26.7 (:8123)',
-            'clickhouse-data': 'elvis-data-clickhouse (:9083)',
             tester: 'elvis-tester (:9085)'
           }
           const display = titles[service] || service
@@ -702,8 +666,8 @@ function infraLauncherPlugin(): Plugin {
             // 2) 신규 창 기동 스크립트 작성
             let psCmd = ''
             if (isErrorMode) {
-              // 에러 모드: ClickHouse 등 전용 에러 파일이 있으면 그 파일 감시, 없으면 로그 파일에서 ERROR 라인 실시간 필터링
-              if (service === 'clickhouse' || fs.existsSync(errFile)) {
+              // 에러 모드: 전용 에러 파일이 있으면 그 파일 감시, 없으면 로그 파일에서 ERROR 라인 실시간 필터링
+              if (fs.existsSync(errFile)) {
                 psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 [에러] 콘솔 로그' -ForegroundColor Red; Write-Host '  에러 로그 경로: ${errFile}' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host ''; if (Test-Path '${errFile}') { Write-Host '[모니터링] ${display} 전용 에러 로그 스트림을 감시합니다.' -ForegroundColor Red; Get-Content -Path '${errFile}' -Tail 150 -Wait -Encoding utf8 } else { Write-Host '[안내] 에러 로그 파일(${path.basename(errFile)}) 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${errFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 에러 로그 감시를 시작합니다.' -ForegroundColor Red; Get-Content -Path '${errFile}' -Tail 150 -Wait -Encoding utf8 }`
               } else {
                 psCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null; $host.UI.RawUI.WindowTitle = '${winTitle}'; Clear-Host; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host '  ELVIS CSMS Lite - ${display} 실시간 [에러/예외] 필터 스트림' -ForegroundColor Red; Write-Host '  감시 대상: ${logFile} (ERROR | Exception | FATAL | 실패 필터링)' -ForegroundColor DarkGray; Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; Write-Host '========================================================================================================' -ForegroundColor DarkRed; Write-Host ''; if (Test-Path '${logFile}') { Write-Host '[실시간 필터] ERROR/Exception 발생 이벤트를 대기 및 모니터링합니다...' -ForegroundColor DarkYellow; Get-Content -Path '${logFile}' -Tail 200 -Wait -Encoding utf8 | Where-Object { $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' } } else { Write-Host '[안내] 원본 로그 파일 대기 중...' -ForegroundColor Yellow; while (-not (Test-Path '${logFile}')) { Start-Sleep -Seconds 2 }; Clear-Host; Write-Host '[연결됨] 에러 필터 감시를 시작합니다.' -ForegroundColor Red; Get-Content -Path '${logFile}' -Tail 200 -Wait -Encoding utf8 | Where-Object { $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' } }`

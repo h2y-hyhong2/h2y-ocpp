@@ -1,10 +1,13 @@
 package com.lselink.elvis.connect.sync.domain;
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
@@ -14,6 +17,7 @@ import java.time.LocalDateTime;
  * Dead Letter Topic 실패 메시지 격리 및 재처리 원장 엔티티 (Sprint 24: S24-SYNC-0100-CO)
  * <p>
  * 결함 패킷(Poison Pill) 또는 최종 재시도 실패 메시지를 보존하고, 운영자 Replay 라이프사이클을 추적합니다.
+ * [전사 코딩 표준 준수: Lombok 배제, 순수 자바 엔티티 및 Builder 패턴 구현]
  * </p>
  */
 @Entity
@@ -23,8 +27,6 @@ import java.time.LocalDateTime;
                 @Index(name = "IX_DLT_STATUS", columnList = "status"),
                 @Index(name = "IX_DLT_FAILED", columnList = "failed_dt")
         })
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @DynamicInsert
 @DynamicUpdate
 public class DltHistory {
@@ -93,18 +95,19 @@ public class DltHistory {
     @Column(name = "updt_dt", nullable = false)
     private LocalDateTime updtDt;
 
-    @Builder
+    protected DltHistory() {}
+
     public DltHistory(String dltId,
-                      String chargeBoxId,
-                      String sourceTopic,
-                      int sourcePartition,
-                      long sourceOffset,
-                      ErrorCategory errorCategory,
-                      String exceptionClass,
-                      String errorMessage,
-                      String rawPayload,
-                      int retryCount,
-                      LocalDateTime failedDt) {
+            String chargeBoxId,
+            String sourceTopic,
+            int sourcePartition,
+            long sourceOffset,
+            ErrorCategory errorCategory,
+            String exceptionClass,
+            String errorMessage,
+            String rawPayload,
+            int retryCount,
+            LocalDateTime failedDt) {
         this.dltId = dltId;
         this.chargeBoxId = chargeBoxId;
         this.sourceTopic = sourceTopic;
@@ -119,6 +122,66 @@ public class DltHistory {
         this.failedDt = failedDt;
         this.regDt = LocalDateTime.now();
         this.updtDt = LocalDateTime.now();
+    }
+
+    public String getDltId() {
+        return dltId;
+    }
+
+    public String getChargeBoxId() {
+        return chargeBoxId;
+    }
+
+    public String getSourceTopic() {
+        return sourceTopic;
+    }
+
+    public int getSourcePartition() {
+        return sourcePartition;
+    }
+
+    public long getSourceOffset() {
+        return sourceOffset;
+    }
+
+    public ErrorCategory getErrorCategory() {
+        return errorCategory;
+    }
+
+    public String getExceptionClass() {
+        return exceptionClass;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public String getRawPayload() {
+        return rawPayload;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public DltStatus getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getFailedDt() {
+        return failedDt;
+    }
+
+    public LocalDateTime getReplayedDt() {
+        return replayedDt;
+    }
+
+    public LocalDateTime getRegDt() {
+        return regDt;
+    }
+
+    public LocalDateTime getUpdtDt() {
+        return updtDt;
     }
 
     /**
@@ -148,5 +211,83 @@ public class DltHistory {
         this.errorMessage = newErrorMessage;
         this.retryCount = this.retryCount + 1;
         this.updtDt = LocalDateTime.now();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private String dltId;
+        private String chargeBoxId;
+        private String sourceTopic;
+        private int sourcePartition;
+        private long sourceOffset;
+        private ErrorCategory errorCategory;
+        private String exceptionClass;
+        private String errorMessage;
+        private String rawPayload;
+        private int retryCount;
+        private LocalDateTime failedDt;
+
+        public Builder dltId(String dltId) {
+            this.dltId = dltId;
+            return this;
+        }
+
+        public Builder chargeBoxId(String chargeBoxId) {
+            this.chargeBoxId = chargeBoxId;
+            return this;
+        }
+
+        public Builder sourceTopic(String sourceTopic) {
+            this.sourceTopic = sourceTopic;
+            return this;
+        }
+
+        public Builder sourcePartition(int sourcePartition) {
+            this.sourcePartition = sourcePartition;
+            return this;
+        }
+
+        public Builder sourceOffset(long sourceOffset) {
+            this.sourceOffset = sourceOffset;
+            return this;
+        }
+
+        public Builder errorCategory(ErrorCategory errorCategory) {
+            this.errorCategory = errorCategory;
+            return this;
+        }
+
+        public Builder exceptionClass(String exceptionClass) {
+            this.exceptionClass = exceptionClass;
+            return this;
+        }
+
+        public Builder errorMessage(String errorMessage) {
+            this.errorMessage = errorMessage;
+            return this;
+        }
+
+        public Builder rawPayload(String rawPayload) {
+            this.rawPayload = rawPayload;
+            return this;
+        }
+
+        public Builder retryCount(int retryCount) {
+            this.retryCount = retryCount;
+            return this;
+        }
+
+        public Builder failedDt(LocalDateTime failedDt) {
+            this.failedDt = failedDt;
+            return this;
+        }
+
+        public DltHistory build() {
+            return new DltHistory(dltId, chargeBoxId, sourceTopic, sourcePartition, sourceOffset,
+                    errorCategory, exceptionClass, errorMessage, rawPayload, retryCount, failedDt);
+        }
     }
 }

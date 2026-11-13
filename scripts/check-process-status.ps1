@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Target = "all",
     [switch]$Once
 )
@@ -11,8 +11,6 @@ $scopeName = if ($targetMode -eq "infra") {
     "인프라 미들웨어 (MySQL, Kafka)"
 } elseif ($targetMode -eq "core") {
     "코어 백엔드 엔진 (WS, Sync, API)"
-} elseif ($targetMode -eq "extension" -or $targetMode -eq "extensions") {
-    "확장 기능 엔진 (ClickHouse, Data Engine)"
 } else {
     "전체 시스템"
 }
@@ -36,8 +34,6 @@ function Show-Dashboard {
         @{ Category = "코어엔진"; Name = "elvis-connect-ws"; Port = 9080; Group = "core" },
         @{ Category = "코어엔진"; Name = "elvis-connect-sync"; Port = 9081; Group = "core" },
         @{ Category = "코어엔진"; Name = "elvis-control-api"; Port = 9082; Group = "core" },
-        @{ Category = "확장기능"; Name = "ClickHouse v26.7 (WSL2)"; Port = 8123; Group = "extension" },
-        @{ Category = "확장기능"; Name = "elvis-data-clickhouse"; Port = 9083; Group = "extension" },
         @{ Category = "관제웹UI"; Name = "elvis-control-ui"; Port = 1421; Group = "ui" },
         @{ Category = "독립테스터"; Name = "elvis-tester-ui"; Port = 1422; Group = "tester" }
     )
@@ -46,8 +42,6 @@ function Show-Dashboard {
         $allTargets | Where-Object { $_["Group"] -eq "infra" }
     } elseif ($targetMode -eq "core") {
         $allTargets | Where-Object { $_["Group"] -eq "core" }
-    } elseif ($targetMode -eq "extension" -or $targetMode -eq "extensions") {
-        $allTargets | Where-Object { $_["Group"] -eq "extension" }
     } else {
         $allTargets
     }
@@ -132,11 +126,6 @@ function Show-Dashboard {
                 $grp = "core"
                 $cat = "코어엔진"
                 $pStr = ":9082"
-            } elseif ($cmd -match "elvis-data-clickhouse") {
-                $tag = "elvis-data-clickhouse Engine"
-                $grp = "extension"
-                $cat = "확장기능"
-                $pStr = ":9083"
             } elseif ($cmd -match "GradleDaemon") {
                 $tag = "Gradle Build Daemon"
                 $grp = "build"
@@ -160,25 +149,7 @@ function Show-Dashboard {
         }
     }
 
-    # 3) ClickHouse (WSL2 / Relay) 감지
-    $chConn = Get-NetTCPConnection -LocalPort 8123 -State Listen -ErrorAction SilentlyContinue
-    if ($chConn) {
-        $chPid = ($chConn | Select-Object -ExpandProperty OwningProcess -Unique)[0]
-        $pObj = Get-Process -Id $chPid -ErrorAction SilentlyContinue
-        $memMb = if ($pObj) { [math]::Round($pObj.WorkingSet64 / 1MB, 1) } else { 0 }
-        $pName = if ($pObj) { $pObj.ProcessName } else { "wsl.exe" }
-        $detectedProcs += [PSCustomObject]@{
-            Group = "extension"
-            Category = "확장기능"
-            Name = "ClickHouse v26.7 Server"
-            PID = $chPid
-            ProcessName = $pName
-            PortStr = ":8123"
-            Memory = $memMb
-        }
-    }
-
-    # 4) Node.js 프로세스 감지 (관제 UI, 테스터 UI, 런처)
+    # 3) Node.js 프로세스 감지 (관제 UI, 테스터 UI, 런처)
     $nodeProcs = Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue
     if ($nodeProcs) {
         foreach ($np in $nodeProcs) {

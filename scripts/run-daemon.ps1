@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory=$true)][string]$BatName,
     [Parameter(Mandatory=$true)][string]$ServiceName
 )
@@ -10,12 +10,7 @@ if (-not (Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }
 
-# ClickHouse는 바이너리 내부(run-clickhouse.sh)에서 자체적으로 clickhouse.log에 기록하므로 startup 로그 분리
-if ($ServiceName -eq "clickhouse") {
-    $logPath = Join-Path $logDir "clickhouse-startup.log"
-} else {
-    $logPath = Join-Path $logDir "$ServiceName.log"
-}
+$logPath = Join-Path $logDir "$ServiceName.log"
 
 $vbsPath = Join-Path $scriptDir "run-daemon.vbs"
 

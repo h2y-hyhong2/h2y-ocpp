@@ -15,7 +15,7 @@ config/
 ├── connect-ws/
 │   └── application.yml        # WebSocket Gateway 포트(8080), Kafka 토픽, 세션 타임아웃
 ├── connect-sync/
-│   └── application.yml        # Parser & Sync Engine DB/ClickHouse 연결 및 컨슈머 설정
+│   └── application.yml        # Parser & Sync Engine DB 연결 및 컨슈머 설정
 ├── control-api/
 │   └── application.yml        # Admin REST API 포트(8081), JWT 시크릿, DB 접속 설정
 └── README.md                  # 본 가이드 문서

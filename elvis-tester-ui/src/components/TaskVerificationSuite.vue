@@ -70,17 +70,16 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
   {
     id: 'S08-COMMON-0060-TE-03',
     seq: 15,
-    title: 'DB 인프라 (MySQL 9.71 & ClickHouse) 환경 검증',
+    title: 'DB 인프라 (MySQL 9.71) 환경 검증',
     module: 'COMMON',
     moduleLabel: '기반 인프라',
     sprint: 'Sprint 8.5',
     featureId: 'COMMON-0060',
     reqId: 'REQ-001, REQ-004',
-    docFileName: '✅ S08-COMMON-0060-TE-03 DB 인프라 (MySQL 9.71 & ClickHouse) 환경 검증.md',
-    description: 'MySQL 9.71 UTF8MB4/KST 기본 스키마 DDL 및 ClickHouse 시계열 엔진 연결성 검증',
+    docFileName: '✅ S08-COMMON-0060-TE-03 DB 인프라 (MySQL 9.71) 환경 검증.md',
+    description: 'MySQL 9.71 UTF8MB4/KST 기본 스키마 DDL 및 연결성 검증',
     sequenceSteps: [
       'MySQL 9.71 연결 및 핵심 테이블(OCPP_STATION, OCPP_CHARGER, OCPP_TRANSACTION) DDL 검증',
-      'ClickHouse 시계열 DB(포트 8123) HTTP 인터페이스 및 meter_values 테이블 적재 검증',
       '트랜잭션 커넥션 풀(HikariCP) 헬스체크 및 쿼리 응답(10ms 미만) 검증'
     ],
     status: 'idle'
@@ -396,46 +395,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     status: 'idle'
   },
 
-  // 4. DATA (ClickHouse 시계열)
-  {
-    id: 'S22-DATA-0010-TE',
-    seq: 95,
-    title: 'ClickHouse 적재 Engine 검증',
-    module: 'DATA',
-    moduleLabel: '시계열 데이터',
-    sprint: 'Sprint 22',
-    featureId: 'DATA-0010',
-    reqId: 'REQ-012, REQ-015',
-    docFileName: '✅ S22-DATA-0010-TE ClickHouse 적재 Engine 검증.md',
-    description: 'ConcurrentLinkedQueue 1초 단위 미터값 버퍼링 및 ClickHouse JDBC Batch Bulk 적재 검증',
-    sequenceSteps: [
-      '1초 주기 초고속 MeterValues 계측 데이터 수집',
-      '인메모리 논블로킹 큐(ConcurrentLinkedQueue) 버퍼링',
-      'ClickHouse 초당 2,000건 JDBC Batch Insert 벌크 적재(지연 50ms 이내) 검증'
-    ],
-    status: 'idle'
-  },
-  {
-    id: 'S27-DATA-0020-TE',
-    seq: 115,
-    title: 'ClickHouse 시계열 통계 API 검증',
-    module: 'DATA',
-    moduleLabel: '시계열/ClickHouse',
-    sprint: 'Sprint 27',
-    featureId: 'DATA-0020',
-    reqId: 'REQ-017',
-    docFileName: '✅ S27-DATA-0020-TE ClickHouse 시계열 통계 API 검증.md',
-    description: '적응형 다운샘플링(1m/5m/30m/60m), 전력 요약, 충전소 실시간 합산 및 Graceful Degradation 회복성 검증',
-    sequenceSteps: [
-      '적응형 다운샘플링 차트 API(GET /api/v1/metrics/timeseries/chart) 24h/5m 버킷팅 응답 검증',
-      '전력 요약 통계 API(GET /api/v1/metrics/timeseries/summary) 피크/평균 부하 및 소비량 산출 검증',
-      '충전소 실시간 전력 합산 API(GET /api/v1/metrics/timeseries/station/{stationId}) 최근 1시간 부하 집계 확인',
-      'ClickHouse 미가동 환경 시 500 장애 방지 및 200 OK 빈 응답(Graceful Fallback) 내결함성 검증'
-    ],
-    status: 'idle'
-  },
-
-  // 5. API (어드민 백엔드 REST API)
+  // 4. API (어드민 백엔드 REST API)
   {
     id: 'S25-API-0010-TE',
     seq: 107,
@@ -688,7 +648,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sequenceSteps: [
       '충전기 웹소켓 기동 및 BootNotification 정상 승인',
       'RFID 회원 태깅 인증 및 StartTransaction 전역 단일 시퀀스(TRN_ID) 채번',
-      '1초 주기 MeterValues ClickHouse 적재 및 StopTransaction/TOU 과금 CDR 완성 확인'
+      '1초 주기 MeterValues 처리 및 StopTransaction/TOU 과금 CDR 완성 확인'
     ],
     status: 'idle'
   },
@@ -705,7 +665,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     description: '외부 인터넷 차단 환경 내 오프라인 단일 패키지 무인 설치 및 인프라 전 구성요소 기동 검증',
     sequenceSteps: [
       '인터넷 단절 폐쇄망 VM 내 단일 패키지 무인 압축 해제',
-      'MySQL, Kafka, ClickHouse, Backend, Desktop UI 원클릭 데몬 정상 기동 확인',
+      'MySQL, Kafka, Backend, Desktop UI 원클릭 데몬 정상 기동 확인',
       '로컬 루프백(127.0.0.1) 기반 전주기 통신 및 관제 대시보드 정상 동작 확인'
     ],
     status: 'idle'
@@ -723,7 +683,6 @@ const moduleList = [
   { key: 'ALL', label: '전체 보기', icon: '🌐' },
   { key: 'WS', label: 'WS 게이트웨이', icon: '⚡' },
   { key: 'SYNC', label: '동기화/트랜잭션', icon: '🔄' },
-  { key: 'DATA', label: '시계열/ClickHouse', icon: '📊' },
   { key: 'API', label: '관제/통계 API', icon: '📡' },
   { key: 'PT', label: '관제 프로토타입', icon: '🖥️' },
   { key: 'COMMON', label: '기반 인프라', icon: '⚙️' },
@@ -811,61 +770,6 @@ const stats = computed(() => {
 })
 
 // ─────────────────────────────────────────────────────────────
-// [S27-DATA-0020-TE] 인터랙티브 실시간 시계열 API 테스터 상태
-// ─────────────────────────────────────────────────────────────
-const tsTestRange = ref<'1h' | '24h' | '7d' | '30d'>('24h')
-const tsTestConnector = ref<number>(1)
-const tsTestLoading = ref<boolean>(false)
-const tsTestResult = ref<{
-  endpoint: string
-  status: number
-  elapsedMs: number
-  data: any
-  testedAt: string
-} | null>(null)
-
-async function executeInteractiveTsTest(endpoint: 'chart' | 'summary' | 'station', customTargetId?: string) {
-  tsTestLoading.value = true
-  const cid = customTargetId || props.chargerId || '00000001'
-  const stationId = cid.length >= 6 ? cid.substring(0, 6) : '000000'
-  const apiBase = 'http://localhost:9082/api/v1/metrics/timeseries'
-  const startT = performance.now()
-
-  let url = ''
-  if (endpoint === 'chart') {
-    url = `${apiBase}/chart?chargeBoxId=${cid}&connectorId=${tsTestConnector.value}&range=${tsTestRange.value}`
-  } else if (endpoint === 'summary') {
-    url = `${apiBase}/summary?chargeBoxId=${cid}&connectorId=${tsTestConnector.value}&range=${tsTestRange.value}`
-  } else if (endpoint === 'station') {
-    url = `${apiBase}/station/${stationId}`
-  }
-
-  try {
-    const res = await fetch(url, { headers: { Accept: 'application/json' } })
-    const elapsed = Math.round(performance.now() - startT)
-    const json = await res.json()
-    tsTestResult.value = {
-      endpoint: url,
-      status: res.status,
-      elapsedMs: elapsed,
-      data: json,
-      testedAt: new Date().toLocaleTimeString('ko-KR')
-    }
-  } catch (err: any) {
-    const elapsed = Math.round(performance.now() - startT)
-    tsTestResult.value = {
-      endpoint: url,
-      status: 0,
-      elapsedMs: elapsed,
-      data: { error: err.message || '네트워크 연결 오류 (elvis-control-api:9082 확인 필요)' },
-      testedAt: new Date().toLocaleTimeString('ko-KR')
-    }
-  } finally {
-    tsTestLoading.value = false
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
 // 개별 검증 실행 로직 (실제 백엔드 API 연동 지원)
 // ─────────────────────────────────────────────────────────────
 async function runSingleTask(task: WbsTaskVerifyItem) {
@@ -876,110 +780,6 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
   const startTime = performance.now()
   const targetId = props.chargerId || '00000001'
   const isConnected = props.charger?.currentCharger?.value?.connected ?? true
-
-  // [S27-DATA-0020-TE] ClickHouse 시계열 통계 API 실제 백엔드 호출 검증
-  if (task.id === 'S27-DATA-0020-TE') {
-    const apiBase = 'http://localhost:9082/api/v1/metrics/timeseries'
-    const stationId = targetId.length >= 6 ? targetId.substring(0, 6) : '000000'
-
-    try {
-      // 1. 적응형 다운샘플링 차트 API (24h -> 5m 버킷팅)
-      const chartUrl = `${apiBase}/chart?chargeBoxId=${targetId}&connectorId=1&range=24h`
-      const chartRes = await fetch(chartUrl, { headers: { Accept: 'application/json' } }).catch(() => null)
-      let chartJson: any = null
-      if (chartRes && chartRes.ok) {
-        chartJson = await chartRes.json().catch(() => null)
-      }
-
-      // 2. 전력 요약 통계 API
-      const summaryUrl = `${apiBase}/summary?chargeBoxId=${targetId}&connectorId=1&range=24h`
-      const summaryRes = await fetch(summaryUrl, { headers: { Accept: 'application/json' } }).catch(() => null)
-      let summaryJson: any = null
-      if (summaryRes && summaryRes.ok) {
-        summaryJson = await summaryRes.json().catch(() => null)
-      }
-
-      // 3. 충전소 실시간 합산 부하 API
-      const stationUrl = `${apiBase}/station/${stationId}`
-      const stationRes = await fetch(stationUrl, { headers: { Accept: 'application/json' } }).catch(() => null)
-      let stationJson: any = null
-      if (stationRes && stationRes.ok) {
-        stationJson = await stationRes.json().catch(() => null)
-      }
-
-      const elapsed = Math.round(performance.now() - startTime)
-      task.elapsedMs = elapsed
-      task.testedAt = new Date().toLocaleTimeString('ko-KR')
-
-      const isLiveSuccess = chartRes?.ok && summaryRes?.ok
-      task.status = 'pass'
-      task.resultSummary = isLiveSuccess
-        ? `✅ PASS: [${task.id}] elvis-control-api(9082) 실시간 통신 및 24h/5m 다운샘플링 정상 검증 (${elapsed}ms)`
-        : `✅ PASS: [${task.id}] ClickHouse 미가동 Graceful Degradation 회복성(200 OK) 방어 검증 (${elapsed}ms)`
-
-      task.responsePayload = JSON.stringify(
-        {
-          wbsTaskId: task.id,
-          taskTitle: task.title,
-          module: task.module,
-          sprint: task.sprint,
-          featureId: task.featureId,
-          relatedReq: task.reqId,
-          docPath: task.docFileName,
-          testedChargerId: targetId,
-          testedStationId: stationId,
-          backendApiUrl: apiBase,
-          serverPort: 9082,
-          httpStatus: chartRes?.status || 200,
-          elapsedMs: elapsed,
-          testedAt: new Date().toISOString(),
-          executedSteps: [
-            {
-              stepNo: 1,
-              stepName: '적응형 다운샘플링 차트 API(GET /api/v1/metrics/timeseries/chart) 24h/5m 버킷팅 응답 검증',
-              status: 'PASSED',
-              assertResult: chartJson?.data?.interval === '5m' ? 'SUCCESS (5m 버킷 일치)' : 'FALLBACK_OK'
-            },
-            {
-              stepNo: 2,
-              stepName: '전력 요약 통계 API(GET /api/v1/metrics/timeseries/summary) 피크/평균 부하 및 소비량 산출 검증',
-              status: 'PASSED',
-              assertResult: summaryJson?.success ? 'SUCCESS (Summary 데이터 수신)' : 'FALLBACK_OK'
-            },
-            {
-              stepNo: 3,
-              stepName: '충전소 실시간 전력 합산 API(GET /api/v1/metrics/timeseries/station/{stationId}) 최근 1시간 부하 집계 확인',
-              status: 'PASSED',
-              assertResult: stationJson?.success ? 'SUCCESS (Station 메트릭 수신)' : 'FALLBACK_OK'
-            },
-            {
-              stepNo: 4,
-              stepName: 'ClickHouse 미가동 환경 시 500 장애 방지 및 200 OK 빈 응답(Graceful Fallback) 내결함성 검증',
-              status: 'PASSED',
-              assertResult: 'SUCCESS (500 에러 전파 원천 차단 확인)'
-            }
-          ],
-          liveApiResponses: {
-            chartApiResponse: chartJson || { note: 'Fallback 빈 DTO' },
-            summaryApiResponse: summaryJson || { note: 'Fallback 기본 요약' },
-            stationApiResponse: stationJson || { note: 'Fallback 합산 목록' }
-          },
-          verificationDetails: {
-            domainRule: 'CSMS Lite PoC 아키텍처 및 WBS TE 표준 규격 준수',
-            adaptiveInterval: chartJson?.data?.interval || '5m',
-            faultTolerance: 'Graceful Degradation 회복성 100% 보장',
-            responseTimeMs: elapsed,
-            slaMet: elapsed < 500
-          }
-        },
-        null,
-        2
-      )
-      return
-    } catch (e: any) {
-      // 네트워크 예외 시에도 기본 완료 처리
-    }
-  }
 
   // [S26-API-0020-TE] 자산 및 실시간 상태 API 실제 백엔드 호출 검증
   if (task.id === 'S26-API-0020-TE') {
@@ -1394,107 +1194,6 @@ function copyPayload(payload?: string) {
 
         <!-- 결과 페이로드 및 인터랙티브 테스터 (펼침 상태) -->
         <div v-if="task.isExpanded" class="space-y-3 pt-2.5 border-t border-slate-200">
-          <!-- [S27-DATA-0020-TE 전용] 실시간 ClickHouse 시계열 API 인터랙티브 테스터 콘솔 -->
-          <div v-if="task.id === 'S27-DATA-0020-TE'" class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5">
-                <span class="text-sm">⚡</span>
-                <span class="text-xs font-bold text-indigo-900">ClickHouse 시계열 API 실시간 인터랙티브 테스터</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold">Port 9082</span>
-              </div>
-              <span class="text-[10px] text-slate-500 font-mono">대상 단말: {{ props.chargerId || '00000001' }}</span>
-            </div>
-
-            <!-- 파라미터 조작 바 -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-              <!-- 기간 선택 -->
-              <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200">
-                <span class="text-[10px] font-bold text-slate-500 px-1.5 shrink-0">기간:</span>
-                <div class="flex items-center gap-1 flex-1">
-                  <button
-                    v-for="r in (['1h', '24h', '7d', '30d'] as const)"
-                    :key="r"
-                    @click="tsTestRange = r"
-                    class="flex-1 py-1 text-[11px] font-bold rounded font-mono transition-colors cursor-pointer"
-                    :class="tsTestRange === r ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
-                  >
-                    {{ r }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- 커넥터 선택 -->
-              <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200">
-                <span class="text-[10px] font-bold text-slate-500 px-1.5 shrink-0">커넥터:</span>
-                <div class="flex items-center gap-1 flex-1">
-                  <button
-                    v-for="c in [1, 2]"
-                    :key="c"
-                    @click="tsTestConnector = c"
-                    class="flex-1 py-1 text-[11px] font-bold rounded font-mono transition-colors cursor-pointer"
-                    :class="tsTestConnector === c ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
-                  >
-                    {{ c }}번 건
-                  </button>
-                </div>
-              </div>
-
-              <!-- 테스트 실행 버튼군 -->
-              <div class="flex items-center gap-1">
-                <button
-                  @click="executeInteractiveTsTest('chart')"
-                  :disabled="tsTestLoading"
-                  class="flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg bg-sky-600 hover:bg-sky-700 text-white transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 disabled:opacity-50"
-                  title="적응형 다운샘플링 차트 데이터 조회"
-                >
-                  <span>📈 차트</span>
-                </button>
-                <button
-                  @click="executeInteractiveTsTest('summary')"
-                  :disabled="tsTestLoading"
-                  class="flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 disabled:opacity-50"
-                  title="전력 요약 통계 조회"
-                >
-                  <span>📋 요약</span>
-                </button>
-                <button
-                  @click="executeInteractiveTsTest('station')"
-                  :disabled="tsTestLoading"
-                  class="flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 disabled:opacity-50"
-                  title="충전소 합산 부하 조회"
-                >
-                  <span>🏢 충전소</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- 인터랙티브 테스트 실시간 결과 카드 -->
-            <div v-if="tsTestResult" class="p-2.5 bg-white rounded-lg border border-indigo-200 text-xs space-y-1.5">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span
-                    class="px-2 py-0.5 rounded font-mono font-bold text-[10px]"
-                    :class="tsTestResult.status === 200 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
-                  >
-                    HTTP {{ tsTestResult.status }}
-                  </span>
-                  <span class="font-mono text-slate-500 text-[10px]">지연시간: {{ tsTestResult.elapsedMs }}ms</span>
-                  <span class="font-mono text-slate-400 text-[10px]">시각: {{ tsTestResult.testedAt }}</span>
-                </div>
-                <button
-                  @click="copyPayload(JSON.stringify(tsTestResult.data, null, 2))"
-                  class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
-                >
-                  📋 결과 복사
-                </button>
-              </div>
-              <div class="text-[10px] font-mono text-slate-600 truncate bg-slate-50 p-1 rounded">
-                <b>URL:</b> {{ tsTestResult.endpoint }}
-              </div>
-              <pre class="bg-slate-900 text-sky-400 p-2.5 rounded font-mono text-[10px] leading-relaxed overflow-x-auto max-h-40 scrollbar-thin">{{ JSON.stringify(tsTestResult.data, null, 2) }}</pre>
-            </div>
-          </div>
-
           <!-- 검증 페이로드 JSON -->
           <div v-if="task.responsePayload" class="space-y-1.5">
             <div class="flex items-center justify-between">

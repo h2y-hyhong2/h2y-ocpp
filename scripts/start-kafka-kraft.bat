@@ -8,7 +8,10 @@ set KAFKA_HOME=%SCRIPT_DIR%..\binaries\kafka_2.13-4.3.1
 set KRAFT_CONFIG=%SCRIPT_DIR%..\config\kafka\server.properties
 
 rem 1순위: JDK 21 LTS 우선 강제 지정
-if exist "D:\jdk\windows\jdk-21.0.12.1+1" (
+if exist "D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1" (
+    set "JAVA_HOME=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1"
+    set "PATH=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1\bin;%PATH%"
+) else if exist "D:\jdk\windows\jdk-21.0.12.1+1" (
     set "JAVA_HOME=D:\jdk\windows\jdk-21.0.12.1+1"
     set "PATH=D:\jdk\windows\jdk-21.0.12.1+1\bin;%PATH%"
 ) else if exist "D:\jdk\windows\jdk-25.0.4.1+1" (

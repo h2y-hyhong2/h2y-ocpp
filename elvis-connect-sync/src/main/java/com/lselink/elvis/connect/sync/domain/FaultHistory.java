@@ -1,10 +1,14 @@
 package com.lselink.elvis.connect.sync.domain;
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
@@ -14,17 +18,17 @@ import java.time.LocalDateTime;
  * 충전기 장애 발생 및 복구 이력 원장 엔티티 (Sprint 23: S23-SYNC-0060-CO)
  * <p>
  * 충전기 고장(Faulted) 및 에러코드 수신 시 생성되며, 정상 복구(NoError) 시 자동 마감 처리됩니다.
+ * [전사 코딩 표준 준수: Lombok 배제, 순수 자바 엔티티 및 Builder 패턴 구현]
  * </p>
  */
 @Entity
 @Table(name = "tbl_fault_history",
         indexes = {
-                @Index(name = "IX_FAULT_BOX_CONN", columnList = "charge_box_id, connector_id, is_resolved"),
+                @Index(name = "IX_FAULT_BOX_CONN",
+                        columnList = "charge_box_id, connector_id, is_resolved"),
                 @Index(name = "IX_FAULT_OCCURRED", columnList = "occurred_dt"),
                 @Index(name = "IX_FAULT_SEVERITY", columnList = "severity")
         })
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @DynamicInsert
 @DynamicUpdate
 public class FaultHistory {
@@ -87,16 +91,17 @@ public class FaultHistory {
     @Column(name = "updt_dt", nullable = false)
     private LocalDateTime updtDt;
 
-    @Builder
+    protected FaultHistory() {}
+
     public FaultHistory(String chargeBoxId,
-                        int connectorId,
-                        String status,
-                        String errorCode,
-                        String vendorErrorCode,
-                        FaultSeverity severity,
-                        String faultMsg,
-                        String actionRequired,
-                        LocalDateTime occurredDt) {
+            int connectorId,
+            String status,
+            String errorCode,
+            String vendorErrorCode,
+            FaultSeverity severity,
+            String faultMsg,
+            String actionRequired,
+            LocalDateTime occurredDt) {
         this.chargeBoxId = chargeBoxId;
         this.connectorId = connectorId;
         this.status = status;
@@ -111,6 +116,62 @@ public class FaultHistory {
         this.updtDt = LocalDateTime.now();
     }
 
+    public Long getFaultId() {
+        return faultId;
+    }
+
+    public String getChargeBoxId() {
+        return chargeBoxId;
+    }
+
+    public int getConnectorId() {
+        return connectorId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public String getVendorErrorCode() {
+        return vendorErrorCode;
+    }
+
+    public FaultSeverity getSeverity() {
+        return severity;
+    }
+
+    public String getFaultMsg() {
+        return faultMsg;
+    }
+
+    public String getActionRequired() {
+        return actionRequired;
+    }
+
+    public LocalDateTime getOccurredDt() {
+        return occurredDt;
+    }
+
+    public LocalDateTime getResolvedDt() {
+        return resolvedDt;
+    }
+
+    public String getIsResolved() {
+        return isResolved;
+    }
+
+    public LocalDateTime getRegDt() {
+        return regDt;
+    }
+
+    public LocalDateTime getUpdtDt() {
+        return updtDt;
+    }
+
     /**
      * 장애 정상 복구 종결 처리
      *
@@ -120,5 +181,71 @@ public class FaultHistory {
         this.isResolved = "Y";
         this.resolvedDt = resolvedDt;
         this.updtDt = LocalDateTime.now();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private String chargeBoxId;
+        private int connectorId;
+        private String status;
+        private String errorCode;
+        private String vendorErrorCode;
+        private FaultSeverity severity;
+        private String faultMsg;
+        private String actionRequired;
+        private LocalDateTime occurredDt;
+
+        public Builder chargeBoxId(String chargeBoxId) {
+            this.chargeBoxId = chargeBoxId;
+            return this;
+        }
+
+        public Builder connectorId(int connectorId) {
+            this.connectorId = connectorId;
+            return this;
+        }
+
+        public Builder status(String status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder errorCode(String errorCode) {
+            this.errorCode = errorCode;
+            return this;
+        }
+
+        public Builder vendorErrorCode(String vendorErrorCode) {
+            this.vendorErrorCode = vendorErrorCode;
+            return this;
+        }
+
+        public Builder severity(FaultSeverity severity) {
+            this.severity = severity;
+            return this;
+        }
+
+        public Builder faultMsg(String faultMsg) {
+            this.faultMsg = faultMsg;
+            return this;
+        }
+
+        public Builder actionRequired(String actionRequired) {
+            this.actionRequired = actionRequired;
+            return this;
+        }
+
+        public Builder occurredDt(LocalDateTime occurredDt) {
+            this.occurredDt = occurredDt;
+            return this;
+        }
+
+        public FaultHistory build() {
+            return new FaultHistory(chargeBoxId, connectorId, status, errorCode,
+                    vendorErrorCode, severity, faultMsg, actionRequired, occurredDt);
+        }
     }
 }
