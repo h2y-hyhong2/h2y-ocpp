@@ -57,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(username, null, authorities);
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("[JwtAuthenticationFilter] 인증 성공 - 사용자: {}, 권한: {}", username, role);
+                log.trace("[JwtAuthenticationFilter] 인증 성공 - 사용자: {}, 권한: {}", username, role);
             }
         }
 
