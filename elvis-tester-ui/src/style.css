@@ -29,7 +29,7 @@
 }
 
 .font-mono, code, pre {
-  font-family: 'Inconsolata', 'Pretendard', 'D2Coding', Consolas, monospace !important;
+  font-family: 'JetBrains Mono', 'Inconsolata', 'Pretendard', 'D2Coding', Consolas, monospace !important;
 }
 
 body {
@@ -56,10 +56,4 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
 }

@@ -2,6 +2,7 @@ package com.lselink.elvis.connect.ws.handler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,9 @@ public class OcppHandshakeInterceptor implements HandshakeInterceptor {
     private static final Logger log = LoggerFactory.getLogger(OcppHandshakeInterceptor.class);
     public static final String ATTR_CHARGE_BOX_ID = "chargeBoxId";
 
+    @Value("${elvis.gateway.websocket.require-auth:false}")
+    private boolean requireAuth;
+
     @Override
     public boolean beforeHandshake(ServerHttpRequest request,
                                    ServerHttpResponse response,
@@ -27,7 +31,7 @@ public class OcppHandshakeInterceptor implements HandshakeInterceptor {
                                    Map<String, Object> attributes) {
 
         URI uri = request.getURI();
-        String path = uri.getPath(); // 예: /ocpp/CP_1001
+        String path = uri.getPath(); // 예: /ocpp/00000001
 
         String chargeBoxId = extractChargeBoxId(path);
         if (chargeBoxId == null || chargeBoxId.isBlank()) {
@@ -52,19 +56,24 @@ public class OcppHandshakeInterceptor implements HandshakeInterceptor {
     private boolean validateSecurityCredentials(ServerHttpRequest request, URI uri) {
         // HTTP Basic Auth 헤더 검사
         String authHeader = request.getHeaders().getFirst("Authorization");
-        if (authHeader != null && authHeader.startsWith("Basic ")) {
+        if (authHeader != null && authHeader.startsWith("Basic ") && authHeader.length() > "Basic ".length()) {
             return true; // Basic 인증 정보 수신 통과
         }
 
-        // URL 쿼리 파라미터 내 token 또는 key 검사 (예: /ocpp/CP_1001?token=xyz)
+        // URL 쿼리 파라미터 내 token 또는 auth 검사 (예: /ocpp/00000001?token=xyz)
         String query = uri.getQuery();
         if (query != null && (query.contains("token=") || query.contains("auth="))) {
             return true;
         }
 
-        // PoC 환경에서는 미설정 시에도 개발 편의상 허용하되 경고 로깅
-        log.debug("[Handshake] 인증 헤더/토큰 미포함 (PoC 모드 기본 허용): {}", uri);
-        return true;
+        if (!requireAuth) {
+            // PoC 환경(require-auth=false)에서는 미설정 시에도 개발 편의상 허용하되 디버그 로깅
+            log.debug("[Handshake] 인증 헤더/토큰 미포함 (PoC 모드 허용, require-auth=false): {}", uri);
+            return true;
+        }
+
+        log.warn("[Handshake] 인증 헤더/토큰 미포함으로 핸드셰이크 거부 (require-auth=true): {}", uri);
+        return false;
     }
 
     @Override

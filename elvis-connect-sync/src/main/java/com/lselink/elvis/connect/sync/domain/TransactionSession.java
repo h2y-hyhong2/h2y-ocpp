@@ -19,14 +19,14 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(
-        name = "tb_transaction_session",
+        name = "transaction_session",
         uniqueConstraints = {
-                @UniqueConstraint(name = "UK_SESSION_CHARGE_BOX_TRN", columnNames = {"CHARGE_BOX_ID", "TRANSACTION_ID"})
+                @UniqueConstraint(name = "uk_session_charge_box_trn", columnNames = {"charge_box_id", "transaction_id"})
         },
         indexes = {
-                @Index(name = "IX_SESSION_CHARGER_CONN_STATUS", columnList = "CHARGE_BOX_ID, CONNECTOR_ID, STATUS"),
-                @Index(name = "IX_SESSION_START_TIME", columnList = "START_TIME"),
-                @Index(name = "IX_SESSION_ID_TAG", columnList = "ID_TAG")
+                @Index(name = "ix_session_charger_conn_status", columnList = "charge_box_id, connector_id, status"),
+                @Index(name = "ix_session_start_time", columnList = "start_time"),
+                @Index(name = "ix_session_id_tag", columnList = "id_tag")
         }
 )
 @DynamicUpdate
@@ -34,75 +34,75 @@ public class TransactionSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
+    @Column(name = "id")
     private Long id;
 
     /** 충전기 식별자 (ChargeBoxIdentity) */
-    @Column(name = "CHARGE_BOX_ID", nullable = false, length = 64)
+    @Column(name = "charge_box_id", nullable = false, length = 50)
     private String chargeBoxId;
 
     /** 충전 건/커넥터 번호 (1~N) */
-    @Column(name = "CONNECTOR_ID", nullable = false)
+    @Column(name = "connector_id", nullable = false)
     private int connectorId;
 
-    /** OCPP 거래 번호 (단말 채번 TransactionId) */
-    @Column(name = "TRANSACTION_ID", nullable = false)
+    /** OCPP 거래 번호 (CSMS 채번 TransactionId) */
+    @Column(name = "transaction_id", nullable = false)
     private Long transactionId;
 
     /** 회원 인증 식별자 (RFID / IdTag) */
-    @Column(name = "ID_TAG", nullable = false, length = 64)
+    @Column(name = "id_tag", nullable = false, length = 64)
     private String idTag;
 
     /** 상위/법인 회원 식별자 (ParentIdTag) */
-    @Column(name = "PARENT_ID_TAG", length = 64)
+    @Column(name = "parent_id_tag", length = 64)
     private String parentIdTag;
 
     /** 세션 상태 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS", nullable = false, length = 32)
+    @Column(name = "status", nullable = false, length = 32)
     private SessionStatus status;
 
     /** 충전 시작 미터값 (Wh) */
-    @Column(name = "METER_START", nullable = false)
+    @Column(name = "meter_start", nullable = false)
     private Long meterStart;
 
     /** 충전 종료 미터값 (Wh) */
-    @Column(name = "METER_STOP")
+    @Column(name = "meter_stop")
     private Long meterStop;
 
     /** 최종 충전 전력량 (kWh, (meterStop - meterStart) / 1000) */
-    @Column(name = "TOTAL_ENERGY_KWH", nullable = false, precision = 10, scale = 3)
+    @Column(name = "total_energy_kwh", nullable = false, precision = 10, scale = 3)
     private BigDecimal totalEnergyKwh;
 
     /** 충전 시작 일시 (단말 타임스탬프 기준) */
-    @Column(name = "START_TIME", nullable = false)
+    @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
     /** 충전 종료 일시 (단말 타임스탬프 기준) */
-    @Column(name = "STOP_TIME")
+    @Column(name = "stop_time")
     private LocalDateTime stopTime;
 
     /** 총 충전 경과 시간 (분 단위) */
-    @Column(name = "CHARGING_MINUTES", nullable = false)
+    @Column(name = "charging_minutes", nullable = false)
     private int chargingMinutes;
 
     /** OCPP 종료 사유 (EmergencyStop, EVDisconnected 등 11종) */
     @Enumerated(EnumType.STRING)
-    @Column(name = "STOP_REASON", length = 64)
+    @Column(name = "stop_reason", length = 64)
     private StopReason stopReason;
 
     /** JPA 낙관적 락(Optimistic Locking) 버전 컬럼 */
     @Version
-    @Column(name = "VERSION", nullable = false)
+    @Column(name = "version", nullable = false)
     private int version;
 
     /** 최초 세션 생성 일시 */
     @CreationTimestamp
-    @Column(name = "REG_DT", nullable = false, updatable = false)
+    @Column(name = "reg_dt", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
     @UpdateTimestamp
-    @Column(name = "UPDT_DT", nullable = false)
+    @Column(name = "updt_dt", nullable = false)
     private LocalDateTime updtDt;
 
     protected TransactionSession() {

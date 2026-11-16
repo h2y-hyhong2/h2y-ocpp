@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -77,20 +76,20 @@ public class BillingCdrController {
         writer.println("트랜잭션ID,충전기ID,충전소ID,충전소명,커넥터ID,회원태그,시작시각,종료시각,충전량(kWh),단가(원),결제금액(원),결제상태,종료사유,충전시간(분)");
 
         for (CdrResponseDto item : items) {
-            String line = String.format("%d,%s,%s,\"%s\",%d,%s,%s,%s,%s,%s,%s,%s,%s,%s",
+            String line = String.format("%d,%s,%s,%s,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s",
                     item.getTransactionId(),
-                    escapeCsv(item.getChargeBoxId()),
-                    escapeCsv(item.getStationId()),
-                    escapeCsv(item.getStationName()),
+                    formatCsvCell(item.getChargeBoxId()),
+                    formatCsvCell(item.getStationId()),
+                    formatCsvCell(item.getStationName()),
                     item.getConnectorId(),
-                    escapeCsv(item.getUserTag()),
-                    item.getStartTime(),
-                    item.getStopTime(),
+                    formatCsvCell(item.getUserTag()),
+                    formatCsvCell(item.getStartTime()),
+                    formatCsvCell(item.getStopTime()),
                     item.getKwh(),
                     item.getUnitPrice(),
                     item.getTotalAmount(),
-                    escapeCsv(item.getPaymentStatus()),
-                    escapeCsv(item.getStopReason()),
+                    formatCsvCell(item.getPaymentStatus()),
+                    formatCsvCell(item.getStopReason()),
                     item.getDurationMinutes() != null ? String.valueOf(item.getDurationMinutes()) : "-"
             );
             writer.println(line);
@@ -121,64 +120,17 @@ public class BillingCdrController {
         return ApiResponse.success(result);
     }
 
-    private String escapeCsv(String value) {
+    private String formatCsvCell(String value) {
         if (value == null) {
-            return "";
+            return "\"\"";
         }
-        return value.replace("\"", "\"\"");
-    }
-
-    /**
-     * 기존 코드 및 테스트 호환용 레거시 DTO 정의
-     */
-    public static class CdrItemDto {
-        private Long transactionId;
-        private String userTag;
-        private String chargeBoxId;
-        private String stationName;
-        private String startTime;
-        private String stopTime;
-        private BigDecimal kwh;
-        private BigDecimal unitPrice;
-        private BigDecimal totalAmount;
-        private String paymentStatus;
-
-        public CdrItemDto() {}
-
-        public CdrItemDto(Long transactionId, String userTag, String chargeBoxId, String stationName,
-                          String startTime, String stopTime, BigDecimal kwh, BigDecimal unitPrice,
-                          BigDecimal totalAmount, String paymentStatus) {
-            this.transactionId = transactionId;
-            this.userTag = userTag;
-            this.chargeBoxId = chargeBoxId;
-            this.stationName = stationName;
-            this.startTime = startTime;
-            this.stopTime = stopTime;
-            this.kwh = kwh;
-            this.unitPrice = unitPrice;
-            this.totalAmount = totalAmount;
-            this.paymentStatus = paymentStatus;
+        String sanitized = value;
+        if (!sanitized.isEmpty()) {
+            char first = sanitized.charAt(0);
+            if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r') {
+                sanitized = "'" + sanitized;
+            }
         }
-
-        public Long getTransactionId() { return transactionId; }
-        public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
-        public String getUserTag() { return userTag; }
-        public void setUserTag(String userTag) { this.userTag = userTag; }
-        public String getChargeBoxId() { return chargeBoxId; }
-        public void setChargeBoxId(String chargeBoxId) { this.chargeBoxId = chargeBoxId; }
-        public String getStationName() { return stationName; }
-        public void setStationName(String stationName) { this.stationName = stationName; }
-        public String getStartTime() { return startTime; }
-        public void setStartTime(String startTime) { this.startTime = startTime; }
-        public String getStopTime() { return stopTime; }
-        public void setStopTime(String stopTime) { this.stopTime = stopTime; }
-        public BigDecimal getKwh() { return kwh; }
-        public void setKwh(BigDecimal kwh) { this.kwh = kwh; }
-        public BigDecimal getUnitPrice() { return unitPrice; }
-        public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
-        public BigDecimal getTotalAmount() { return totalAmount; }
-        public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
-        public String getPaymentStatus() { return paymentStatus; }
-        public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+        return "\"" + sanitized.replace("\"", "\"\"") + "\"";
     }
 }

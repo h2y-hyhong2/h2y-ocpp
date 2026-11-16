@@ -21,11 +21,11 @@ import java.time.LocalDateTime;
  * </p>
  */
 @Entity
-@Table(name = "tbl_dlt_history",
+@Table(name = "dlt_history",
         indexes = {
-                @Index(name = "IX_DLT_BOX", columnList = "charge_box_id"),
-                @Index(name = "IX_DLT_STATUS", columnList = "status"),
-                @Index(name = "IX_DLT_FAILED", columnList = "failed_dt")
+                @Index(name = "ix_dlt_box", columnList = "charge_box_id"),
+                @Index(name = "ix_dlt_status", columnList = "status"),
+                @Index(name = "ix_dlt_failed", columnList = "failed_dt")
         })
 @DynamicInsert
 @DynamicUpdate
@@ -208,7 +208,11 @@ public class DltHistory {
      */
     public void markFailed(String newErrorMessage) {
         this.status = DltStatus.FAILED;
-        this.errorMessage = newErrorMessage;
+        if (newErrorMessage != null && newErrorMessage.length() > 1000) {
+            this.errorMessage = newErrorMessage.substring(0, 1000);
+        } else {
+            this.errorMessage = newErrorMessage;
+        }
         this.retryCount = this.retryCount + 1;
         this.updtDt = LocalDateTime.now();
     }

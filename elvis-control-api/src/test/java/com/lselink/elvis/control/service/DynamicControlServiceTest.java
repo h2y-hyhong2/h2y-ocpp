@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Sandbox / WireTap 동적 제어 서비스 단위 테스트 (Sprint 32: S32-API-0090-TE)
@@ -171,5 +172,27 @@ class DynamicControlServiceTest {
         // then
         assertThat(status.getChargeBoxId()).isEqualTo("00000001");
         assertThat(dynamicControlService.isSandboxed("00000001")).isTrue();
+    }
+
+    @Test
+    @DisplayName("WireTap maxDurationSeconds=0 요청 시 Sandbox와 동일하게 무기한(expiresAt=null) 처리 검증")
+    void wiretap_zero_duration_means_no_expiration() {
+        WireTapPolicyRequest request = new WireTapPolicyRequest("00000001", true, "ALL", 0L);
+
+        WireTapStatusDto status = dynamicControlService.setWireTapPolicy(request);
+
+        assertThat(status.isEnabled()).isTrue();
+        assertThat(status.getExpiresAt()).isNull();
+        assertThat(status.isExpired()).isFalse();
+    }
+
+    @Test
+    @DisplayName("8자리 숫자 형식이 아닌 chargeBoxId 입력 시 예외 발생 검증")
+    void invalid_chargeBoxId_throws_exception() {
+        SandboxPolicyRequest request = new SandboxPolicyRequest("CP-01", true, "DROP", "형식 오류", 60L);
+
+        assertThatThrownBy(() -> dynamicControlService.setSandboxPolicy(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("8자리 숫자");
     }
 }

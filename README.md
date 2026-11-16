@@ -4,16 +4,18 @@
 
 ## 📌 문서 인덱스 (Documentation Index)
 
-프로젝트와 관련된 주요 설계 및 요구사항 정의 문서 목록입니다. 각 문서는 Markdown 원본 또는 웹 브라우저에서 편리하게 볼 수 있는 **HTML 뷰어** 링크를 제공합니다.
+프로젝트와 관련된 주요 설계 문서는 로컬/사내 문서 저장소(`doc/01.standard_solution/`, `doc/as-is-functions`) 및 리포지토리 내 `docs/` 디렉터리에서 관리됩니다.
 
-| 문서명                                 | 주요 내용                                                                                                           | 문서 링크 (Markdown)                                                                                                | 브라우저 뷰어 (HTML)                                                                                |
-| :------------------------------------- | :------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------- |
-| **01. 제품 요구사항 정의서 (PRD)**     | 프로젝트 개요, 시스템 아키텍처 후보군(1안/2안) 비교, 실시간 관제/정산 요건, 하드웨어 권장 스펙                      | [01.prd.md](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/01.prd.md)                                     | [HTML 뷰어](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/01.prd.html)                   |
-| **02. 통합 기능 분류 정의서**          | AS-IS 150여 개 화면 분석을 기반으로 Phase 1(필수) 및 Phase 2(선택) 분류 매트릭스 정의                               | [02.feature_specification.md](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/02.feature_specification.md) | [HTML 뷰어](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/02.feature_specification.html) |
-| **03. 예상 개발 일정 정의서**          | Phase 1 (Standalone 6개월) 및 Phase 2 (HA[^HA] 분산 6개월) 주차별 세부 작업 및 마일스톤                             | [03.timeline.md](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/03.timeline.md)                           | [HTML 뷰어](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/03.timeline.html)              |
-| **04. 소프트웨어 아키텍처 정의서**     | EIP[^EIP] 패턴 설계, 가상 스레드 분배, 분산 세션 관리, CQRS[^CQRS] 데이터 구조 설계 및 EAI[^EAI] 통합 아키텍처 매핑 | [04.software_architecture.md](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/04.software_architecture.md) | [HTML 뷰어](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/04.software_architecture.html) |
-| **05. Phase 1 기술 검증 정의서 (POC)** | Phase 1 기준 인프라 구성, EIP 구성 코드, 벌크 저장 설정 및 시뮬레이터 검증 시나리오 정의                            | [05.poc.md](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/05.poc.md)                                     | [HTML 뷰어](file:///d:/project/h2y/h2y-ocpp/doc/01.standard_solution/05.poc.html)                   |
-| **AS-IS 메뉴 목록**                    | 이전 시스템의 원본 화면 목록 (CSV 포맷)                                                                             | [as-is-functions](file:///d:/project/h2y/h2y-ocpp/doc/as-is-functions)                                              | -                                                                                                   |
+| 문서명                                 | 주요 내용                                                                                                           | 저장 경로 (참고)                                              |
+| :------------------------------------- | :------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------ |
+| **01. 제품 요구사항 정의서 (PRD)**     | 프로젝트 개요, 시스템 아키텍처 후보군(1안/2안) 비교, 실시간 관제/정산 요건, 하드웨어 권장 스펙                      | `doc/01.standard_solution/01.prd.md`                          |
+| **02. 통합 기능 분류 정의서**          | AS-IS 150여 개 화면 분석을 기반으로 Phase 1(필수) 및 Phase 2(선택) 분류 매트릭스 정의                               | `doc/01.standard_solution/02.feature_specification.md`        |
+| **03. 예상 개발 일정 정의서**          | Phase 1 (Standalone 6개월) 및 Phase 2 (HA[^HA] 분산 6개월) 주차별 세부 작업 및 마일스톤                             | `doc/01.standard_solution/03.timeline.md`                     |
+| **04. 소프트웨어 아키텍처 정의서**     | EIP[^EIP] 패턴 설계, 가상 스레드 분배, 분산 세션 관리, CQRS[^CQRS] 데이터 구조 설계 및 EAI[^EAI] 통합 아키텍처 매핑 | `doc/01.standard_solution/04.software_architecture.md`        |
+| **05. Phase 1 기술 검증 정의서 (POC)** | Phase 1 기준 인프라 구성, EIP 구성 코드, 벌크 저장 설정 및 시뮬레이터 검증 시나리오 정의                            | `doc/01.standard_solution/05.poc.md`                          |
+| **CI/BI 마스터 컬러 가이드**           | E-LINK / LS 브랜드 컬러 시스템, 라이트 테마 기준 60-30-10 컬러 위계 및 상태 색상 토큰                               | [docs/CI_COLOR_GUIDE.md](docs/CI_COLOR_GUIDE.md)              |
+| **외부 설정 및 인스톨러 가이드**       | `config/` 외부 설정 오버라이드 및 미들웨어 실행 가이드                                                              | [config/README.md](config/README.md)                          |
+| **로컬 기동 스크립트 가이드**          | Windows Native(Zero-Docker) 미들웨어/서비스/테스터 기동 스크립트 안내                                               | [scripts/README.md](scripts/README.md)                        |
 
 ---
 
@@ -23,7 +25,7 @@
 - **Enterprise Integration:** Spring-Kafka (제 2안 채택 적용 기준)
 - **Message Broker:** Apache Kafka (KRaft Mode)
 - **Databases:** MySQL 9.71 (OLTP[^OLTP], 정산/자산 마스터)
-- **In-Memory Cache:** Redis (분산 세션 및 명령 라우팅 Pub/Sub)
+- **In-Memory Cache:** Caffeine (로컬 L1) & Redis (선택적 L2 연동 / Phase 2 HA 분산 세션 및 명령 라우팅 Pub/Sub 확장)
 - **Frontend / Desktop App:** Vue 3 (Composition API[^API], Pinia, Pure Tailwind CSS, ECharts) & **Tauri 2.0 (Rust 기반 초경량 Standalone 데스크톱 앱, pnpm)**
 
 ---
@@ -37,12 +39,14 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 | **Apache Kafka** | `2.13-4.3.1` (KRaft)        | Windows / JVM           | `19092`                     | `binaries/kafka_2.13-4.3.1/`                                              |
 | **MySQL**        | `9.7.1-winx64`              | Windows x64             | `13306`                     | `binaries/mysql-9.7.1-winx64/`                                            |
 
-### 주요 마이크로서비스 모듈
+### 주요 마이크로서비스 및 UI 모듈
 
-- **`elvis-core`**: OCPP 1.6J WebSocket 수신 및 핵심 비즈니스 로직 처리
-- **`elvis-control-api`**: 관제 REST API 및 Spring Security JWT 관리자 인증 백엔드 (`:9082`)
-- **`elvis-control-ui`**: ELVIS-CSMS 관제 데스크톱 센터 (Tauri 2.0 / Vue 3, `:1420`)
-- **`elvis-tester-ui`**: 가상 충전기(EVSE) 에뮬레이터 및 관제 프로토타입 UI (Tauri/Vue 3)
+- **`elvis-connect-ws`**: OCPP 1.6J WebSocket 게이트웨이 수신 및 하향 커맨드 전달 (`:9080`)
+- **`elvis-connect-sync`**: Kafka 이벤트 파싱, MySQL 실시간 상태/세션/과금/장애 동기화 엔진 (`:9081`)
+- **`elvis-control-api`**: 관제 REST API, SSE 실시간 알림 푸시 및 Spring Security JWT 관리자 인증 백엔드 (`:9082`)
+- **`elvis-launcher`**: 로컬 미들웨어 및 코어 서비스 통합 런처 데스크톱 앱 (Tauri 2.0 / Vue 3, `:1420`)
+- **`elvis-control-ui`**: ELVIS-CSMS 관제 데스크톱 센터 (Tauri 2.0 / Vue 3, `:1421`)
+- **`elvis-tester-ui`**: 가상 충전기(EVSE) 에뮬레이터 및 WireTap 패킷 시뮬레이터 UI (Tauri 2.0 / Vue 3, `:1422`)
 
 ---
 
@@ -91,7 +95,5 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 [^HA]: **HA (High Availability):** 고가용성 (서버 다중화 등을 통한 서비스 중단 최소화 설계)
 
 [^OCPP]: **OCPP (Open Charge Point Protocol):** 개방형 충전 통신 규격
-
-[^OLAP]: **OLAP (Online Analytical Processing):** 실시간 데이터 분석 처리
 
 [^OLTP]: **OLTP (Online Transaction Processing):** 실시간 트랜잭션 처리

@@ -1,11 +1,14 @@
 package com.lselink.elvis.control.dto.dynamic;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * 실시간 패킷 감시(WireTap) 정책 요청 DTO
  */
 public class WireTapPolicyRequest {
 
     /** 대상 충전기 식별자 (예: "00000001") */
+    @NotBlank(message = "chargeBoxId는 필수입니다.")
     private String chargeBoxId;
 
     /** WireTap 활성화 여부 (true / false) */

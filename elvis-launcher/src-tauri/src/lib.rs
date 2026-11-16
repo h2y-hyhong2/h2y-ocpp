@@ -1,12 +1,15 @@
+use std::path::PathBuf;
 use std::process::Command;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, WindowEvent,
 };
 
-// 서비스별 비동기 작업 진행 상태 추적 (0: Idle, 1: Starting, 2: Stopping)
+// 서비스별 비동기 작업 진행 상태 추적
+// 0: Idle, 1: Starting, 2: Stopping, 3: RestartStopping, 4: RestartStarting
 static PENDING_MYSQL: AtomicU8 = AtomicU8::new(0);
 static PENDING_KAFKA: AtomicU8 = AtomicU8::new(0);
 static PENDING_WS: AtomicU8 = AtomicU8::new(0);
@@ -14,24 +17,196 @@ static PENDING_SYNC: AtomicU8 = AtomicU8::new(0);
 static PENDING_API: AtomicU8 = AtomicU8::new(0);
 
 // 그룹 작업 진행 상태 추적
-// 0: Idle, 1: StartingAll, 2: StoppingAll, 3: RestartingAll, 4: RestartingBackend, 5: RestartingInfra
+// 0: Idle
+// 1: StartingAll, 2: StoppingAll
+// 3: RestartingAll_Stopping, 4: RestartingBackend_Stopping, 5: RestartingInfra_Stopping
+// 6: RestartingAll_Starting, 7: RestartingBackend_Starting, 8: RestartingInfra_Starting
 static PENDING_GROUP: AtomicU8 = AtomicU8::new(0);
+static PENDING_STARTED_AT: AtomicU64 = AtomicU64::new(0);
 
-fn check_single_port(port: u16) -> bool {
-    let addr = format!("127.0.0.1:{}", port);
-    if let Ok(socket_addr) = addr.parse() {
-        std::net::TcpStream::connect_timeout(&socket_addr, std::time::Duration::from_millis(250)).is_ok()
-    } else {
-        false
+fn now_epoch_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn mark_pending_started() {
+    PENDING_STARTED_AT.store(now_epoch_secs(), Ordering::Relaxed);
+}
+
+#[tauri::command]
+fn reset_tray_pending() {
+    PENDING_GROUP.store(0, Ordering::Relaxed);
+    PENDING_MYSQL.store(0, Ordering::Relaxed);
+    PENDING_KAFKA.store(0, Ordering::Relaxed);
+    PENDING_WS.store(0, Ordering::Relaxed);
+    PENDING_SYNC.store(0, Ordering::Relaxed);
+    PENDING_API.store(0, Ordering::Relaxed);
+    PENDING_STARTED_AT.store(0, Ordering::Relaxed);
+}
+
+struct EnvConfig {
+    log_dir: String,
+    mysql_port: u16,
+    kafka_port: u16,
+    ws_port: u16,
+    sync_port: u16,
+    api_port: u16,
+    tester_port: u16,
+}
+
+impl Default for EnvConfig {
+    fn default() -> Self {
+        Self {
+            log_dir: "D:\\elvis-lite\\logs".to_string(),
+            mysql_port: 13306,
+            kafka_port: 19092,
+            ws_port: 9080,
+            sync_port: 9081,
+            api_port: 9082,
+            tester_port: 9085,
+        }
     }
 }
 
-fn check_all_service_ports() -> (bool, bool, bool, bool, bool, usize) {
-    let mysql = check_single_port(13306);
-    let kafka = check_single_port(19092);
-    let ws = check_single_port(9080);
-    let sync = check_single_port(9081);
-    let api = check_single_port(9082);
+fn find_paths_env_file() -> Option<PathBuf> {
+    if let Ok(cur_dir) = std::env::current_dir() {
+        for ancestor in cur_dir.ancestors().take(5) {
+            let candidate = ancestor.join("config").join("paths.env");
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+    }
+    if let Ok(cur_exe) = std::env::current_exe() {
+        for ancestor in cur_exe.ancestors().take(6) {
+            let candidate = ancestor.join("config").join("paths.env");
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+fn load_env_config() -> EnvConfig {
+    let mut cfg = EnvConfig::default();
+    if let Some(env_path) = find_paths_env_file() {
+        if let Ok(content) = std::fs::read_to_string(env_path) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    continue;
+                }
+                if let Some((k, v)) = trimmed.split_once('=') {
+                    let key = k.trim();
+                    let val = v.trim();
+                    if val.is_empty() {
+                        continue;
+                    }
+                    match key {
+                        "ELVIS_LOG_DIR" => cfg.log_dir = val.to_string(),
+                        "ELVIS_MYSQL_PORT" => {
+                            if let Ok(p) = val.parse::<u16>() {
+                                cfg.mysql_port = p;
+                            }
+                        }
+                        "ELVIS_KAFKA_PORT" => {
+                            if let Ok(p) = val.parse::<u16>() {
+                                cfg.kafka_port = p;
+                            }
+                        }
+                        "ELVIS_WS_PORT" => {
+                            if let Ok(p) = val.parse::<u16>() {
+                                cfg.ws_port = p;
+                            }
+                        }
+                        "ELVIS_SYNC_PORT" => {
+                            if let Ok(p) = val.parse::<u16>() {
+                                cfg.sync_port = p;
+                            }
+                        }
+                        "ELVIS_API_PORT" => {
+                            if let Ok(p) = val.parse::<u16>() {
+                                cfg.api_port = p;
+                            }
+                        }
+                        "ELVIS_TESTER_PORT" => {
+                            if let Ok(p) = val.parse::<u16>() {
+                                cfg.tester_port = p;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+    cfg
+}
+
+fn escape_ps_single_quoted(value: &str) -> String {
+    value.replace('\'', "''")
+}
+
+fn sanitize_cmd_title(value: &str) -> String {
+    value
+        .chars()
+        .map(|c| match c {
+            '"' | '&' | '|' | '<' | '>' | '^' | '%' | '\r' | '\n' => ' ',
+            _ => c,
+        })
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+fn encode_ps_base64(script: &str) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut bytes = Vec::with_capacity(script.len() * 2);
+    for unit in script.encode_utf16() {
+        bytes.extend_from_slice(&unit.to_le_bytes());
+    }
+    let mut out = String::with_capacity((bytes.len() + 2) / 3 * 4);
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+        let n = (b0 << 16) | (b1 << 8) | b2;
+        out.push(TABLE[((n >> 18) & 0x3F) as usize] as char);
+        out.push(TABLE[((n >> 12) & 0x3F) as usize] as char);
+        out.push(if chunk.len() > 1 {
+            TABLE[((n >> 6) & 0x3F) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            TABLE[(n & 0x3F) as usize] as char
+        } else {
+            '='
+        });
+    }
+    out
+}
+
+fn check_single_port(port: u16) -> bool {
+    let timeout = std::time::Duration::from_millis(250);
+    [format!("127.0.0.1:{}", port), format!("[::1]:{}", port)]
+        .into_iter()
+        .any(|addr| {
+            addr.parse::<std::net::SocketAddr>()
+                .map(|socket_addr| std::net::TcpStream::connect_timeout(&socket_addr, timeout).is_ok())
+                .unwrap_or(false)
+        })
+}
+
+fn check_all_service_ports(env: &EnvConfig) -> (bool, bool, bool, bool, bool, usize) {
+    let mysql = check_single_port(env.mysql_port);
+    let kafka = check_single_port(env.kafka_port);
+    let ws = check_single_port(env.ws_port);
+    let sync = check_single_port(env.sync_port);
+    let api = check_single_port(env.api_port);
     let mut count = 0;
     if mysql { count += 1; }
     if kafka { count += 1; }
@@ -39,6 +214,56 @@ fn check_all_service_ports() -> (bool, bool, bool, bool, bool, usize) {
     if sync { count += 1; }
     if api { count += 1; }
     (mysql, kafka, ws, sync, api, count)
+}
+
+fn update_service_menu_label(
+    item: &MenuItem<tauri::Wry>,
+    pending: &AtomicU8,
+    is_up: bool,
+    label_prefix: &str,
+) {
+    let state = pending.load(Ordering::Relaxed);
+    match state {
+        1 => {
+            if is_up {
+                pending.store(0, Ordering::Relaxed);
+                let _ = item.set_text(format!("● {} [ON]", label_prefix));
+            } else {
+                let _ = item.set_text(format!("[진행] {} [기동 중...]", label_prefix));
+            }
+        }
+        2 => {
+            if !is_up {
+                pending.store(0, Ordering::Relaxed);
+                let _ = item.set_text(format!("○ {} [OFF]", label_prefix));
+            } else {
+                let _ = item.set_text(format!("[진행] {} [종료 중...]", label_prefix));
+            }
+        }
+        3 => {
+            if !is_up {
+                pending.store(4, Ordering::Relaxed);
+                let _ = item.set_text(format!("[진행] {} [재기동: 기동 대기]", label_prefix));
+            } else {
+                let _ = item.set_text(format!("[진행] {} [재기동: 종료 중]", label_prefix));
+            }
+        }
+        4 => {
+            if is_up {
+                pending.store(0, Ordering::Relaxed);
+                let _ = item.set_text(format!("● {} [ON]", label_prefix));
+            } else {
+                let _ = item.set_text(format!("[진행] {} [재기동: 기동 중]", label_prefix));
+            }
+        }
+        _ => {
+            if is_up {
+                let _ = item.set_text(format!("● {} [ON]", label_prefix));
+            } else {
+                let _ = item.set_text(format!("○ {} [OFF]", label_prefix));
+            }
+        }
+    }
 }
 
 fn update_tray_status_view(
@@ -55,20 +280,45 @@ fn update_tray_status_view(
     restart_backend_item: &MenuItem<tauri::Wry>,
     restart_infra_item: &MenuItem<tauri::Wry>,
 ) {
-    let (mysql, kafka, ws, sync, api, count) = check_all_service_ports();
+    let env = load_env_config();
+    let (mysql, kafka, ws, sync, api, count) = check_all_service_ports(&env);
     let infra_count = (if mysql { 1 } else { 0 }) + (if kafka { 1 } else { 0 });
     let core_count = (if ws { 1 } else { 0 }) + (if sync { 1 } else { 0 }) + (if api { 1 } else { 0 });
 
-    let p_group = PENDING_GROUP.load(Ordering::Relaxed);
+    let started_at = PENDING_STARTED_AT.load(Ordering::Relaxed);
+    let elapsed = if started_at > 0 {
+        now_epoch_secs().saturating_sub(started_at)
+    } else {
+        0
+    };
 
-    // 1) 전체 요약 텍스트 (완전 기동/종료될 때까지 진행 상태 유지)
+    // 장시간(90초 초과) 미해결 상태가 고착되는 것을 방지하는 안전 타임아웃
+    if started_at > 0 && elapsed > 90 {
+        reset_tray_pending();
+    }
+
+    let mut p_group = PENDING_GROUP.load(Ordering::Relaxed);
+
+    // 2단계 재기동 상태 전이: 종료 완료 확인(또는 12초 경과) 시 기동 단계로 전이
+    if p_group == 3 && (count == 0 || elapsed >= 12) {
+        PENDING_GROUP.store(6, Ordering::Relaxed);
+        p_group = 6;
+    } else if p_group == 4 && (core_count == 0 || elapsed >= 12) {
+        PENDING_GROUP.store(7, Ordering::Relaxed);
+        p_group = 7;
+    } else if p_group == 5 && (infra_count == 0 || elapsed >= 12) {
+        PENDING_GROUP.store(8, Ordering::Relaxed);
+        p_group = 8;
+    }
+
+    // 1) 전체 요약 텍스트
     let summary_text = match p_group {
         1 => {
             if count == 5 {
                 PENDING_GROUP.store(0, Ordering::Relaxed);
                 "● [ STATUS: 5/5 전체 정상 가동 중 ]".to_string()
             } else {
-                format!("⏳ [ STATUS: 전체 순차 기동 중... ({}/5) ]", count)
+                format!("[진행] [ STATUS: 전체 순차 기동 중... ({}/5) ]", count)
             }
         }
         2 => {
@@ -76,17 +326,19 @@ fn update_tray_status_view(
                 PENDING_GROUP.store(0, Ordering::Relaxed);
                 "○ [ STATUS: 0/5 모든 서비스 정지됨 ]".to_string()
             } else {
-                format!("⏳ [ STATUS: 전체 순차 종료 중... ({}/5 잔여) ]", count)
+                format!("[진행] [ STATUS: 전체 순차 종료 중... ({}/5 잔여) ]", count)
             }
         }
-        3 => {
+        3 => format!("[진행] [ STATUS: 전체 재기동(종료 중)... ({}/5 잔여) ]", count),
+        6 => {
             if count == 5 {
                 PENDING_GROUP.store(0, Ordering::Relaxed);
                 "● [ STATUS: 5/5 전체 정상 가동 중 ]".to_string()
             } else {
-                format!("⏳ [ STATUS: 전체 재기동 중... ({}/5) ]", count)
+                format!("[진행] [ STATUS: 전체 재기동(기동 중)... ({}/5) ]", count)
             }
         }
+        4 | 7 | 5 | 8 => format!("[진행] [ STATUS: 선택 그룹 재기동 중... ({}/5) ]", count),
         _ => {
             if count == 5 {
                 "● [ STATUS: 5/5 전체 정상 가동 중 ]".to_string()
@@ -99,127 +351,40 @@ fn update_tray_status_view(
     };
     let _ = summary_item.set_text(summary_text);
 
-    // 2) MySQL (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
-    let p_mysql = PENDING_MYSQL.load(Ordering::Relaxed);
-    if p_mysql == 1 {
-        if mysql {
-            PENDING_MYSQL.store(0, Ordering::Relaxed);
-            let _ = mysql_item.set_text("● [인프라] MySQL 9.71 (:13306) [ON]");
-        } else {
-            let _ = mysql_item.set_text("⏳ [인프라] MySQL 9.71 (:13306) [기동 중...]");
-        }
-    } else if p_mysql == 2 {
-        if !mysql {
-            PENDING_MYSQL.store(0, Ordering::Relaxed);
-            let _ = mysql_item.set_text("○ [인프라] MySQL 9.71 (:13306) [OFF]");
-        } else {
-            let _ = mysql_item.set_text("⏳ [인프라] MySQL 9.71 (:13306) [종료 중...]");
-        }
-    } else {
-        if mysql {
-            let _ = mysql_item.set_text("● [인프라] MySQL 9.71 (:13306) [ON]");
-        } else {
-            let _ = mysql_item.set_text("○ [인프라] MySQL 9.71 (:13306) [OFF]");
-        }
-    }
-
-    // 3) Kafka (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
-    let p_kafka = PENDING_KAFKA.load(Ordering::Relaxed);
-    if p_kafka == 1 {
-        if kafka {
-            PENDING_KAFKA.store(0, Ordering::Relaxed);
-            let _ = kafka_item.set_text("● [인프라] Apache Kafka (:19092) [ON]");
-        } else {
-            let _ = kafka_item.set_text("⏳ [인프라] Apache Kafka (:19092) [기동 중...]");
-        }
-    } else if p_kafka == 2 {
-        if !kafka {
-            PENDING_KAFKA.store(0, Ordering::Relaxed);
-            let _ = kafka_item.set_text("○ [인프라] Apache Kafka (:19092) [OFF]");
-        } else {
-            let _ = kafka_item.set_text("⏳ [인프라] Apache Kafka (:19092) [종료 중...]");
-        }
-    } else {
-        if kafka {
-            let _ = kafka_item.set_text("● [인프라] Apache Kafka (:19092) [ON]");
-        } else {
-            let _ = kafka_item.set_text("○ [인프라] Apache Kafka (:19092) [OFF]");
-        }
-    }
-
-    // 4) WS (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
-    let p_ws = PENDING_WS.load(Ordering::Relaxed);
-    if p_ws == 1 {
-        if ws {
-            PENDING_WS.store(0, Ordering::Relaxed);
-            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:9080) [ON]");
-        } else {
-            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:9080) [기동 중...]");
-        }
-    } else if p_ws == 2 {
-        if !ws {
-            PENDING_WS.store(0, Ordering::Relaxed);
-            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:9080) [OFF]");
-        } else {
-            let _ = ws_item.set_text("⏳ [코어] elvis-connect-ws (:9080) [종료 중...]");
-        }
-    } else {
-        if ws {
-            let _ = ws_item.set_text("● [코어] elvis-connect-ws (:9080) [ON]");
-        } else {
-            let _ = ws_item.set_text("○ [코어] elvis-connect-ws (:9080) [OFF]");
-        }
-    }
-
-    // 5) Sync (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
-    let p_sync = PENDING_SYNC.load(Ordering::Relaxed);
-    if p_sync == 1 {
-        if sync {
-            PENDING_SYNC.store(0, Ordering::Relaxed);
-            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:9081) [ON]");
-        } else {
-            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:9081) [기동 중...]");
-        }
-    } else if p_sync == 2 {
-        if !sync {
-            PENDING_SYNC.store(0, Ordering::Relaxed);
-            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:9081) [OFF]");
-        } else {
-            let _ = sync_item.set_text("⏳ [코어] elvis-connect-sync (:9081) [종료 중...]");
-        }
-    } else {
-        if sync {
-            let _ = sync_item.set_text("● [코어] elvis-connect-sync (:9081) [ON]");
-        } else {
-            let _ = sync_item.set_text("○ [코어] elvis-connect-sync (:9081) [OFF]");
-        }
-    }
-
-    // 6) API (완전히 뜰 때까지 기동중, 완전히 꺼질 때까지 종료중)
-    let p_api = PENDING_API.load(Ordering::Relaxed);
-    if p_api == 1 {
-        if api {
-            PENDING_API.store(0, Ordering::Relaxed);
-            let _ = api_item.set_text("● [코어] elvis-control-api (:9082) [ON]");
-        } else {
-            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:9082) [기동 중...]");
-        }
-    } else if p_api == 2 {
-        if !api {
-            PENDING_API.store(0, Ordering::Relaxed);
-            let _ = api_item.set_text("○ [코어] elvis-control-api (:9082) [OFF]");
-        } else {
-            let _ = api_item.set_text("⏳ [코어] elvis-control-api (:9082) [종료 중...]");
-        }
-    } else {
-        if api {
-            let _ = api_item.set_text("● [코어] elvis-control-api (:9082) [ON]");
-        } else {
-            let _ = api_item.set_text("○ [코어] elvis-control-api (:9082) [OFF]");
-        }
-    }
+    // 2~6) 개별 서비스 메뉴 텍스트 갱신 (동적 포트 반영)
+    update_service_menu_label(
+        mysql_item,
+        &PENDING_MYSQL,
+        mysql,
+        &format!("[인프라] MySQL 9.71 (:{})", env.mysql_port),
+    );
+    update_service_menu_label(
+        kafka_item,
+        &PENDING_KAFKA,
+        kafka,
+        &format!("[인프라] Apache Kafka (:{})", env.kafka_port),
+    );
+    update_service_menu_label(
+        ws_item,
+        &PENDING_WS,
+        ws,
+        &format!("[코어] elvis-connect-ws (:{})", env.ws_port),
+    );
+    update_service_menu_label(
+        sync_item,
+        &PENDING_SYNC,
+        sync,
+        &format!("[코어] elvis-connect-sync (:{})", env.sync_port),
+    );
+    update_service_menu_label(
+        api_item,
+        &PENDING_API,
+        api,
+        &format!("[코어] elvis-control-api (:{})", env.api_port),
+    );
 
     // 7) 그룹 메뉴 버튼 상태 및 텍스트 갱신
+    p_group = PENDING_GROUP.load(Ordering::Relaxed);
     match p_group {
         1 => {
             if count == 5 {
@@ -228,7 +393,7 @@ fn update_tray_status_view(
                 let _ = start_all_item.set_enabled(false);
                 let _ = stop_all_item.set_enabled(true);
             } else {
-                let _ = start_all_item.set_text(format!("⏳ 전체 서비스 시작 중... ({}/5)", count));
+                let _ = start_all_item.set_text(format!("[진행] 전체 서비스 시작 중... ({}/5)", count));
                 let _ = start_all_item.set_enabled(false);
                 let _ = stop_all_item.set_enabled(true);
             }
@@ -240,47 +405,59 @@ fn update_tray_status_view(
                 let _ = stop_all_item.set_enabled(false);
                 let _ = start_all_item.set_enabled(true);
             } else {
-                let _ = stop_all_item.set_text(format!("⏳ 전체 서비스 종료 중... ({}/5)", 5 - count));
+                let _ = stop_all_item.set_text(format!("[진행] 전체 서비스 종료 중... ({}/5)", 5 - count));
                 let _ = stop_all_item.set_enabled(false);
                 let _ = start_all_item.set_enabled(true);
             }
         }
         3 => {
+            let _ = restart_all_item.set_text(format!("[진행] 전체 재기동(종료)... ({}/5 잔여)", count));
+            let _ = restart_all_item.set_enabled(false);
+        }
+        6 => {
             if count == 5 {
                 PENDING_GROUP.store(0, Ordering::Relaxed);
-                let _ = restart_all_item.set_text("🔄 전체 재기동");
+                let _ = restart_all_item.set_text("전체 재기동");
                 let _ = restart_all_item.set_enabled(true);
             } else {
-                let _ = restart_all_item.set_text(format!("⏳ 전체 재기동 중... ({}/5)", count));
+                let _ = restart_all_item.set_text(format!("[진행] 전체 재기동(기동)... ({}/5)", count));
                 let _ = restart_all_item.set_enabled(false);
             }
         }
         4 => {
+            let _ = restart_backend_item.set_text(format!("[진행] 백엔드 재기동(종료)... ({}/3 잔여)", core_count));
+            let _ = restart_backend_item.set_enabled(false);
+        }
+        7 => {
             if core_count == 3 {
                 PENDING_GROUP.store(0, Ordering::Relaxed);
-                let _ = restart_backend_item.set_text("⚡ 백엔드만 재기동 (WS/Sync/API)");
+                let _ = restart_backend_item.set_text("백엔드만 재기동 (WS/Sync/API)");
                 let _ = restart_backend_item.set_enabled(true);
             } else {
-                let _ = restart_backend_item.set_text(format!("⏳ 백엔드 재기동 중... ({}/3)", core_count));
+                let _ = restart_backend_item.set_text(format!("[진행] 백엔드 재기동(기동)... ({}/3)", core_count));
                 let _ = restart_backend_item.set_enabled(false);
             }
         }
         5 => {
+            let _ = restart_infra_item.set_text(format!("[진행] 인프라 재기동(종료)... ({}/2 잔여)", infra_count));
+            let _ = restart_infra_item.set_enabled(false);
+        }
+        8 => {
             if infra_count == 2 {
                 PENDING_GROUP.store(0, Ordering::Relaxed);
-                let _ = restart_infra_item.set_text("📦 인프라만 재기동 (MySQL/Kafka)");
+                let _ = restart_infra_item.set_text("인프라만 재기동 (MySQL/Kafka)");
                 let _ = restart_infra_item.set_enabled(true);
             } else {
-                let _ = restart_infra_item.set_text(format!("⏳ 인프라 재기동 중... ({}/2)", infra_count));
+                let _ = restart_infra_item.set_text(format!("[진행] 인프라 재기동(기동)... ({}/2)", infra_count));
                 let _ = restart_infra_item.set_enabled(false);
             }
         }
         _ => {
             let _ = start_all_item.set_text("▶ 전체 서비스 시작");
             let _ = stop_all_item.set_text("■ 전체 서비스 종료");
-            let _ = restart_all_item.set_text("🔄 전체 재기동");
-            let _ = restart_backend_item.set_text("⚡ 백엔드만 재기동 (WS/Sync/API)");
-            let _ = restart_infra_item.set_text("📦 인프라만 재기동 (MySQL/Kafka)");
+            let _ = restart_all_item.set_text("전체 재기동");
+            let _ = restart_backend_item.set_text("백엔드만 재기동 (WS/Sync/API)");
+            let _ = restart_infra_item.set_text("인프라만 재기동 (MySQL/Kafka)");
 
             let _ = start_all_item.set_enabled(count < 5);
             let _ = stop_all_item.set_enabled(count > 0);
@@ -301,18 +478,22 @@ fn check_middleware_status(
     api_port: Option<u16>,
     ws_port: Option<u16>,
     sync_port: Option<u16>,
+    tester_port: Option<u16>,
 ) -> serde_json::Value {
-    let p_mysql = mysql_port.unwrap_or(13306);
-    let p_kafka = kafka_port.unwrap_or(19092);
-    let p_api = api_port.unwrap_or(9082);
-    let p_ws = ws_port.unwrap_or(9080);
-    let p_sync = sync_port.unwrap_or(9081);
+    let env = load_env_config();
+    let p_mysql = mysql_port.unwrap_or(env.mysql_port);
+    let p_kafka = kafka_port.unwrap_or(env.kafka_port);
+    let p_api = api_port.unwrap_or(env.api_port);
+    let p_ws = ws_port.unwrap_or(env.ws_port);
+    let p_sync = sync_port.unwrap_or(env.sync_port);
+    let p_tester = tester_port.unwrap_or(env.tester_port);
 
     let kafka = check_single_port(p_kafka);
     let mysql = check_single_port(p_mysql);
     let api = check_single_port(p_api);
     let ws = check_single_port(p_ws);
     let sync = check_single_port(p_sync);
+    let tester = check_single_port(p_tester) || check_single_port(1422);
 
     serde_json::json!({
         "kafka": kafka,
@@ -320,28 +501,22 @@ fn check_middleware_status(
         "controlApi": api,
         "connectWs": ws,
         "connectSync": sync,
+        "tester": tester,
         "ports": {
             "mysql": p_mysql,
             "kafka": p_kafka,
             "api": p_api,
             "ws": p_ws,
-            "sync": p_sync
+            "sync": p_sync,
+            "tester": p_tester
         }
     })
 }
 
 fn find_script_file(script_file: &str) -> Result<std::path::PathBuf, String> {
-    let fixed_path = std::path::PathBuf::from("D:\\project\\lselink\\ocpp-lite\\git\\h2y-ocpp\\scripts").join(script_file);
-    if fixed_path.exists() {
-        return Ok(fixed_path);
-    }
-
     if let Ok(cur_dir) = std::env::current_dir() {
-        for candidate in [
-            cur_dir.join("scripts").join(script_file),
-            cur_dir.join("../scripts").join(script_file),
-            cur_dir.join("../../scripts").join(script_file),
-        ] {
+        for ancestor in cur_dir.ancestors().take(5) {
+            let candidate = ancestor.join("scripts").join(script_file);
             if candidate.exists() {
                 return Ok(candidate);
             }
@@ -349,7 +524,7 @@ fn find_script_file(script_file: &str) -> Result<std::path::PathBuf, String> {
     }
 
     if let Ok(cur_exe) = std::env::current_exe() {
-        for ancestor in cur_exe.ancestors().take(5) {
+        for ancestor in cur_exe.ancestors().take(6) {
             let candidate = ancestor.join("scripts").join(script_file);
             if candidate.exists() {
                 return Ok(candidate);
@@ -419,24 +594,69 @@ fn stop_service_processes(service: &str) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        use std::process::Command;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        let cmd = match service {
-            "kafka" => "Get-NetTCPConnection -LocalPort 19092,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache Kafka*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
-            "mysql" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,3306 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null",
-            "ws" => "Get-NetTCPConnection -LocalPort 9080 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect WS*\" 2>$null",
-            "sync" => "Get-NetTCPConnection -LocalPort 9081 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect Sync*\" 2>$null",
-            "api" => "Get-NetTCPConnection -LocalPort 9082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control API*\" 2>$null",
-            "all-services" => "Get-NetTCPConnection -LocalPort 9080,9081,9082 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null",
-            "all-infra" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache Kafka*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
-            "all" => "taskkill /f /im mysqld.exe 2>$null; Get-NetTCPConnection -LocalPort 13306,19092,9080,9081,9082,3306,9092 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Connect*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Control*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - Apache*\" 2>$null; taskkill /f /fi \"WINDOWTITLE eq ELVIS - MySQL*\" 2>$null; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'kafka.Kafka' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+        let env = load_env_config();
+
+        let ps_script = match service {
+            "kafka" => format!(
+                "Get-NetTCPConnection -LocalPort {},9092 -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Apache Kafka*' }} | Stop-Process -Force -ErrorAction SilentlyContinue; \
+                 Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {{ $_.CommandLine -match 'kafka\\.Kafka' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}",
+                env.kafka_port
+            ),
+            "mysql" => format!(
+                "Stop-Process -Name 'mysqld' -Force -ErrorAction SilentlyContinue; \
+                 Get-NetTCPConnection -LocalPort {},3306 -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - MySQL*' }} | Stop-Process -Force -ErrorAction SilentlyContinue",
+                env.mysql_port
+            ),
+            "ws" => format!(
+                "Get-NetTCPConnection -LocalPort {} -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Connect WS*' }} | Stop-Process -Force -ErrorAction SilentlyContinue",
+                env.ws_port
+            ),
+            "sync" => format!(
+                "Get-NetTCPConnection -LocalPort {} -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Connect Sync*' }} | Stop-Process -Force -ErrorAction SilentlyContinue",
+                env.sync_port
+            ),
+            "api" => format!(
+                "Get-NetTCPConnection -LocalPort {} -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Control API*' }} | Stop-Process -Force -ErrorAction SilentlyContinue",
+                env.api_port
+            ),
+            "tester" => format!(
+                "Get-NetTCPConnection -LocalPort {},1422 -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Tester Harness*' }} | Stop-Process -Force -ErrorAction SilentlyContinue",
+                env.tester_port
+            ),
+            "all-services" => format!(
+                "Get-NetTCPConnection -LocalPort {},{},{} -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Connect*' -or $_.MainWindowTitle -like 'ELVIS - Control*' }} | Stop-Process -Force -ErrorAction SilentlyContinue",
+                env.ws_port, env.sync_port, env.api_port
+            ),
+            "all-infra" => format!(
+                "Stop-Process -Name 'mysqld' -Force -ErrorAction SilentlyContinue; \
+                 Get-NetTCPConnection -LocalPort {},{},3306,9092 -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Apache Kafka*' -or $_.MainWindowTitle -like 'ELVIS - MySQL*' }} | Stop-Process -Force -ErrorAction SilentlyContinue; \
+                 Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {{ $_.CommandLine -match 'kafka\\.Kafka' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}",
+                env.mysql_port, env.kafka_port
+            ),
+            "all" => format!(
+                "Stop-Process -Name 'mysqld' -Force -ErrorAction SilentlyContinue; \
+                 Get-NetTCPConnection -LocalPort {},{},{},{},{},3306,9092 -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}; \
+                 Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like 'ELVIS - Connect*' -or $_.MainWindowTitle -like 'ELVIS - Control*' -or $_.MainWindowTitle -like 'ELVIS - Apache*' -or $_.MainWindowTitle -like 'ELVIS - MySQL*' }} | Stop-Process -Force -ErrorAction SilentlyContinue; \
+                 Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {{ $_.CommandLine -match 'kafka\\.Kafka' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}",
+                env.mysql_port, env.kafka_port, env.ws_port, env.sync_port, env.api_port
+            ),
             _ => return Err("지원되지 않는 서비스입니다.".to_string()),
         };
 
+        let encoded = encode_ps_base64(&ps_script);
         let _ = Command::new("powershell")
-            .args(["-Command", cmd])
+            .args(["-NoProfile", "-WindowStyle", "Hidden", "-EncodedCommand", &encoded])
             .creation_flags(CREATE_NO_WINDOW)
-            .spawn()
+            .output()
             .map_err(|e| format!("중지 실패: {}", e))?;
 
         Ok(format!("{} 서비스가 중지되었습니다.", service))
@@ -492,27 +712,39 @@ fn stop_middleware_detached(service: String) -> Result<String, String> {
 fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
-        use std::process::Command;
         let svc = service.unwrap_or_else(|| "mysql".to_string());
+        if !matches!(svc.as_str(), "mysql" | "kafka" | "ws" | "sync" | "api" | "tester") {
+            return Err(format!("지원되지 않는 로그 서비스입니다: {}", svc));
+        }
+
+        let env = load_env_config();
         let is_error_mode = log_type.as_deref() == Some("error");
 
-        let (mut log_file_name, display_name) = match svc.as_str() {
-            "mysql" => ("mysql.log".to_string(), "MySQL 9.71 (:13306)"),
-            "kafka" => ("kafka.log".to_string(), "Apache Kafka (:19092)"),
-            "ws" => ("ws.log".to_string(), "elvis-connect-ws (:9080)"),
-            "sync" => ("sync.log".to_string(), "elvis-connect-sync (:9081)"),
-            "api" => ("api.log".to_string(), "elvis-control-api (:9082)"),
-            "tester" => ("tester.log".to_string(), "elvis-tester (:9085)"),
-            _ => ("mysql.log".to_string(), "서비스"),
+        let (log_file_name, display_name) = match svc.as_str() {
+            "mysql" => ("mysql.log", format!("MySQL 9.71 (:{})", env.mysql_port)),
+            "kafka" => ("kafka.log", format!("Apache Kafka (:{})", env.kafka_port)),
+            "ws" => ("ws.log", format!("elvis-connect-ws (:{})", env.ws_port)),
+            "sync" => ("sync.log", format!("elvis-connect-sync (:{})", env.sync_port)),
+            "api" => ("api.log", format!("elvis-control-api (:{})", env.api_port)),
+            "tester" => ("tester.log", format!("elvis-tester (:{})", env.tester_port)),
+            _ => unreachable!(),
         };
 
-        let log_dir = "D:\\elvis-lite\\logs";
-        let full_log_path = format!("{}\\{}", log_dir, log_file_name);
+        let full_log_path = PathBuf::from(&env.log_dir)
+            .join(log_file_name)
+            .to_string_lossy()
+            .to_string();
         let win_title = if is_error_mode {
             format!("ELVIS - {} 실시간 [에러] 콘솔 로그", display_name)
         } else {
             format!("ELVIS - {} 실시간 콘솔 로그", display_name)
         };
+
+        let safe_title_cmd = sanitize_cmd_title(&win_title);
+        let ps_title = escape_ps_single_quoted(&win_title);
+        let ps_display = escape_ps_single_quoted(&display_name);
+        let ps_path = escape_ps_single_quoted(&full_log_path);
+        let ps_file_name = escape_ps_single_quoted(log_file_name);
 
         // 1) 기존 동일 서비스 로그창이 이미 열려 있는지 검사 -> 활성화(Focus) 성공 시 중복 생성 방지
         let check_script = format!(
@@ -521,11 +753,20 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
              $p = Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like '*{title}*' }}; \
              if ($p) {{ if ($w.AppActivate($p[0].Id)) {{ exit 10 }} }}; \
              exit 0",
-            title = win_title
+            title = ps_title
         );
 
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
         if let Ok(st) = Command::new("powershell")
-            .args(["-NoProfile", "-NonInteractive", "-Command", &check_script])
+            .args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-EncodedCommand",
+                &encode_ps_base64(&check_script),
+            ])
+            .creation_flags(CREATE_NO_WINDOW)
             .status()
         {
             if st.code() == Some(10) {
@@ -556,10 +797,10 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
                      Write-Host '[연결됨] 에러 필터 감시를 시작합니다.' -ForegroundColor Red; \
                      Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }} \
                  }}",
-                title = win_title,
-                display_name = display_name,
-                path = full_log_path,
-                log_file_name = log_file_name
+                title = ps_title,
+                display_name = ps_display,
+                path = ps_path,
+                log_file_name = ps_file_name
             )
         } else {
             format!(
@@ -584,19 +825,31 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
                      Write-Host '[연결됨] {log_file_name} 로그 감시를 시작합니다.' -ForegroundColor Green; \
                      Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8 \
                  }}",
-                title = win_title,
-                display_name = display_name,
-                path = full_log_path,
-                log_file_name = log_file_name
+                title = ps_title,
+                display_name = ps_display,
+                path = ps_path,
+                log_file_name = ps_file_name
             )
         };
 
         Command::new("cmd")
-            .args(["/c", "start", &win_title, "powershell", "-NoExit", "-Command", &ps_cmd])
+            .args([
+                "/c",
+                "start",
+                &safe_title_cmd,
+                "powershell",
+                "-NoExit",
+                "-EncodedCommand",
+                &encode_ps_base64(&ps_cmd),
+            ])
             .spawn()
             .map_err(|e| format!("PowerShell 콘솔 기동 실패: {}", e))?;
 
-        Ok(format!("{} 서비스의 실시간 {} 터미널 콘솔이 열렸습니다.", svc, if is_error_mode { "에러" } else { "표준" }))
+        Ok(format!(
+            "{} 서비스의 실시간 {} 터미널 콘솔이 열렸습니다.",
+            svc,
+            if is_error_mode { "에러" } else { "표준" }
+        ))
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -608,7 +861,13 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
 fn open_process_status_window(target: Option<String>) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
+        let target_arg = target.unwrap_or_else(|| "all".to_string());
+        if !matches!(target_arg.as_str(), "all" | "infra" | "core" | "extension") {
+            return Err(format!("허용되지 않은 진단 타겟입니다: {}", target_arg));
+        }
+
         let win_title = "ELVIS - 프로세스 및 포트 점유 실시간 진단";
+        let ps_title = escape_ps_single_quoted(win_title);
 
         // 기존 진단창이 열려 있으면 포커스 활성화 (중복 기동 방지)
         let check_script = format!(
@@ -617,11 +876,20 @@ fn open_process_status_window(target: Option<String>) -> Result<String, String> 
              $p = Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.MainWindowTitle -like '*{title}*' }}; \
              if ($p) {{ if ($w.AppActivate($p[0].Id)) {{ exit 10 }} }}; \
              exit 0",
-            title = win_title
+            title = ps_title
         );
 
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
         if let Ok(st) = Command::new("powershell")
-            .args(["-NoProfile", "-NonInteractive", "-Command", &check_script])
+            .args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-EncodedCommand",
+                &encode_ps_base64(&check_script),
+            ])
+            .creation_flags(CREATE_NO_WINDOW)
             .status()
         {
             if st.code() == Some(10) {
@@ -630,10 +898,10 @@ fn open_process_status_window(target: Option<String>) -> Result<String, String> 
         }
 
         let target_bat = find_script_file("check-status.bat")?;
-        let target_arg = target.unwrap_or_else(|| "all".to_string());
         let cwd = target_bat.parent().unwrap();
+        let bat_str = target_bat.to_str().ok_or_else(|| "잘못된 스크립트 경로입니다.".to_string())?;
         Command::new("cmd")
-            .args(["/c", "start", win_title, "cmd", "/c", "call", target_bat.to_str().unwrap(), &target_arg])
+            .args(["/c", "start", win_title, "cmd", "/c", "call", bat_str, &target_arg])
             .current_dir(cwd)
             .spawn()
             .map_err(|e| format!("프로세스 진단창 실행 실패: {}", e))?;
@@ -658,10 +926,14 @@ fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
 fn trigger_ui_command(app: &tauri::AppHandle, action: &str, service: &str) {
     if let Some(window) = app.get_webview_window("main") {
         let js = format!(
-            "window.__triggerTrayCommand && window.__triggerTrayCommand('{}', '{}');",
+            "if (window.__triggerTrayCommand) {{ window.__triggerTrayCommand('{}', '{}'); }} else if (window.__TAURI_INTERNALS__) {{ window.__TAURI_INTERNALS__.invoke('reset_tray_pending'); }}",
             action, service
         );
-        let _ = window.eval(&js);
+        if window.eval(&js).is_err() {
+            reset_tray_pending();
+        }
+    } else {
+        reset_tray_pending();
     }
 }
 
@@ -685,32 +957,63 @@ pub fn run() {
             // }
 
             // 시스템 트레이 메뉴 아이템 정의
+            let init_env = load_env_config();
             let summary_i = MenuItem::with_id(app, "status_summary", "● [ STATUS: 점검 중... ]", false, None::<&str>)?;
             let sep1 = PredefinedMenuItem::separator(app)?;
 
             // 1. 인프라 미들웨어 상태 (클릭 시 단독 기동/종료 토글)
-            let mysql_i = MenuItem::with_id(app, "status_mysql", "○ [인프라] MySQL 9.71 (:13306) [OFF]", true, None::<&str>)?;
-            let kafka_i = MenuItem::with_id(app, "status_kafka", "○ [인프라] Apache Kafka (:19092) [OFF]", true, None::<&str>)?;
+            let mysql_i = MenuItem::with_id(
+                app,
+                "status_mysql",
+                format!("○ [인프라] MySQL 9.71 (:{}) [OFF]", init_env.mysql_port),
+                true,
+                None::<&str>,
+            )?;
+            let kafka_i = MenuItem::with_id(
+                app,
+                "status_kafka",
+                format!("○ [인프라] Apache Kafka (:{}) [OFF]", init_env.kafka_port),
+                true,
+                None::<&str>,
+            )?;
             let sep_infra = PredefinedMenuItem::separator(app)?;
 
             // 2. 코어 백엔드 엔진 상태 (클릭 시 단독 기동/종료 토글)
-            let ws_i = MenuItem::with_id(app, "status_ws", "○ [코어] elvis-connect-ws (:9080) [OFF]", true, None::<&str>)?;
-            let sync_i = MenuItem::with_id(app, "status_sync", "○ [코어] elvis-connect-sync (:9081) [OFF]", true, None::<&str>)?;
-            let api_i = MenuItem::with_id(app, "status_api", "○ [코어] elvis-control-api (:9082) [OFF]", true, None::<&str>)?;
+            let ws_i = MenuItem::with_id(
+                app,
+                "status_ws",
+                format!("○ [코어] elvis-connect-ws (:{}) [OFF]", init_env.ws_port),
+                true,
+                None::<&str>,
+            )?;
+            let sync_i = MenuItem::with_id(
+                app,
+                "status_sync",
+                format!("○ [코어] elvis-connect-sync (:{}) [OFF]", init_env.sync_port),
+                true,
+                None::<&str>,
+            )?;
+            let api_i = MenuItem::with_id(
+                app,
+                "status_api",
+                format!("○ [코어] elvis-control-api (:{}) [OFF]", init_env.api_port),
+                true,
+                None::<&str>,
+            )?;
 
             let sep2 = PredefinedMenuItem::separator(app)?;
 
             // 3. 일괄 제어 명령
             let start_all_i = MenuItem::with_id(app, "start_all", "▶ 전체 서비스 시작", true, None::<&str>)?;
             let stop_all_i = MenuItem::with_id(app, "stop_all", "■ 전체 서비스 종료", true, None::<&str>)?;
-            let restart_all_i = MenuItem::with_id(app, "restart_all", "🔄 전체 재기동", true, None::<&str>)?;
-            let restart_backend_i = MenuItem::with_id(app, "restart_backend", "⚡ 백엔드만 재기동 (WS/Sync/API)", true, None::<&str>)?;
-            let restart_infra_i = MenuItem::with_id(app, "restart_infra", "📦 인프라만 재기동 (MySQL/Kafka)", true, None::<&str>)?;
+            let restart_all_i = MenuItem::with_id(app, "restart_all", "전체 재기동", true, None::<&str>)?;
+            let restart_backend_i = MenuItem::with_id(app, "restart_backend", "백엔드만 재기동 (WS/Sync/API)", true, None::<&str>)?;
+            let restart_infra_i = MenuItem::with_id(app, "restart_infra", "인프라만 재기동 (MySQL/Kafka)", true, None::<&str>)?;
 
             let sep3 = PredefinedMenuItem::separator(app)?;
 
             // 4. 진단 도구 및 창 제어
-            let check_proc_i = MenuItem::with_id(app, "check_proc", "🔍 프로세스 & 포트 점유 진단", true, None::<&str>)?;
+            let check_proc_i = MenuItem::with_id(app, "check_proc", "프로세스 & 포트 점유 진단", true, None::<&str>)?;
             let show_i = MenuItem::with_id(app, "show", "런처 창 열기", true, None::<&str>)?;
 
             let sep4 = PredefinedMenuItem::separator(app)?;
@@ -761,128 +1064,141 @@ pub fn run() {
                     .icon(icon.clone())
                     .tooltip("ELVIS Launcher [상태 점검 중...]")
                     .menu(&menu)
-                    .on_menu_event(move |app, event| match event.id.as_ref() {
-                        "show" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
+                    .on_menu_event(move |app, event| {
+                        let env = load_env_config();
+                        match event.id.as_ref() {
+                            "show" => {
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
                             }
-                        }
-                        "check_proc" => {
-                            let _ = open_process_status_window(None);
-                        }
-                        "status_mysql" => {
-                            let (mysql, ..) = check_all_service_ports();
-                            if mysql {
-                                PENDING_MYSQL.store(2, Ordering::Relaxed);
-                                let _ = m_mysql.set_text("⏳ [인프라] MySQL 9.71 (:13306) [종료 중...]");
-                                trigger_ui_command(app, "stop", "mysql");
-                            } else {
+                            "check_proc" => {
+                                let _ = open_process_status_window(None);
+                            }
+                            "status_mysql" => {
+                                let (mysql, ..) = check_all_service_ports(&env);
+                                mark_pending_started();
+                                if mysql {
+                                    PENDING_MYSQL.store(2, Ordering::Relaxed);
+                                    let _ = m_mysql.set_text(format!("[진행] [인프라] MySQL 9.71 (:{}) [종료 중...]", env.mysql_port));
+                                    trigger_ui_command(app, "stop", "mysql");
+                                } else {
+                                    PENDING_MYSQL.store(1, Ordering::Relaxed);
+                                    let _ = m_mysql.set_text(format!("[진행] [인프라] MySQL 9.71 (:{}) [기동 중...]", env.mysql_port));
+                                    trigger_ui_command(app, "start", "mysql");
+                                }
+                            }
+                            "status_kafka" => {
+                                let (_, kafka, ..) = check_all_service_ports(&env);
+                                mark_pending_started();
+                                if kafka {
+                                    PENDING_KAFKA.store(2, Ordering::Relaxed);
+                                    let _ = m_kafka.set_text(format!("[진행] [인프라] Apache Kafka (:{}) [종료 중...]", env.kafka_port));
+                                    trigger_ui_command(app, "stop", "kafka");
+                                } else {
+                                    PENDING_KAFKA.store(1, Ordering::Relaxed);
+                                    let _ = m_kafka.set_text(format!("[진행] [인프라] Apache Kafka (:{}) [기동 중...]", env.kafka_port));
+                                    trigger_ui_command(app, "start", "kafka");
+                                }
+                            }
+                            "status_ws" => {
+                                let (_, _, ws, ..) = check_all_service_ports(&env);
+                                mark_pending_started();
+                                if ws {
+                                    PENDING_WS.store(2, Ordering::Relaxed);
+                                    let _ = m_ws.set_text(format!("[진행] [코어] elvis-connect-ws (:{}) [종료 중...]", env.ws_port));
+                                    trigger_ui_command(app, "stop", "ws");
+                                } else {
+                                    PENDING_WS.store(1, Ordering::Relaxed);
+                                    let _ = m_ws.set_text(format!("[진행] [코어] elvis-connect-ws (:{}) [기동 중...]", env.ws_port));
+                                    trigger_ui_command(app, "start", "ws");
+                                }
+                            }
+                            "status_sync" => {
+                                let (_, _, _, sync, ..) = check_all_service_ports(&env);
+                                mark_pending_started();
+                                if sync {
+                                    PENDING_SYNC.store(2, Ordering::Relaxed);
+                                    let _ = m_sync.set_text(format!("[진행] [코어] elvis-connect-sync (:{}) [종료 중...]", env.sync_port));
+                                    trigger_ui_command(app, "stop", "sync");
+                                } else {
+                                    PENDING_SYNC.store(1, Ordering::Relaxed);
+                                    let _ = m_sync.set_text(format!("[진행] [코어] elvis-connect-sync (:{}) [기동 중...]", env.sync_port));
+                                    trigger_ui_command(app, "start", "sync");
+                                }
+                            }
+                            "status_api" => {
+                                let (_, _, _, _, api, ..) = check_all_service_ports(&env);
+                                mark_pending_started();
+                                if api {
+                                    PENDING_API.store(2, Ordering::Relaxed);
+                                    let _ = m_api.set_text(format!("[진행] [코어] elvis-control-api (:{}) [종료 중...]", env.api_port));
+                                    trigger_ui_command(app, "stop", "api");
+                                } else {
+                                    PENDING_API.store(1, Ordering::Relaxed);
+                                    let _ = m_api.set_text(format!("[진행] [코어] elvis-control-api (:{}) [기동 중...]", env.api_port));
+                                    trigger_ui_command(app, "start", "api");
+                                }
+                            }
+                            "start_all" => {
+                                mark_pending_started();
+                                PENDING_GROUP.store(1, Ordering::Relaxed);
                                 PENDING_MYSQL.store(1, Ordering::Relaxed);
-                                let _ = m_mysql.set_text("⏳ [인프라] MySQL 9.71 (:13306) [기동 중...]");
-                                trigger_ui_command(app, "start", "mysql");
-                            }
-                        }
-                        "status_kafka" => {
-                            let (_, kafka, ..) = check_all_service_ports();
-                            if kafka {
-                                PENDING_KAFKA.store(2, Ordering::Relaxed);
-                                let _ = m_kafka.set_text("⏳ [인프라] Apache Kafka (:19092) [종료 중...]");
-                                trigger_ui_command(app, "stop", "kafka");
-                            } else {
                                 PENDING_KAFKA.store(1, Ordering::Relaxed);
-                                let _ = m_kafka.set_text("⏳ [인프라] Apache Kafka (:19092) [기동 중...]");
-                                trigger_ui_command(app, "start", "kafka");
-                            }
-                        }
-                        "status_ws" => {
-                            let (_, _, ws, ..) = check_all_service_ports();
-                            if ws {
-                                PENDING_WS.store(2, Ordering::Relaxed);
-                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:9080) [종료 중...]");
-                                trigger_ui_command(app, "stop", "ws");
-                            } else {
                                 PENDING_WS.store(1, Ordering::Relaxed);
-                                let _ = m_ws.set_text("⏳ [코어] elvis-connect-ws (:9080) [기동 중...]");
-                                trigger_ui_command(app, "start", "ws");
-                            }
-                        }
-                        "status_sync" => {
-                            let (_, _, _, sync, ..) = check_all_service_ports();
-                            if sync {
-                                PENDING_SYNC.store(2, Ordering::Relaxed);
-                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:9081) [종료 중...]");
-                                trigger_ui_command(app, "stop", "sync");
-                            } else {
                                 PENDING_SYNC.store(1, Ordering::Relaxed);
-                                let _ = m_sync.set_text("⏳ [코어] elvis-connect-sync (:9081) [기동 중...]");
-                                trigger_ui_command(app, "start", "sync");
-                            }
-                        }
-                        "status_api" => {
-                            let (_, _, _, _, api, ..) = check_all_service_ports();
-                            if api {
-                                PENDING_API.store(2, Ordering::Relaxed);
-                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:9082) [종료 중...]");
-                                trigger_ui_command(app, "stop", "api");
-                            } else {
                                 PENDING_API.store(1, Ordering::Relaxed);
-                                let _ = m_api.set_text("⏳ [코어] elvis-control-api (:9082) [기동 중...]");
-                                trigger_ui_command(app, "start", "api");
+                                let _ = m_summary.set_text("[진행] [ STATUS: 전체 서비스 순차 기동 중... ]");
+                                let _ = m_start_all.set_text("[진행] 전체 서비스 시작 중...");
+                                trigger_ui_command(app, "start_all", "");
                             }
+                            "stop_all" => {
+                                mark_pending_started();
+                                PENDING_GROUP.store(2, Ordering::Relaxed);
+                                PENDING_MYSQL.store(2, Ordering::Relaxed);
+                                PENDING_KAFKA.store(2, Ordering::Relaxed);
+                                PENDING_WS.store(2, Ordering::Relaxed);
+                                PENDING_SYNC.store(2, Ordering::Relaxed);
+                                PENDING_API.store(2, Ordering::Relaxed);
+                                let _ = m_summary.set_text("[진행] [ STATUS: 전체 서비스 종료 중... ]");
+                                let _ = m_stop_all.set_text("[진행] 전체 서비스 종료 중...");
+                                trigger_ui_command(app, "stop_all", "");
+                            }
+                            "restart_all" => {
+                                mark_pending_started();
+                                PENDING_GROUP.store(3, Ordering::Relaxed);
+                                PENDING_MYSQL.store(3, Ordering::Relaxed);
+                                PENDING_KAFKA.store(3, Ordering::Relaxed);
+                                PENDING_WS.store(3, Ordering::Relaxed);
+                                PENDING_SYNC.store(3, Ordering::Relaxed);
+                                PENDING_API.store(3, Ordering::Relaxed);
+                                let _ = m_summary.set_text("[진행] [ STATUS: 전체 서비스 재기동 중... ]");
+                                let _ = m_restart_all.set_text("[진행] 전체 재기동 중...");
+                                trigger_ui_command(app, "restart_all", "");
+                            }
+                            "restart_backend" => {
+                                mark_pending_started();
+                                PENDING_GROUP.store(4, Ordering::Relaxed);
+                                PENDING_WS.store(3, Ordering::Relaxed);
+                                PENDING_SYNC.store(3, Ordering::Relaxed);
+                                PENDING_API.store(3, Ordering::Relaxed);
+                                let _ = m_restart_backend.set_text("[진행] 백엔드 재기동 중...");
+                                trigger_ui_command(app, "restart_backend", "");
+                            }
+                            "restart_infra" => {
+                                mark_pending_started();
+                                PENDING_GROUP.store(5, Ordering::Relaxed);
+                                PENDING_MYSQL.store(3, Ordering::Relaxed);
+                                PENDING_KAFKA.store(3, Ordering::Relaxed);
+                                let _ = m_restart_infra.set_text("[진행] 인프라 재기동 중...");
+                                trigger_ui_command(app, "restart_infra", "");
+                            }
+                            "quit" => {
+                                app.exit(0);
+                            }
+                            _ => {}
                         }
-                        "start_all" => {
-                            PENDING_GROUP.store(1, Ordering::Relaxed);
-                            PENDING_MYSQL.store(1, Ordering::Relaxed);
-                            PENDING_KAFKA.store(1, Ordering::Relaxed);
-                            PENDING_WS.store(1, Ordering::Relaxed);
-                            PENDING_SYNC.store(1, Ordering::Relaxed);
-                            PENDING_API.store(1, Ordering::Relaxed);
-                            let _ = m_summary.set_text("⏳ [ STATUS: 전체 서비스 순차 기동 중... ]");
-                            let _ = m_start_all.set_text("⏳ 전체 서비스 시작 중...");
-                            trigger_ui_command(app, "start_all", "");
-                        }
-                        "stop_all" => {
-                            PENDING_GROUP.store(2, Ordering::Relaxed);
-                            PENDING_MYSQL.store(2, Ordering::Relaxed);
-                            PENDING_KAFKA.store(2, Ordering::Relaxed);
-                            PENDING_WS.store(2, Ordering::Relaxed);
-                            PENDING_SYNC.store(2, Ordering::Relaxed);
-                            PENDING_API.store(2, Ordering::Relaxed);
-                            let _ = m_summary.set_text("⏳ [ STATUS: 전체 서비스 종료 중... ]");
-                            let _ = m_stop_all.set_text("⏳ 전체 서비스 종료 중...");
-                            trigger_ui_command(app, "stop_all", "");
-                        }
-                        "restart_all" => {
-                            PENDING_GROUP.store(3, Ordering::Relaxed);
-                            PENDING_MYSQL.store(1, Ordering::Relaxed);
-                            PENDING_KAFKA.store(1, Ordering::Relaxed);
-                            PENDING_WS.store(1, Ordering::Relaxed);
-                            PENDING_SYNC.store(1, Ordering::Relaxed);
-                            PENDING_API.store(1, Ordering::Relaxed);
-                            let _ = m_summary.set_text("⏳ [ STATUS: 전체 서비스 재기동 중... ]");
-                            let _ = m_restart_all.set_text("⏳ 전체 재기동 중...");
-                            trigger_ui_command(app, "restart_all", "");
-                        }
-                        "restart_backend" => {
-                            PENDING_GROUP.store(4, Ordering::Relaxed);
-                            PENDING_WS.store(1, Ordering::Relaxed);
-                            PENDING_SYNC.store(1, Ordering::Relaxed);
-                            PENDING_API.store(1, Ordering::Relaxed);
-                            let _ = m_restart_backend.set_text("⏳ 백엔드 재기동 중...");
-                            trigger_ui_command(app, "restart_backend", "");
-                        }
-                        "restart_infra" => {
-                            PENDING_GROUP.store(5, Ordering::Relaxed);
-                            PENDING_MYSQL.store(1, Ordering::Relaxed);
-                            PENDING_KAFKA.store(1, Ordering::Relaxed);
-                            let _ = m_restart_infra.set_text("⏳ 인프라 재기동 중...");
-                            trigger_ui_command(app, "restart_infra", "");
-                        }
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        _ => {}
                     })
                     .on_tray_icon_event(|tray, event| {
                         // 트레이 아이콘 좌클릭 시 메인 런처 창 표시
@@ -960,7 +1276,8 @@ pub fn run() {
             stop_middleware_detached,
             open_log_window,
             open_process_status_window,
-            show_main_window
+            show_main_window,
+            reset_tray_pending
         ])
         .run(tauri::generate_context!())
         .expect("error while running ELVIS launcher application");

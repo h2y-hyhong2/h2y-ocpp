@@ -18,14 +18,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,6 +48,7 @@ public class TouRatingServiceImpl implements TouRatingService {
         private static final Logger log = LoggerFactory.getLogger(TouRatingServiceImpl.class);
 
         private static final String DEFAULT_POLICY_ID = "DEFAULT_TOU";
+        private static final int MAX_CDR_NO_LENGTH = 64;
         private static final DateTimeFormatter DATE_FORMATTER =
                         DateTimeFormatter.ofPattern("yyyyMMdd");
         private static final BigDecimal VAT_RATE = new BigDecimal("0.10");
@@ -72,7 +77,7 @@ public class TouRatingServiceImpl implements TouRatingService {
         }
 
         @Override
-        @Transactional(isolation = Isolation.READ_COMMITTED)
+        @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
         public ChargeDetailRecord calculateAndSaveCdr(
                         TransactionSession session,
                         long meterStop,
@@ -146,9 +151,9 @@ public class TouRatingServiceImpl implements TouRatingService {
                 BigDecimal totalAmount = taxableAmount.add(vat).setScale(0, RoundingMode.HALF_UP)
                                 .setScale(2);
 
-                // 6. 고유 영수증 번호 채번: CDR-YYYYMMDD-CBID-TRNID
+                // 6. 고유 영수증 번호 채번: CDR-YYYYMMDD-CBID-TRNID (최대 64자 길이 안전 보장)
                 String datePart = stopTime.format(DATE_FORMATTER);
-                String cdrNo = String.format("CDR-%s-%s-%d", datePart, chargeBoxId, transactionId);
+                String cdrNo = buildSafeCdrNo(datePart, chargeBoxId, transactionId);
 
                 // 7. 분할 상세 내역 JSON 직렬화
                 String breakdownJson = null;
@@ -211,9 +216,7 @@ public class TouRatingServiceImpl implements TouRatingService {
          */
         private Map<String, List<PricingTouRule>> getOrLoadRules(String policyId) {
                 return ruleCache.computeIfAbsent(policyId, id -> {
-                        List<PricingTouRule> rules = ruleRepository
-                                        .findByPolicyIdOrderBySeasonTypeAscDayTypeAscStartHourAsc(
-                                                        id);
+                        List<PricingTouRule> rules = ruleRepository.findAllByPolicyId(id);
                         if (rules.isEmpty()) {
                                 log.warn("[TouRating] 등록된 TOU 단가 규칙이 없음: policyId={}", id);
                                 return Collections.emptyMap();
@@ -223,5 +226,27 @@ public class TouRatingServiceImpl implements TouRatingService {
                                         .collect(Collectors.groupingBy(r -> r.getSeasonType().name()
                                                         + "_" + r.getDayType().name()));
                 });
+        }
+
+        private String buildSafeCdrNo(String datePart, String chargeBoxId, Long transactionId) {
+                String candidate = String.format("CDR-%s-%s-%d", datePart, chargeBoxId, transactionId);
+                if (candidate.length() <= MAX_CDR_NO_LENGTH) {
+                        return candidate;
+                }
+                String shortHash = shortSha256(chargeBoxId, 8);
+                String compact = String.format("CDR-%s-%s-%d", datePart, shortHash, transactionId);
+                return compact.length() <= MAX_CDR_NO_LENGTH
+                                ? compact
+                                : compact.substring(0, MAX_CDR_NO_LENGTH);
+        }
+
+        private String shortSha256(String input, int hexLen) {
+                try {
+                        byte[] digest = MessageDigest.getInstance("SHA-256")
+                                        .digest(input.getBytes(StandardCharsets.UTF_8));
+                        return HexFormat.of().formatHex(digest).substring(0, hexLen);
+                } catch (Exception e) {
+                        return Integer.toHexString(input.hashCode());
+                }
         }
 }

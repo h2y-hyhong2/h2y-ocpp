@@ -5,7 +5,6 @@ import com.lselink.elvis.connect.sync.domain.LoadType;
 import com.lselink.elvis.connect.sync.domain.PricingTouRule;
 import com.lselink.elvis.connect.sync.domain.SeasonType;
 import com.lselink.elvis.connect.sync.dto.CdrBreakdownItem;
-
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -37,10 +36,10 @@ public class TouTimeSlicer {
     /**
      * 타임 슬라이스 분할 및 시간대별 전력량/요금 계산
      *
-     * @param startTime 충전 시작 일시
-     * @param stopTime 충전 종료 일시
+     * @param startTime      충전 시작 일시
+     * @param stopTime       충전 종료 일시
      * @param totalEnergyKwh 총 충전 전력량 (kWh, 소수점 3자리)
-     * @param ruleCache (SeasonType + "_" + DayType) -> List<PricingTouRule> 룰 캐시 맵
+     * @param ruleCache      (SeasonType + "_" + DayType) -> List<PricingTouRule> 룰 캐시 맵
      * @return 시간대별 분할 상세 내역 리스트
      */
     public List<CdrBreakdownItem> sliceAndRate(
@@ -49,18 +48,21 @@ public class TouTimeSlicer {
             BigDecimal totalEnergyKwh,
             Map<String, List<PricingTouRule>> ruleCache) {
         List<CdrBreakdownItem> breakdownItems = new ArrayList<>();
+        BigDecimal safeTotalKwh = totalEnergyKwh != null
+                ? totalEnergyKwh.max(BigDecimal.ZERO).setScale(3, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP);
 
         if (startTime == null || stopTime == null || !stopTime.isAfter(startTime)) {
-            // 비정상 시간(시작>=종료)의 경우 단일 슬롯 0원 처리
+            // 비정상 시간(시작>=종료)의 경우 duration 0초 단일 슬롯 처리
             LocalDateTime safeStart = (startTime != null) ? startTime : LocalDateTime.now();
             LocalDateTime safeStop =
                     (stopTime != null && stopTime.isAfter(safeStart)) ? stopTime : safeStart;
-            long dur = Math.max(1L, Duration.between(safeStart, safeStop).toSeconds());
+            long dur = Math.max(0L, Duration.between(safeStart, safeStop).toSeconds());
 
             PricingTouRule rule = findRule(safeStart, ruleCache);
             BigDecimal unitPrice = (rule != null) ? rule.getUnitPrice() : DEFAULT_UNIT_PRICE;
             LoadType loadType = (rule != null) ? rule.getLoadType() : LoadType.MID_PEAK;
-            BigDecimal fee = totalEnergyKwh.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal fee = safeTotalKwh.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
 
             breakdownItems.add(CdrBreakdownItem.builder()
                     .slotStart(safeStart.format(FORMATTER))
@@ -70,31 +72,34 @@ public class TouTimeSlicer {
                     .loadType(loadType)
                     .durationSeconds(dur)
                     .unitPrice(unitPrice)
-                    .kwh(totalEnergyKwh)
+                    .kwh(safeTotalKwh)
                     .fee(fee)
                     .build());
             return breakdownItems;
         }
 
-        long totalSeconds = Duration.between(startTime, stopTime).toSeconds();
-        if (totalSeconds <= 0) {
-            totalSeconds = 1L;
-        }
+        long totalSeconds = Math.max(1L, Duration.between(startTime, stopTime).toSeconds());
 
-        // 1. 시간대 구간 분할점(Hour Boundary) 계산
+        // 1. 시간대 구간 분할점(Hour Boundary) 계산 및 유효 슬롯 추출
         List<LocalDateTime> boundaries = getHourBoundaries(startTime, stopTime);
+        List<TimeSlot> validSlots = new ArrayList<>();
+        for (int i = 0; i < boundaries.size() - 1; i++) {
+            LocalDateTime s = boundaries.get(i);
+            LocalDateTime e = boundaries.get(i + 1);
+            long sec = Duration.between(s, e).toSeconds();
+            if (sec > 0) {
+                validSlots.add(new TimeSlot(s, e, sec));
+            }
+        }
 
         BigDecimal accumulatedKwh = BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP);
 
-        // 2. 각 슬롯별 전력량 및 요금 계산
-        for (int i = 0; i < boundaries.size() - 1; i++) {
-            LocalDateTime slotStart = boundaries.get(i);
-            LocalDateTime slotEnd = boundaries.get(i + 1);
-            long slotSeconds = Duration.between(slotStart, slotEnd).toSeconds();
-
-            if (slotSeconds <= 0) {
-                continue;
-            }
+        // 2. 각 슬롯별 전력량 및 요금 계산 (누적 상한 클램프로 Zero-Sum 보장)
+        for (int i = 0; i < validSlots.size(); i++) {
+            TimeSlot slot = validSlots.get(i);
+            LocalDateTime slotStart = slot.start();
+            LocalDateTime slotEnd = slot.end();
+            long slotSeconds = slot.seconds();
 
             SeasonType seasonType = SeasonType.from(slotStart.toLocalDate());
             DayType dayType = DayType.from(slotStart.toLocalDate());
@@ -104,16 +109,21 @@ public class TouTimeSlicer {
             LoadType loadType = (rule != null) ? rule.getLoadType() : LoadType.MID_PEAK;
 
             BigDecimal slotKwh;
-            boolean isLastSlot = (i == boundaries.size() - 2);
+            boolean isLastSlot = (i == validSlots.size() - 1);
 
             if (isLastSlot) {
-                // 마지막 슬롯: 소수점 오차 보정을 위해 (전체 전력량 - 누적 전력량) 적용
-                slotKwh = totalEnergyKwh.subtract(accumulatedKwh).max(BigDecimal.ZERO).setScale(3,
-                        RoundingMode.HALF_UP);
+                // 마지막 슬롯: 소수점 오차 보정을 위해 잔여 전력량 전액 배분 (Zero-Sum 보장)
+                slotKwh = safeTotalKwh.subtract(accumulatedKwh)
+                        .max(BigDecimal.ZERO)
+                        .setScale(3, RoundingMode.HALF_UP);
             } else {
-                // 가중 비율 계산: (slotSeconds / totalSeconds) * totalEnergyKwh
-                slotKwh = totalEnergyKwh.multiply(BigDecimal.valueOf(slotSeconds))
+                // 가중 비율 계산 + 잔여 한도 클램프(반올림 누적이 전체 전력량을 초과하지 않도록 방어)
+                BigDecimal remaining = safeTotalKwh.subtract(accumulatedKwh).max(BigDecimal.ZERO);
+                slotKwh = safeTotalKwh.multiply(BigDecimal.valueOf(slotSeconds))
                         .divide(BigDecimal.valueOf(totalSeconds), 3, RoundingMode.HALF_UP);
+                if (slotKwh.compareTo(remaining) > 0) {
+                    slotKwh = remaining;
+                }
                 accumulatedKwh = accumulatedKwh.add(slotKwh);
             }
 
@@ -192,5 +202,8 @@ public class TouTimeSlicer {
         }
 
         return null;
+    }
+
+    private record TimeSlot(LocalDateTime start, LocalDateTime end, long seconds) {
     }
 }

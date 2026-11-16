@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ChargersView from '@/views/ChargersView.vue'
 import BillingCdrView from '@/views/BillingCdrView.vue'
 import LoginView from '@/views/LoginView.vue'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore, isJwtExpired } from '@/stores/authStore'
 
 /**
  * CSMS Lite 관제 라우터 테이블
@@ -37,12 +37,20 @@ const router = createRouter({
   routes
 })
 
-// 네비게이션 가드: 미인증 접근 제어
-router.beforeEach((to, from, next) => {
+// 네비게이션 가드: 미인증 접근 제어 및 만료 토큰 자동 재발급 시도
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)
 
   if (requiresAuth && !authStore.isAuthenticated) {
+    if (authStore.refreshToken && !isJwtExpired(authStore.refreshToken)) {
+      const refreshed = await authStore.refreshAccessToken()
+      if (refreshed && authStore.isAuthenticated) {
+        next()
+        return
+      }
+    }
+    authStore.logout()
     next({
       path: '/login',
       query: { redirect: to.fullPath }

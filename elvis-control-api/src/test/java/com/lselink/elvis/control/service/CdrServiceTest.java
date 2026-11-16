@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,7 +29,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -87,15 +87,17 @@ class CdrServiceTest {
     }
 
     @Test
-    @DisplayName("다차원 조건 검색 및 서버사이드 페이징(getPagedCdr) 조회 검증")
+    @DisplayName("다차원 조건 검색 및 서버사이드 페이징(getPagedCdr) 조회 검증 - stId 및 keyword 전달 포함")
     void testGetPagedCdr() {
         // given
         CdrSearchCondition cond = new CdrSearchCondition();
+        cond.setStId("000000");
         cond.setChargeBoxId("00000001");
         cond.setPaymentStatus("PAID");
+        cond.setKeyword("RFID");
 
         Page<TransactionCdrEntity> pageResult = new PageImpl<>(Collections.singletonList(sampleCdr));
-        when(transactionCdrRepository.searchCdrPaged(eq("00000001"), isNull(), eq("PAID"), isNull(), isNull(), any(Pageable.class)))
+        when(transactionCdrRepository.searchCdr(any(CdrSearchCondition.class), any(Pageable.class)))
                 .thenReturn(pageResult);
         when(chargerRepository.findAllById(any())).thenReturn(Collections.singletonList(sampleCharger));
         when(stationRepository.findAll()).thenReturn(Collections.singletonList(sampleStation));
@@ -116,26 +118,30 @@ class CdrServiceTest {
         assertThat(dto.getUserTag()).isEqualTo("RFID_CARD_01");
         assertThat(dto.getKwh()).isEqualTo(new BigDecimal("25.50"));
         assertThat(dto.getPaymentStatus()).isEqualTo("PAID");
-        assertThat(dto.getDurationMinutes()).isEqualTo(45.0); // 45분
+        assertThat(dto.getDurationMinutes()).isEqualTo(45.0);
         assertThat(response.getTotalElements()).isEqualTo(1L);
 
-        verify(transactionCdrRepository, times(1)).searchCdrPaged(any(), any(), any(), any(), any(), any());
+        ArgumentCaptor<CdrSearchCondition> condCaptor = ArgumentCaptor.forClass(CdrSearchCondition.class);
+        verify(transactionCdrRepository, times(1)).searchCdr(condCaptor.capture(), any(Pageable.class));
+        assertThat(condCaptor.getValue().getStId()).isEqualTo("000000");
+        assertThat(condCaptor.getValue().getKeyword()).isEqualTo("RFID");
     }
 
     @Test
-    @DisplayName("조건 검색 4대 KPI 요약 통계(getCdrSummary) 산출 검증")
+    @DisplayName("조건 검색 4대 KPI 요약 통계(getCdrSummary) DB 집계 위임 검증")
     void testGetCdrSummary() {
         // given
         CdrSearchCondition cond = new CdrSearchCondition();
         cond.setPaymentStatus("PAID");
 
-        Object[] rawAgg = new Object[]{ 150L, new BigDecimal("3540.25"), new BigDecimal("1225000.00") };
-        when(transactionCdrRepository.getCdrAggregateSummaryByCondition(isNull(), isNull(), eq("PAID"), isNull(), isNull()))
-                .thenReturn(new Object[]{ rawAgg });
-
-        // 평균 시간 산출용 목록
-        when(transactionCdrRepository.findAllFiltered(isNull(), isNull(), eq("PAID"), isNull(), isNull()))
-                .thenReturn(Collections.singletonList(sampleCdr));
+        CdrSummaryDto expectedSummary = CdrSummaryDto.builder()
+                .totalCount(150L)
+                .totalKwh(new BigDecimal("3540.25"))
+                .totalAmount(new BigDecimal("1225000"))
+                .avgMinutes(45.0)
+                .build();
+        when(transactionCdrRepository.getCdrSummary(any(CdrSearchCondition.class)))
+                .thenReturn(expectedSummary);
 
         // when
         CdrSummaryDto summary = cdrService.getCdrSummary(cond);
@@ -145,7 +151,9 @@ class CdrServiceTest {
         assertThat(summary.getTotalCount()).isEqualTo(150L);
         assertThat(summary.getTotalKwh()).isEqualTo(new BigDecimal("3540.25"));
         assertThat(summary.getTotalAmount()).isEqualTo(new BigDecimal("1225000"));
-        assertThat(summary.getAvgMinutes()).isEqualTo(45.0); // 45분 평균
+        assertThat(summary.getAvgMinutes()).isEqualTo(45.0);
+
+        verify(transactionCdrRepository, times(1)).getCdrSummary(cond);
     }
 
     @Test
@@ -155,7 +163,7 @@ class CdrServiceTest {
         CdrSearchCondition cond = new CdrSearchCondition();
         cond.setChargeBoxId("00000001");
 
-        when(transactionCdrRepository.findAllFiltered(eq("00000001"), isNull(), isNull(), isNull(), isNull()))
+        when(transactionCdrRepository.findAllByCondition(any(CdrSearchCondition.class)))
                 .thenReturn(Collections.singletonList(sampleCdr));
         when(chargerRepository.findAllById(any())).thenReturn(Collections.singletonList(sampleCharger));
         when(stationRepository.findAll()).thenReturn(Collections.singletonList(sampleStation));
@@ -169,5 +177,7 @@ class CdrServiceTest {
         assertThat(dto.getChargeBoxId()).isEqualTo("00000001");
         assertThat(dto.getStationName()).isEqualTo("안양 스마트하이퍼 차징 스테이션");
         assertThat(dto.getDurationMinutes()).isEqualTo(45.0);
+
+        verify(transactionCdrRepository, times(1)).findAllByCondition(cond);
     }
 }

@@ -51,6 +51,9 @@ public class OutboundCommandServiceImpl implements OutboundCommandService {
 
     @Override
     public CommandResultDto remoteStart(RemoteStartCommandRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("원격 충전 시작 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
         String action = "RemoteStartTransaction";
         String messageId = UUID.randomUUID().toString();
@@ -75,6 +78,9 @@ public class OutboundCommandServiceImpl implements OutboundCommandService {
 
     @Override
     public CommandResultDto remoteStop(RemoteStopCommandRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("원격 충전 종료 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
         String action = "RemoteStopTransaction";
         String messageId = UUID.randomUUID().toString();
@@ -92,6 +98,9 @@ public class OutboundCommandServiceImpl implements OutboundCommandService {
 
     @Override
     public CommandResultDto reset(ResetCommandRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("충전기 원격 리셋 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
         String action = "Reset";
         String messageId = UUID.randomUUID().toString();
@@ -109,6 +118,9 @@ public class OutboundCommandServiceImpl implements OutboundCommandService {
 
     @Override
     public CommandResultDto unlockConnector(UnlockConnectorCommandRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("커넥터 잠금 해제 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
         String action = "UnlockConnector";
         String messageId = UUID.randomUUID().toString();
@@ -126,6 +138,9 @@ public class OutboundCommandServiceImpl implements OutboundCommandService {
 
     @Override
     public CommandResultDto changeConfiguration(ChangeConfigurationCommandRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("설정 변경 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
         String action = "ChangeConfiguration";
         String messageId = UUID.randomUUID().toString();
@@ -150,6 +165,9 @@ public class OutboundCommandServiceImpl implements OutboundCommandService {
 
     @Override
     public CommandResultDto triggerMessage(TriggerMessageCommandRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("전문 트리거 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
         String action = "TriggerMessage";
         String messageId = UUID.randomUUID().toString();
@@ -224,12 +242,16 @@ public class OutboundCommandServiceImpl implements OutboundCommandService {
     }
 
     /**
-     * 거버넌스 10조 채번 표준에 따른 chargeBoxId 정규화
+     * 거버넌스 10조 채번 표준({ST_ID}{CP_ID} 8자리 숫자)에 따른 chargeBoxId 정규화 및 검증
      */
     private String sanitizeChargeBoxId(String chargeBoxId) {
         if (chargeBoxId == null || chargeBoxId.trim().isEmpty()) {
             return "00000001";
         }
-        return chargeBoxId.trim();
+        String trimmed = chargeBoxId.trim();
+        if (!trimmed.matches("^\\d{8}$")) {
+            throw new IllegalArgumentException("충전기 식별자(chargeBoxId)는 8자리 숫자({ST_ID}{CP_ID}) 형식이어야 합니다: " + trimmed);
+        }
+        return trimmed;
     }
 }

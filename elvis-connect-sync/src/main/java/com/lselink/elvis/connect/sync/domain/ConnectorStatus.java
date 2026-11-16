@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
  * </p>
  */
 @Entity
-@Table(name = "tb_connector_status",
+@Table(name = "connector_status",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_charge_box_connector",
+                name = "uk_conn_charge_box_connector",
                 columnNames = {"charge_box_id", "connector_id"}
         ))
 @DynamicUpdate // 변경된 컬럼만 UPDATE (불필요한 컬럼 갱신 방지)
@@ -23,10 +23,11 @@ public class ConnectorStatus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     /** 충전기 식별자 (ChargeBoxId) */
-    @Column(name = "charge_box_id", length = 64, nullable = false)
+    @Column(name = "charge_box_id", length = 50, nullable = false)
     private String chargeBoxId;
 
     /** 커넥터 번호 (0=전체기, 1~N=개별 커넥터) */
@@ -49,6 +50,10 @@ public class ConnectorStatus {
     @Column(name = "info", length = 255)
     private String info;
 
+    /** 최종 수신 일시 (관제 화면용) */
+    @Column(name = "last_heartbeat", nullable = false)
+    private LocalDateTime lastHeartbeat;
+
     /** 최근 Heartbeat 수신 일시 */
     @Column(name = "heartbeat_at")
     private LocalDateTime heartbeatAt;
@@ -62,10 +67,10 @@ public class ConnectorStatus {
     @Column(name = "version", nullable = false)
     private int version;
 
-    @Column(name = "REG_DT", nullable = false, updatable = false)
+    @Column(name = "reg_dt", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "UPDT_DT", nullable = false)
+    @Column(name = "updt_dt", nullable = false)
     private LocalDateTime updatedAt;
 
     public ConnectorStatus() {
@@ -108,6 +113,9 @@ public class ConnectorStatus {
 
     public String getInfo() { return info; }
     public void setInfo(String info) { this.info = info; }
+
+    public LocalDateTime getLastHeartbeat() { return lastHeartbeat; }
+    public void setLastHeartbeat(LocalDateTime lastHeartbeat) { this.lastHeartbeat = lastHeartbeat; }
 
     public LocalDateTime getHeartbeatAt() { return heartbeatAt; }
     public void setHeartbeatAt(LocalDateTime heartbeatAt) { this.heartbeatAt = heartbeatAt; }
@@ -162,8 +170,12 @@ public class ConnectorStatus {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        if (this.lastHeartbeat == null) {
+            this.lastHeartbeat = now;
+        }
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate

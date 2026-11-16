@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][string]$BatName,
     [Parameter(Mandatory=$true)][string]$ServiceName
 )
@@ -6,6 +6,14 @@ param(
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $batPath = Join-Path $scriptDir $BatName
 $logDir = "D:\elvis-lite\logs"
+$pathsEnv = Join-Path $scriptDir "..\config\paths.env"
+if (Test-Path -LiteralPath $pathsEnv) {
+    foreach ($line in Get-Content -LiteralPath $pathsEnv) {
+        if ($line -match '^\s*ELVIS_LOG_DIR=(.+)$') {
+            $logDir = $matches[1].Trim()
+        }
+    }
+}
 if (-not (Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }

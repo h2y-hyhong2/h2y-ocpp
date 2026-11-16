@@ -1,5 +1,5 @@
 server:
-  port: ${SYNC_PORT:9081}
+  port: ${ELVIS_SYNC_PORT:${SYNC_PORT:9081}}
 
 spring:
   application:

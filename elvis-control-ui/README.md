@@ -6,24 +6,18 @@
 
 ---
 
-## ✨ 주요 특징
+## 주요 특징
 
-- 🚀 **초경량 데스크톱 네이티브 앱**: WebView2 + Rust 기반으로 메모리 사용량 최소화 및 초고속 기동 속도 제공
-- 📊 **고성능 대시보드 시각화**:
-  - `Apache ECharts`: 실시간 전력량(kW) & TOU 단가(원/kWh) 시계열 줌/패닝 차트
-  - `Pure Tailwind & Pinia`: 2,000대 충전기 실시간 상태 그리드 및 원격 제어(시작/중지/리셋)
-  - `OCPP WireTap`: 실시간 Inbound/Outbound OCPP JSON 패킷 스트림 디버거
-- 🌙 **글래스모피즘 다크 테마**: 장시간 관제 모니터링 시 피로도를 최소화하는 현대적인 관제실 전용 다크 UI
-- 🎨 **3대 디자인 컨셉 & 전용 스타일 독립 분리**:
-  - `src/views/concept1/`: **시안 1 (Enterprise Modern)** - [`Concept1View.vue`](./src/views/concept1/Concept1View.vue) + [`concept1.css`](./src/views/concept1/concept1.css) + [`05-디자인가이드.html`](./src/views/concept1/05-디자인가이드.html)
-  - `src/views/concept2/`: **시안 2 (Cyber Situation Room)** - [`Concept2View.vue`](./src/views/concept2/Concept2View.vue) + [`concept2.css`](./src/views/concept2/concept2.css) + [`05-디자인가이드.html`](./src/views/concept2/05-디자인가이드.html)
-  - `src/views/concept3/`: **시안 3 (Eco Fleet Cockpit)** - [`Concept3View.vue`](./src/views/concept3/Concept3View.vue) + [`concept3.css`](./src/views/concept3/concept3.css) + [`05-디자인가이드.html`](./src/views/concept3/05-디자인가이드.html)
-  - 각 컨셉 폴더 내부의 `.css` 파일을 직접 수정하여 **컬러 팔레트, 폰트, 카드 스타일, 10대 상태 색상을 완전히 독립적으로 커스텀 정의** 가능!
-  - 상단 헤더의 탭 버튼으로 **실시간 무중단 원클릭 전환** 지원
+- **초경량 데스크톱 네이티브 앱**: WebView2 + Rust 기반으로 메모리 사용량 최소화 및 초고속 기동 속도 제공
+- **고성능 대시보드 시각화**:
+  - `Pure Tailwind & Pinia`: 충전기 실시간 상태 그리드, 계측치 모니터링 및 원격 제어(시작/종료/리셋/잠금해제)
+  - `Billing & CDR`: MySQL OLTP 과금 원장 조회, 기간 필터링 및 CSV 내보내기
+- **라이트 테마 기본(Light Theme Default)**: 장시간 관제 모니터링에 적합한 깔끔한 밝은 뉴트럴 톤(`#f8fafc`) 기본 UI 및 멀티 테마(`light`, `cyber`, `emerald`, `purple`, `amber`) 전환 지원
+- **로컬 오프라인 폰트 내장**: `Pretendard` 및 `Inconsolata` 로컬 폰트 탑재로 폐쇄망 환경에서도 외부 CDN 없이 동작
 
 ---
 
-## 🔐 기본 관리자 계정 안내 (Initial Seed Accounts)
+## 기본 관리자 계정 안내 (Initial Seed Accounts)
 
 관제 센터 로그인 시 백엔드(`elvis-control-api`)에 사전 등록된 아래 기본 시드 계정을 사용합니다.
 
@@ -35,7 +29,20 @@
 
 ---
 
-## ⚡ 빠른 시작 (Quick Start)
+## 포트 및 서비스 연계 구성
+
+| 서비스 | 기본 포트 | 비고 |
+| :--- | :---: | :--- |
+| **관제 UI 개발 서버 (Vite)** | `1421` | `http://127.0.0.1:1421` |
+| **OCPP WebSocket 게이트웨이** | `9080` | `/ws` 프록시 대상 (`elvis-connect-ws`) |
+| **Parser & Sync 엔진** | `9081` | Kafka/MySQL 동기화 (`elvis-connect-sync`) |
+| **Admin REST API 서버** | `9082` | `/api`, `/ws-push` 프록시 대상 (`elvis-control-api`) |
+| **MySQL 9.71** | `13306` | `ELVIS_MYSQL_PORT` |
+| **Apache Kafka KRaft** | `19092` | `ELVIS_KAFKA_PORT` |
+
+---
+
+## 빠른 시작 (Quick Start)
 
 ### 1. 프론트엔드 의존성 설치
 ```powershell
@@ -44,7 +51,7 @@ pnpm install
 ```
 
 ### 2. 웹 브라우저 개발 모드 실행
-Rust 컴파일 없이 브라우저(`http://localhost:1420`)에서 관제 UI를 즉시 확인합니다.
+Rust 컴파일 없이 브라우저(`http://127.0.0.1:1421`)에서 관제 UI를 즉시 확인합니다.
 ```powershell
 pnpm dev
 ```
@@ -68,8 +75,7 @@ pnpm tauri:build
 
 ---
 
-## 📚 상세 개발 및 트러블슈팅 가이드
+## 상세 개발 및 트러블슈팅 가이드
 
-- 🛠️ **[개발 및 빌드 상세 가이드 (DEVELOPMENT.md)](./DEVELOPMENT.md)**: 사전 요구사항, Tauri/Cargo 아키텍처, 빌드/테스트 절차
-- 🔍 **[오류 해결 및 트러블슈팅 가이드 (TROUBLESHOOTING.md)](./TROUBLESHOOTING.md)**: Tauri/Rust/Node.js/Vite 오류 사례별 해결법
-
+- **[개발 및 빌드 상세 가이드 (DEVELOPMENT.md)](./DEVELOPMENT.md)**: 사전 요구사항, Tauri/Cargo 아키텍처, 빌드/테스트 절차
+- **[오류 해결 및 트러블슈팅 가이드 (TROUBLESHOOTING.md)](./TROUBLESHOOTING.md)**: Tauri/Rust/Node.js/Vite 오류 사례별 해결법

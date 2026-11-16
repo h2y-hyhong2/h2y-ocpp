@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Target = "all",
     [switch]$Once
 )
@@ -233,7 +233,7 @@ while ($true) {
         continue
     } elseif ($key.Character -eq "k" -or $key.Character -eq "K") {
         Write-Host ""
-        $targetPort = Read-Host " 종료할 포트 번호를 입력하세요 (예: 8123, 취소는 Enter)"
+        $targetPort = Read-Host " 종료할 포트 번호를 입력하세요 (예: 9082, 취소는 Enter)"
         if ($targetPort) {
             $conns = Get-NetTCPConnection -LocalPort $targetPort -State Listen -ErrorAction SilentlyContinue
             if ($conns) {

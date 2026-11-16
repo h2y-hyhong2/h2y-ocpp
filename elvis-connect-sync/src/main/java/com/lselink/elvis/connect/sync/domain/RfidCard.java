@@ -17,13 +17,13 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(
-        name = "tb_rfid_card",
+        name = "rfid_card",
         uniqueConstraints = {
-                @UniqueConstraint(name = "UK_RFID_CARD_ID_TAG", columnNames = {"ID_TAG"})
+                @UniqueConstraint(name = "uk_rfid_card_id_tag", columnNames = {"id_tag"})
         },
         indexes = {
-                @Index(name = "IX_RFID_CARD_MEMBER", columnList = "MEMBER_ID, CARD_STATUS"),
-                @Index(name = "IX_RFID_CARD_PARENT", columnList = "PARENT_ID_TAG")
+                @Index(name = "ix_rfid_card_member", columnList = "member_id, card_status"),
+                @Index(name = "ix_rfid_card_parent", columnList = "parent_id_tag")
         }
 )
 @DynamicUpdate
@@ -31,59 +31,59 @@ public class RfidCard {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
+    @Column(name = "id")
     private Long id;
 
     /** RFID 태그 식별자 (대문자 정규화) */
-    @Column(name = "ID_TAG", nullable = false, length = 64)
+    @Column(name = "id_tag", nullable = false, length = 64)
     private String idTag;
 
-    /** 회원 식별자 (tb_member 매핑) */
-    @Column(name = "MEMBER_ID", nullable = false)
+    /** 회원 식별자 */
+    @Column(name = "member_id", nullable = false)
     private Long memberId;
 
     /** 회원명 (마스킹) */
-    @Column(name = "MEMBER_NAME", length = 64)
+    @Column(name = "member_name", length = 64)
     private String memberName;
 
     /** 상위/법인 대표 태그 식별자 */
-    @Column(name = "PARENT_ID_TAG", length = 64)
+    @Column(name = "parent_id_tag", length = 64)
     private String parentIdTag;
 
     /** 카드 발급 상태 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "CARD_STATUS", nullable = false, length = 32)
+    @Column(name = "card_status", nullable = false, length = 32)
     private CardStatus cardStatus = CardStatus.NORMAL;
 
     /** 카드 만료 일시 */
-    @Column(name = "EXPIRY_DATE")
+    @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
     /** 선불 잔액 / 결제 한도 (원) */
-    @Column(name = "BALANCE", nullable = false, precision = 12, scale = 2)
+    @Column(name = "balance", nullable = false, precision = 12, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
     /** 최대 허용 동시 충전 세션 수 (기본 1) */
-    @Column(name = "MAX_CONCURRENT_TX", nullable = false)
+    @Column(name = "max_concurrent_tx", nullable = false)
     private int maxConcurrentTx = 1;
 
     /** 논리 삭제 여부 */
-    @Column(name = "IS_DELETED", nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
     /** 낙관적 락 버전 */
     @Version
-    @Column(name = "VERSION", nullable = false)
+    @Column(name = "version", nullable = false)
     private int version = 0;
 
     /** 등록 일시 */
     @CreationTimestamp
-    @Column(name = "REG_DT", nullable = false, updatable = false)
+    @Column(name = "reg_dt", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
     /** 수정 일시 */
     @UpdateTimestamp
-    @Column(name = "UPDT_DT", nullable = false)
+    @Column(name = "updt_dt", nullable = false)
     private LocalDateTime updtDt;
 
     protected RfidCard() {

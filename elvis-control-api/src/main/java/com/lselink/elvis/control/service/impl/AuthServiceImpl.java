@@ -9,7 +9,6 @@ import com.lselink.elvis.control.entity.AdminUser;
 import com.lselink.elvis.control.repository.AdminUserRepository;
 import com.lselink.elvis.control.security.JwtTokenProvider;
 import com.lselink.elvis.control.service.AuthService;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,7 +43,6 @@ public class AuthServiceImpl implements AuthService {
     /**
      * DB 내 기본 관리자 및 운영자 계정 존재 여부를 확인하고 없으면 자동 시딩
      */
-    @PostConstruct
     @Transactional
     public void initSeedAdmins() {
         if (!adminUserRepository.existsByUsername("admin")) {

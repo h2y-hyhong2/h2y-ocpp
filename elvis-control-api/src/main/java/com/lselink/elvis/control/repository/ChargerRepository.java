@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ChargerRepository extends JpaRepository<ChargerEntity, String> {
+public interface ChargerRepository extends JpaRepository<ChargerEntity, String>, ChargerRepositoryCustom {
     List<ChargerEntity> findByStIdOrderByCpIdAsc(String stId);
     List<ChargerEntity> findAllByOrderByChargeBoxIdAsc();
 }

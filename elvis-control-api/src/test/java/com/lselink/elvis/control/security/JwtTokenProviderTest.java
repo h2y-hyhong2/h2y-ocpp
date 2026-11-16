@@ -33,6 +33,7 @@ class JwtTokenProviderTest {
         assertTrue(jwtTokenProvider.validateToken(token));
         assertEquals(username, jwtTokenProvider.extractUsername(token));
         assertEquals(role, jwtTokenProvider.extractRole(token));
+        assertTrue(jwtTokenProvider.isAccessToken(token));
         assertFalse(jwtTokenProvider.isRefreshToken(token));
     }
 
@@ -46,6 +47,7 @@ class JwtTokenProviderTest {
         assertNotNull(refreshToken);
         assertTrue(jwtTokenProvider.validateToken(refreshToken));
         assertEquals(username, jwtTokenProvider.extractUsername(refreshToken));
+        assertFalse(jwtTokenProvider.isAccessToken(refreshToken));
         assertTrue(jwtTokenProvider.isRefreshToken(refreshToken));
     }
 
@@ -77,5 +79,21 @@ class JwtTokenProviderTest {
         String expiredToken = shortLivedProvider.generateAccessToken("admin", "ROLE_ADMIN");
 
         assertFalse(shortLivedProvider.validateToken(expiredToken));
+    }
+
+    @Test
+    @DisplayName("exp 클레임이 누락된 토큰은 fail-closed 검증에 실패해야 한다")
+    void testTokenWithoutExpClaimFailsValidation() throws Exception {
+        String header = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String payload = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("{\"sub\":\"admin\",\"type\":\"access\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String data = header + "." + payload;
+        javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+        mac.init(new javax.crypto.spec.SecretKeySpec(secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+        String sig = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(mac.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        assertFalse(jwtTokenProvider.validateToken(data + "." + sig));
     }
 }

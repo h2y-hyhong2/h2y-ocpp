@@ -11,6 +11,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
@@ -95,20 +96,24 @@ public class JwtTokenProvider {
             String expectedSignature = sign(headerAndPayload);
             String actualSignature = parts[2];
 
-            if (!expectedSignature.equals(actualSignature)) {
+            if (!MessageDigest.isEqual(
+                    expectedSignature.getBytes(StandardCharsets.UTF_8),
+                    actualSignature.getBytes(StandardCharsets.UTF_8))) {
                 log.warn("[JwtTokenProvider] JWT 서명 검증 불일치");
                 return false;
             }
 
             Map<String, Object> claims = parseClaims(parts[1]);
             Object expObj = claims.get("exp");
-            if (expObj instanceof Number expNumber) {
-                long expSeconds = expNumber.longValue();
-                long currentSeconds = Instant.now().getEpochSecond();
-                if (currentSeconds >= expSeconds) {
-                    log.warn("[JwtTokenProvider] JWT 토큰 만료 (exp: {}, now: {})", expSeconds, currentSeconds);
-                    return false;
-                }
+            if (!(expObj instanceof Number expNumber)) {
+                log.warn("[JwtTokenProvider] JWT exp 클레임 누락 또는 형식 오류");
+                return false;
+            }
+            long expSeconds = expNumber.longValue();
+            long currentSeconds = Instant.now().getEpochSecond();
+            if (currentSeconds >= expSeconds) {
+                log.warn("[JwtTokenProvider] JWT 토큰 만료 (exp: {}, now: {})", expSeconds, currentSeconds);
+                return false;
             }
 
             return true;
@@ -140,6 +145,15 @@ public class JwtTokenProvider {
             return role.toString();
         }
         return null;
+    }
+
+    /**
+     * 토큰 타입이 Access Token인지 확인
+     */
+    public boolean isAccessToken(String token) {
+        Map<String, Object> claims = getClaimsFromToken(token);
+        Object type = claims.get("type");
+        return type != null && "access".equalsIgnoreCase(type.toString());
     }
 
     /**

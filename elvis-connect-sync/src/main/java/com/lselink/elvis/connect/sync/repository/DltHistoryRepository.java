@@ -41,7 +41,7 @@ public interface DltHistoryRepository extends JpaRepository<DltHistory, String> 
      */
     @Modifying
     @Query(value = """
-            UPDATE tbl_dlt_history
+            UPDATE dlt_history
                SET status      = 'REPLAYED',
                    replayed_dt = :replayedDt,
                    updt_dt     = NOW(3)

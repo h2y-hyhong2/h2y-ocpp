@@ -31,7 +31,7 @@
               <span class="text-sky-600 mx-0.5">•</span>
               <span class="text-slate-500 font-semibold">LITE</span>
             </span>
-            <span class="hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.0.1</span>
+            <span class="hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200">v1.0.0</span>
             
             <!-- MySQL 실시간 연동 뱃지 -->
             <span
@@ -125,9 +125,10 @@
             title="UI 컬러 테마 전환"
           >
             <option value="light">라이트 (기본)</option>
-            <option value="dark">다크</option>
-            <option value="navy">네이비</option>
+            <option value="cyber">사이버 다크</option>
             <option value="emerald">에메랄드</option>
+            <option value="purple">퍼플</option>
+            <option value="amber">앰버</option>
           </select>
         </div>
 
@@ -240,29 +241,53 @@ function handleLogout() {
   router.push('/login')
 }
 
-function handleMinimize() {
-  // @ts-ignore
-  if (window.__TAURI__) {
-    // @ts-ignore
-    import('@tauri-apps/api/window').then(({ appWindow }) => appWindow.minimize())
+async function getTauriWindow() {
+  if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+    return getCurrentWindow()
+  }
+  return null
+}
+
+async function handleMinimize() {
+  const win = await getTauriWindow()
+  await win?.minimize()
+}
+
+async function handleMaximize() {
+  const win = await getTauriWindow()
+  await win?.toggleMaximize()
+}
+
+async function handleClose() {
+  const win = await getTauriWindow()
+  await win?.close()
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    const searchInput = document.querySelector('.global-search-input') as HTMLInputElement | null
+    if (searchInput) {
+      searchInput.focus()
+      searchInput.select()
+    }
   }
 }
 
-function handleMaximize() {
-  // @ts-ignore
-  if (window.__TAURI__) {
-    // @ts-ignore
-    import('@tauri-apps/api/window').then(({ appWindow }) => appWindow.toggleMaximize())
-  }
+function handleResize() {
+  if (window.innerWidth >= 1280) store.toggleControlDrawer(false)
+  if (window.innerWidth >= 1024) store.toggleSidebar(false)
 }
 
-function handleClose() {
-  // @ts-ignore
-  if (window.__TAURI__) {
-    // @ts-ignore
-    import('@tauri-apps/api/window').then(({ appWindow }) => appWindow.close())
+watch(
+  () => authStore.isAuthenticated,
+  (isAuth) => {
+    if (isAuth) {
+      store.fetchInitialData()
+    }
   }
-}
+)
 
 let syncTimer: number | null = null
 
@@ -282,35 +307,15 @@ onMounted(() => {
     }
   }, 3000)
 
-  // 로그인 감지 시 초기 데이터 자동 로드
-  watch(() => authStore.isAuthenticated, (isAuth) => {
-    if (isAuth) {
-      store.fetchInitialData()
-    }
-  })
-
-  // 단축키 Ctrl+K 글로벌 검색 포커스
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault()
-      const searchInput = document.querySelector('.global-search-input') as HTMLInputElement
-      if (searchInput) {
-        searchInput.focus()
-        searchInput.select()
-      }
-    }
-  })
-
-  // 윈도우 리사이즈 시 데스크톱 복귀 시 드로어 자동 닫기
-  window.addEventListener('resize', () => {
-    if (window.innerWidth >= 1280) store.toggleControlDrawer(false)
-    if (window.innerWidth >= 1024) store.toggleSidebar(false)
-  })
+  window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   if (syncTimer) clearInterval(syncTimer)
+  window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 

@@ -1,14 +1,19 @@
 package com.lselink.elvis.control.dto.command;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 /**
  * 커넥터 원격 잠금 해제 요청 DTO (UnlockConnector)
  */
 public class UnlockConnectorCommandRequest {
 
     /** 대상 충전기 식별자 (예: "00000001") */
+    @NotBlank(message = "chargeBoxId는 필수입니다.")
     private String chargeBoxId;
 
     /** 커넥터 번호 (1 또는 2) */
+    @NotNull(message = "connectorId는 필수입니다.")
     private Integer connectorId;
 
     public UnlockConnectorCommandRequest() {

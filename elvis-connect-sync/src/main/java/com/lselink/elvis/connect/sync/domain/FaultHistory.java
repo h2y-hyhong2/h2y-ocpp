@@ -22,12 +22,12 @@ import java.time.LocalDateTime;
  * </p>
  */
 @Entity
-@Table(name = "tbl_fault_history",
+@Table(name = "fault_history",
         indexes = {
-                @Index(name = "IX_FAULT_BOX_CONN",
+                @Index(name = "ix_fault_box_conn",
                         columnList = "charge_box_id, connector_id, is_resolved"),
-                @Index(name = "IX_FAULT_OCCURRED", columnList = "occurred_dt"),
-                @Index(name = "IX_FAULT_SEVERITY", columnList = "severity")
+                @Index(name = "ix_fault_occurred", columnList = "occurred_dt"),
+                @Index(name = "ix_fault_severity", columnList = "severity")
         })
 @DynamicInsert
 @DynamicUpdate

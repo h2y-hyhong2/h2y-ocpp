@@ -14,7 +14,7 @@ if exist "%SCRIPT_DIR%..\config\paths.env" (
 )
 
 echo ========================================================
-echo  [ELVIS-CSMS] MySQL 9.71 스키마 및 초기 시드 데이터 적재 (Port: %MYSQL_PORT%)
+echo  [ELVIS-CSMS] MySQL 9.71 elvis_lite 스키마 및 초기 시드 데이터 적재 (Port: %MYSQL_PORT%)
 echo ========================================================
 
 if not exist "%MYSQL_BIN%" (

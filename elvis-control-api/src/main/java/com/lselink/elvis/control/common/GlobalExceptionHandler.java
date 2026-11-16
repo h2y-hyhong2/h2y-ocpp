@@ -35,6 +35,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 비활성 계정 또는 상태 충돌 (403 Forbidden)
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException ex) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "현재 상태에서 요청을 처리할 수 없습니다.";
+        }
+        log.warn("[GlobalException] 403 Forbidden: {}", message);
+        ApiResponse<Void> response = ApiResponse.error(HttpStatus.FORBIDDEN.value(), message);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    /**
      * 리소스 미존재 (404 Not Found)
      */
     @ExceptionHandler(NoSuchElementException.class)

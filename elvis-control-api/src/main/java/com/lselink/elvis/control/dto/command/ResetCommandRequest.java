@@ -1,11 +1,14 @@
 package com.lselink.elvis.control.dto.command;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * 충전기 원격 리셋 요청 DTO (Reset)
  */
 public class ResetCommandRequest {
 
     /** 대상 충전기 식별자 (예: "00000001") */
+    @NotBlank(message = "chargeBoxId는 필수입니다.")
     private String chargeBoxId;
 
     /** 리셋 유형 ("Soft" 또는 "Hard") */

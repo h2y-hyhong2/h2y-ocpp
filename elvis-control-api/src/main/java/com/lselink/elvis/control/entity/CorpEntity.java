@@ -8,31 +8,31 @@ import java.time.LocalDateTime;
 public class CorpEntity {
 
     @Id
-    @Column(name = "CORP_ID", length = 20)
+    @Column(name = "corp_id", length = 20)
     private String corpId;
 
-    @Column(name = "CORP_NAME", nullable = false, length = 100)
+    @Column(name = "corp_name", nullable = false, length = 100)
     private String corpName;
 
-    @Column(name = "SHORT_NAME", nullable = false, length = 50)
+    @Column(name = "short_name", nullable = false, length = 50)
     private String shortName;
 
-    @Column(name = "TAG", nullable = false, length = 20)
+    @Column(name = "tag", nullable = false, length = 20)
     private String tag;
 
-    @Column(name = "COLOR_CLASS", length = 20)
+    @Column(name = "color_class", length = 20)
     private String colorClass;
 
-    @Column(name = "BADGE", length = 50)
+    @Column(name = "badge", length = 50)
     private String badge;
 
-    @Column(name = "USE_YN", length = 1)
+    @Column(name = "use_yn", length = 1)
     private String useYn;
 
-    @Column(name = "REG_DT")
+    @Column(name = "reg_dt")
     private LocalDateTime regDt;
 
-    @Column(name = "UPDT_DT")
+    @Column(name = "updt_dt")
     private LocalDateTime updtDt;
 
     public CorpEntity() {

@@ -1,5 +1,7 @@
 package com.lselink.elvis.connect.ws.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 import java.time.Instant;
 
@@ -75,6 +77,7 @@ public class OcppOutboundCommand implements Serializable {
         this.messageId = messageId;
     }
 
+    @JsonIgnore
     public String getPayload() {
         return commandPayload;
     }

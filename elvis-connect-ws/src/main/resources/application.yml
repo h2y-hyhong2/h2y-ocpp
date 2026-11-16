@@ -1,5 +1,5 @@
 server:
-  port: ${WS_PORT:9080}
+  port: ${ELVIS_WS_PORT:${WS_PORT:9080}}
 
 spring:
   application:
@@ -37,6 +37,7 @@ elvis:
         - "ocpp1.5"
       buffer-size-bytes: 16384
       idle-timeout-seconds: 90
+      require-auth: false
     kafka:
       inbound-topic: "ocpp-raw-events"
       outbound-topic: "ocpp-outbound-commands"

@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * DLT 결함 격리 및 메시지 재처리 서비스 구현체 (Sprint 24: S24-SYNC-0100-CO)
@@ -26,6 +27,9 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
 
     private static final Logger log = LoggerFactory.getLogger(DltRecoveryServiceImpl.class);
     private static final DateTimeFormatter DLT_ID_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final int MAX_EXCEPTION_CLASS_LENGTH = 200;
+    private static final int MAX_ERROR_MESSAGE_LENGTH = 1000;
+    private static final long REPLAY_SEND_TIMEOUT_SECONDS = 5L;
 
     private final DltHistoryRepository dltHistoryRepository;
     private final DltProducer dltProducer;
@@ -48,19 +52,15 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
         LocalDateTime failedTime = LocalDateTime.now();
         String dltId = generateDltId(failedTime);
 
-        // 오류 분류 판정 (Non-retryable vs Transient vs Business)
         ErrorCategory category = ErrorCategory.classify(ex);
+        String exceptionClass = truncate(ex != null ? ex.getClass().getName() : "UnknownException", MAX_EXCEPTION_CLASS_LENGTH);
+        String errorMessage = truncate(
+                (ex != null && ex.getMessage() != null && !ex.getMessage().isBlank()) ? ex.getMessage() : "알 수 없는 오류",
+                MAX_ERROR_MESSAGE_LENGTH
+        );
+        String finalPayload = rawPayload != null ? rawPayload : "";
 
-        String exceptionClass = "UnknownException";
-        String errorMessage = "알 수 없는 오류";
-        if (ex != null) {
-            exceptionClass = ex.getClass().getName();
-            if (ex.getMessage() != null && !ex.getMessage().isBlank()) {
-                errorMessage = ex.getMessage();
-            }
-        }
-
-        // 1. MySQL tbl_dlt_history 원장 영속화
+        // 1. MySQL dlt_history 원장 영속화
         DltHistory history = DltHistory.builder()
                 .dltId(dltId)
                 .chargeBoxId(chargeBoxId)
@@ -70,7 +70,7 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
                 .errorCategory(category)
                 .exceptionClass(exceptionClass)
                 .errorMessage(errorMessage)
-                .rawPayload(rawPayload)
+                .rawPayload(finalPayload)
                 .retryCount(retryCount)
                 .failedDt(failedTime)
                 .build();
@@ -87,7 +87,7 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
                 sourceTopic,
                 sourcePartition,
                 sourceOffset,
-                rawPayload,
+                finalPayload,
                 category,
                 exceptionClass,
                 errorMessage,
@@ -114,27 +114,18 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
         int sourcePartition = 0;
         long sourceOffset = 0L;
 
-        ErrorCategory category = ErrorCategory.NON_RETRYABLE;
-        if (errorCategory != null) {
-            category = errorCategory;
-        }
+        ErrorCategory category = errorCategory != null ? errorCategory : ErrorCategory.NON_RETRYABLE;
+        String exceptionClass = truncate(
+                (errorClass != null && !errorClass.isBlank()) ? errorClass : "UnknownException",
+                MAX_EXCEPTION_CLASS_LENGTH
+        );
+        String finalErrorMessage = truncate(
+                (errorMessage != null && !errorMessage.isBlank()) ? errorMessage : "알 수 없는 오류",
+                MAX_ERROR_MESSAGE_LENGTH
+        );
+        String finalPayload = rawPayload != null ? rawPayload : "";
 
-        String exceptionClass = "UnknownException";
-        if (errorClass != null && !errorClass.isBlank()) {
-            exceptionClass = errorClass;
-        }
-
-        String finalErrorMessage = "알 수 없는 오류";
-        if (errorMessage != null && !errorMessage.isBlank()) {
-            finalErrorMessage = errorMessage;
-        }
-
-        String finalPayload = "";
-        if (rawPayload != null) {
-            finalPayload = rawPayload;
-        }
-
-        // 1. MySQL tbl_dlt_history 원장 영속화
+        // 1. MySQL dlt_history 원장 영속화
         DltHistory history = DltHistory.builder()
                 .dltId(dltId)
                 .chargeBoxId(chargeBoxId)
@@ -188,10 +179,10 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
         String rawPayload = history.getRawPayload();
 
         try {
-            // 원본 인바운드 토픽으로 재주입
-            dltProducer.replayToInboundTopic(chargeBoxId, rawPayload);
+            // 원본 인바운드 토픽으로 동기 확인 후 성공 시에만 REPLAYED 마킹
+            dltProducer.replayToInboundTopic(chargeBoxId, rawPayload)
+                    .get(REPLAY_SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-            // 상태를 REPLAYED로 갱신
             LocalDateTime replayedTime = LocalDateTime.now();
             history.markReplayed(replayedTime);
             dltHistoryRepository.save(history);
@@ -200,7 +191,10 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
             return true;
 
         } catch (Exception ex) {
-            String retryErrMsg = "Replay 재주입 실패: " + ex.getMessage();
+            if (ex instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            String retryErrMsg = truncate("Replay 재주입 실패: " + ex.getMessage(), MAX_ERROR_MESSAGE_LENGTH);
             history.markFailed(retryErrMsg);
             dltHistoryRepository.save(history);
 
@@ -239,5 +233,12 @@ public class DltRecoveryServiceImpl implements DltRecoveryService {
         String timePart = now.format(DLT_ID_FORMATTER);
         String uuidPart = UUID.randomUUID().toString().substring(0, 8);
         return "DLT-" + timePart + "-" + uuidPart;
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 }

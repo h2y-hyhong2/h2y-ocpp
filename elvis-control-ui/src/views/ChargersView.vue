@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCsmsStore, STATUS_MAP, type ChargerItem } from '../stores/csmsStore'
+import { useCsmsStore, STATUS_MAP, PRIMARY_STATUS_KEYS, getStatusMeta, type ChargerItem } from '../stores/csmsStore'
 
 const store = useCsmsStore()
 
@@ -30,32 +30,66 @@ const currentStationInfo = computed(() => {
   return st ? { id: st.id, name: st.name, corpName: st.corpName, count: st.chargerCount } : { id: '-', name: store.stations[0]?.name || '등록된 충전소 없음', corpName: store.stations[0]?.corpName || '미등록', count: store.stations[0]?.chargerCount || 0 }
 })
 
-// 현재 선택된 충전소에 소속된 충전기 목록
+// 현재 선택된 충전소에 소속된 충전기 목록 (법인 필터 포함)
 const currentStationChargers = computed(() => {
-  if (store.curStFilter === 'ALL') return store.chargers
-  return store.chargers.filter(c => c.stId === store.curStFilter)
-})
-
-// 필터링 및 검색된 충전기 목록
-const filteredChargers = computed(() => {
-  const q = (searchQuery.value || '').toLowerCase().trim()
-  return currentStationChargers.value.filter((chg) => {
-    const matchStatus = store.curStatusFilter === 'ALL' || chg.status === store.curStatusFilter
-    if (!q) return matchStatus
-    const matchQuery =
-      (chg.chargeBoxId || '').toLowerCase().includes(q) ||
-      (chg.stationName || '').toLowerCase().includes(q) ||
-      (chg.carModel || '').toLowerCase().includes(q)
-    return matchStatus && matchQuery
+  return store.chargers.filter(c => {
+    const matchCorp = store.curCorpFilter === 'ALL' || c.corpId === store.curCorpFilter
+    const matchSt = store.curStFilter === 'ALL' || c.stId === store.curStFilter
+    return matchCorp && matchSt
   })
 })
 
-// 상태별 카운트 계산
+function matchesChargerKeyword(chg: ChargerItem, q: string): boolean {
+  if (!q) return true
+  return (
+    (chg.chargeBoxId || '').toLowerCase().includes(q) ||
+    (chg.stationName || '').toLowerCase().includes(q) ||
+    (chg.corpName || '').toLowerCase().includes(q) ||
+    (chg.vendor || '').toLowerCase().includes(q) ||
+    (chg.model || '').toLowerCase().includes(q) ||
+    (chg.carModel || '').toLowerCase().includes(q) ||
+    (chg.userTag || '').toLowerCase().includes(q)
+  )
+}
+
+// 필터링 및 검색된 충전기 목록 (로컬 검색 + 글로벌 헤더 Ctrl+K 검색 동시 반영)
+const filteredChargers = computed(() => {
+  const localQ = (searchQuery.value || '').toLowerCase().trim()
+  const globalQ = (store.searchQuery || '').toLowerCase().trim()
+
+  return currentStationChargers.value.filter((chg) => {
+    const matchStatus =
+      store.curStatusFilter === 'ALL' ||
+      getStatusMeta(chg.status).key === getStatusMeta(store.curStatusFilter).key ||
+      chg.status === store.curStatusFilter
+
+    if (!matchStatus) return false
+    return matchesChargerKeyword(chg, localQ) && matchesChargerKeyword(chg, globalQ)
+  })
+})
+
+// 상태별 카운트 계산 (한글/OCPP 영문 상태 통합 집계)
 const statusCounts = computed(() => {
   const counts: Record<string, number> = {}
-  Object.keys(STATUS_MAP).forEach(k => counts[k] = 0)
+  PRIMARY_STATUS_KEYS.forEach(k => { counts[k] = 0 })
+
+  const keyToPrimary: Record<string, string> = {}
+  PRIMARY_STATUS_KEYS.forEach(k => {
+    const meta = STATUS_MAP[k]
+    if (meta) {
+      keyToPrimary[meta.key] = k
+    }
+  })
+
   currentStationChargers.value.forEach(chg => {
-    if (counts[chg.status] !== undefined) counts[chg.status]++
+    if (counts[chg.status] !== undefined) {
+      counts[chg.status]++
+      return
+    }
+    const primary = keyToPrimary[getStatusMeta(chg.status).key]
+    if (primary && counts[primary] !== undefined) {
+      counts[primary]++
+    }
   })
   return counts
 })
@@ -107,10 +141,15 @@ function sendRemoteCommand(action: string) {
               {{ store.stations.length }}개소
             </span>
             <button
+              type="button"
               @click="store.toggleSidebar(false)"
-              class="lg:hidden text-slate-400 hover:text-slate-800 p-1 font-bold text-base leading-none cursor-pointer"
+              class="lg:hidden text-slate-400 hover:text-slate-800 p-1 cursor-pointer"
               title="사이드바 닫기"
-            >✕</button>
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -215,10 +254,15 @@ function sendRemoteCommand(action: string) {
             />
             <button
               v-if="searchQuery"
+              type="button"
               @click="searchQuery = ''"
-              class="text-[10px] text-slate-400 hover:text-slate-700 px-1 py-1 font-bold cursor-pointer"
+              class="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
               title="검색어 초기화"
-            >✕</button>
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -226,6 +270,7 @@ function sendRemoteCommand(action: string) {
         <div class="flex flex-wrap items-center gap-1.5 py-2 border-b border-[var(--border-glass)] flex-shrink-0">
           <!-- 전체 보기 칩 -->
           <button
+            type="button"
             @click="store.setStatusFilter('ALL')"
             class="px-2.5 py-1 rounded-lg border text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
             :class="store.curStatusFilter === 'ALL' 
@@ -236,20 +281,21 @@ function sendRemoteCommand(action: string) {
             <span class="font-mono text-[11px] opacity-90">{{ currentStationChargers.length }}</span>
           </button>
 
-          <!-- 세부 11종 상태 칩 버튼 목록 -->
+          <!-- 세부 상태 칩 버튼 목록 -->
           <button
-            v-for="(info, key) in STATUS_MAP"
+            v-for="key in PRIMARY_STATUS_KEYS"
             :key="key"
+            type="button"
             @click="store.setStatusFilter(key)"
             class="px-2.5 py-1 rounded-lg border text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
             :class="[
               store.curStatusFilter === key 
-                ? 'ring-2 ring-sky-500 font-bold ' + info.badgeClass 
+                ? 'ring-2 ring-sky-500 font-bold ' + getStatusMeta(key).badgeClass 
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
               (statusCounts[key] || 0) === 0 ? 'opacity-65' : 'font-semibold'
             ]"
           >
-            <span class="w-1.5 h-1.5 rounded-full" :class="info.dotClass"></span>
+            <span class="w-1.5 h-1.5 rounded-full" :class="getStatusMeta(key).dotClass"></span>
             <span>{{ key }}</span>
             <span 
               class="font-mono text-[11px] px-1 py-0.2 rounded"
@@ -294,20 +340,20 @@ function sendRemoteCommand(action: string) {
                 <td class="py-2.5 px-2 font-medium truncate max-w-[140px] whitespace-nowrap">{{ chg.stationName }}</td>
                 <td class="py-2.5 px-2 text-slate-600 truncate max-w-[130px] whitespace-nowrap">{{ chg.vendor }} {{ chg.model }}</td>
                 <td class="py-2.5 px-2 whitespace-nowrap">
-                  <span :class="STATUS_MAP[chg.status]?.badgeClass" class="px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap inline-flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full" :class="STATUS_MAP[chg.status]?.dotClass"></span>
-                    <span>{{ chg.status }}</span>
+                  <span :class="getStatusMeta(chg.status).badgeClass" class="px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap inline-flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="getStatusMeta(chg.status).dotClass"></span>
+                    <span>{{ getStatusMeta(chg.status).name }}</span>
                   </span>
                 </td>
-                <td class="py-2.5 px-2 font-bold whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.powerKw.toFixed(1)} kW` : '-' }}</td>
-                <td class="py-2.5 px-2 text-slate-500 whitespace-nowrap">{{ chg.powerKw > 0 ? `${chg.voltageV.toFixed(0)}V / ${chg.currentA.toFixed(0)}A` : '-' }}</td>
+                <td class="py-2.5 px-2 font-bold whitespace-nowrap">{{ (chg.powerKw ?? 0) > 0 ? `${(chg.powerKw ?? 0).toFixed(1)} kW` : '-' }}</td>
+                <td class="py-2.5 px-2 text-slate-500 whitespace-nowrap">{{ (chg.powerKw ?? 0) > 0 ? `${(chg.voltageV ?? 0).toFixed(0)}V / ${(chg.currentA ?? 0).toFixed(0)}A` : '-' }}</td>
                 <td class="py-2.5 px-2 whitespace-nowrap">
-                  <div v-if="chg.status === '충전중'" class="w-20">
+                  <div v-if="getStatusMeta(chg.status).key === 'charging'" class="w-20">
                     <div class="flex justify-between text-[10px] mb-0.5 font-bold text-emerald-600">
-                      <span>{{ chg.socPercent }}%</span>
+                      <span>{{ chg.socPercent ?? 0 }}%</span>
                     </div>
                     <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div class="h-full bg-emerald-500" :style="{ width: `${chg.socPercent}%` }"></div>
+                      <div class="h-full bg-emerald-500" :style="{ width: `${chg.socPercent ?? 0}%` }"></div>
                     </div>
                   </div>
                   <span v-else class="text-slate-400">-</span>
@@ -335,14 +381,19 @@ function sendRemoteCommand(action: string) {
             <h2 class="text-xs font-bold text-[var(--text-bright)] truncate">단말 계측 · 원격제어</h2>
           </div>
           <div class="flex items-center gap-1.5">
-            <span v-if="store.selectedCharger" :class="STATUS_MAP[store.selectedCharger.status]?.badgeClass" class="text-[10px] px-1.5 py-0.2 rounded border font-bold">
-              {{ store.selectedCharger.status }}
+            <span v-if="store.selectedCharger" :class="getStatusMeta(store.selectedCharger.status).badgeClass" class="text-[10px] px-1.5 py-0.2 rounded border font-bold">
+              {{ getStatusMeta(store.selectedCharger.status).name }}
             </span>
             <button
+              type="button"
               @click="store.toggleControlDrawer(false)"
-              class="xl:hidden p-1 rounded-md text-slate-400 hover:text-slate-800 font-bold text-base leading-none cursor-pointer"
+              class="xl:hidden p-1 rounded-md text-slate-400 hover:text-slate-800 cursor-pointer"
               title="제어반 닫기"
-            >✕</button>
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -371,29 +422,29 @@ function sendRemoteCommand(action: string) {
             <div class="space-y-1">
               <div class="flex items-baseline justify-between">
                 <span class="text-[11px] text-slate-500">순시 출력</span>
-                <span class="text-sm font-black font-mono text-sky-700">{{ store.selectedCharger.powerKw.toFixed(1) }} kW</span>
+                <span class="text-sm font-black font-mono text-sky-700">{{ (store.selectedCharger.powerKw ?? 0).toFixed(1) }} kW</span>
               </div>
               <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-sky-500 h-full rounded-full" :style="{ width: `${Math.min(100, (store.selectedCharger.powerKw / 350) * 100)}%` }"></div>
+                <div class="bg-sky-500 h-full rounded-full" :style="{ width: `${Math.min(100, ((store.selectedCharger.powerKw ?? 0) / 350) * 100)}%` }"></div>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-1.5 pt-1 font-mono text-[11px]">
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
                 <div class="text-[9px] text-slate-500">충전 전압</div>
-                <div class="font-bold">{{ store.selectedCharger.voltageV.toFixed(0) }} V</div>
+                <div class="font-bold">{{ (store.selectedCharger.voltageV ?? 0).toFixed(0) }} V</div>
               </div>
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
                 <div class="text-[9px] text-slate-500">충전 전류</div>
-                <div class="font-bold">{{ store.selectedCharger.currentA.toFixed(0) }} A</div>
+                <div class="font-bold">{{ (store.selectedCharger.currentA ?? 0).toFixed(0) }} A</div>
               </div>
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
                 <div class="text-[9px] text-slate-500">누적 전력량</div>
-                <div class="font-bold">{{ store.selectedCharger.accumulatedKwh.toFixed(1) }} kWh</div>
+                <div class="font-bold">{{ (store.selectedCharger.accumulatedKwh ?? 0).toFixed(1) }} kWh</div>
               </div>
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
                 <div class="text-[9px] text-slate-500">배터리 온도</div>
-                <div class="font-bold text-amber-600">{{ store.selectedCharger.batteryTempC }} °C</div>
+                <div class="font-bold text-amber-600">{{ store.selectedCharger.batteryTempC ?? 25 }} °C</div>
               </div>
             </div>
 
@@ -401,10 +452,10 @@ function sendRemoteCommand(action: string) {
             <div class="space-y-1 pt-1">
               <div class="flex items-baseline justify-between text-[11px]">
                 <span class="text-slate-500">배터리 SoC</span>
-                <span class="font-bold font-mono text-emerald-600">{{ store.selectedCharger.socPercent }}%</span>
+                <span class="font-bold font-mono text-emerald-600">{{ store.selectedCharger.socPercent ?? 0 }}%</span>
               </div>
               <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${store.selectedCharger.socPercent}%` }"></div>
+                <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${store.selectedCharger.socPercent ?? 0}%` }"></div>
               </div>
             </div>
           </div>
@@ -415,7 +466,7 @@ function sendRemoteCommand(action: string) {
             <div class="grid grid-cols-2 gap-1.5 font-bold text-[11px]">
               <button
                 type="button"
-                @click="sendRemoteCommand('RemoteReset')"
+                @click="sendRemoteCommand('Reset')"
                 class="p-2 rounded-lg bg-[var(--bg-surface-2)] hover:bg-slate-200 text-slate-800 border border-[var(--border-glass)] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>

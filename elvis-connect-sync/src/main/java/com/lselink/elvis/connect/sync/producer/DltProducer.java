@@ -6,7 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Dead Letter Topic (`ocpp-dlt`) 발행 및 Replay 전송 Producer (Sprint 24: S24-SYNC-0100-CO)
@@ -66,8 +69,9 @@ public class DltProducer {
      *
      * @param chargeBoxId 충전기 ID
      * @param rawPayload  원본 OCPP JSON 전문
+     * @return Kafka 발행 결과 CompletableFuture
      */
-    public void replayToInboundTopic(String chargeBoxId, String rawPayload) {
+    public CompletableFuture<SendResult<String, Object>> replayToInboundTopic(String chargeBoxId, String rawPayload) {
         String topicName = this.inboundTopic;
         String targetKey = "REPLAY";
         if (chargeBoxId != null && !chargeBoxId.isBlank()) {
@@ -79,7 +83,8 @@ public class DltProducer {
 
         log.info("[DltProducer] Replay 원본 토픽 재주입: topic={}, key={}", topicName, partitionKey);
 
-        kafkaTemplate.send(topicName, partitionKey, envelope).whenComplete((result, ex) -> {
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topicName, partitionKey, envelope);
+        future.whenComplete((result, ex) -> {
             if (ex != null) {
                 log.error("[DltProducer] Replay 재주입 실패: key={}, error={}",
                         partitionKey, ex.getMessage(), ex);
@@ -90,5 +95,6 @@ public class DltProducer {
                         partitionKey, partition, offset);
             }
         });
+        return future;
     }
 }

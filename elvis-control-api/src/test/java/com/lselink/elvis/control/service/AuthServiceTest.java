@@ -147,4 +147,18 @@ class AuthServiceTest {
         assertEquals("시스템 관리자", adminDto.role());
         assertTrue(adminDto.enabled());
     }
+
+    @Test
+    @DisplayName("비활성화된 계정 로그인 시 IllegalStateException 발생 검증")
+    void testLoginWithDisabledUserThrowsIllegalStateException() {
+        AdminUser admin = adminUserRepository.findByUsername("admin").orElseThrow();
+        admin.setEnabled(false);
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> authService.login(new LoginRequest("admin", "admin123!"))
+        );
+
+        assertTrue(exception.getMessage().contains("비활성화된 계정입니다"));
+    }
 }

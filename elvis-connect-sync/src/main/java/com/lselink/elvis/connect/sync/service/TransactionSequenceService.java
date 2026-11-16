@@ -5,16 +5,18 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * OCPP 1.6 규격 트랜잭션 ID 전역 단일 시퀀스 채번 서비스 (규칙 10 표준 준수)
+ * OCPP 1.6 규격 트랜잭션 ID 전역 단일 시퀀스 채번 서비스 (AGENTS.md §4 표준 준수)
  * <p>
  * - 타입: 32비트 signed integer (최대값 2,147,483,647 이하)
  * - 채번 주체: CSMS 서버 (StartTransaction.conf 응답 시 발급)
- * - Redis INCR 원자적 채번 및 DB MAX(transaction_id) 기반 초기 동기화/폴백
+ * - Redis Lua 스크립트 기반 원자적 INCR/롤오버 및 DB MAX(transaction_id) 기반 초기 동기화/폴백
  * </p>
  */
 @Service
@@ -24,6 +26,18 @@ public class TransactionSequenceService {
 
     public static final String REDIS_SEQ_KEY = "csms:seq:transaction_id";
     public static final long MAX_TRANSACTION_ID = 2_147_483_647L;
+
+    private static final DefaultRedisScript<Long> ATOMIC_NEXT_ID_SCRIPT = new DefaultRedisScript<>(
+            """
+            local val = redis.call('INCR', KEYS[1])
+            if val > tonumber(ARGV[1]) then
+                redis.call('SET', KEYS[1], '1')
+                return 1
+            end
+            return val
+            """,
+            Long.class
+    );
 
     private final StringRedisTemplate stringRedisTemplate;
     private final TransactionSessionRepository sessionRepository;
@@ -55,6 +69,7 @@ public class TransactionSequenceService {
                     stringRedisTemplate.opsForValue().set(REDIS_SEQ_KEY, String.valueOf(maxDbId));
                     log.warn("[TxSeqSvc] Redis 시퀀스가 DB보다 낮아 동기화: redis={}, dbMax={}", currentVal, maxDbId);
                 } else {
+                    fallbackSequence.accumulateAndGet(currentVal, Math::max);
                     log.info("[TxSeqSvc] 기존 Redis 트랜잭션 시퀀스 유지: key={}, currentVal={}", REDIS_SEQ_KEY, currentVal);
                 }
             }
@@ -68,12 +83,17 @@ public class TransactionSequenceService {
      */
     public long nextTransactionId() {
         try {
-            Long nextId = stringRedisTemplate.opsForValue().increment(REDIS_SEQ_KEY);
+            Long nextId = stringRedisTemplate.execute(
+                    ATOMIC_NEXT_ID_SCRIPT,
+                    Collections.singletonList(REDIS_SEQ_KEY),
+                    String.valueOf(MAX_TRANSACTION_ID)
+            );
             if (nextId != null) {
-                if (nextId > MAX_TRANSACTION_ID) {
-                    log.warn("[TxSeqSvc] ⚠️ 트랜잭션 ID 최대치(21억) 도달로 롤오버(1) 처리");
-                    stringRedisTemplate.opsForValue().set(REDIS_SEQ_KEY, "1");
-                    return 1L;
+                if (nextId == 1L && fallbackSequence.get() >= MAX_TRANSACTION_ID) {
+                    log.warn("[TxSeqSvc] ⚠️ 트랜잭션 ID 최대치(21억) 도달로 원자적 롤오버(1) 처리");
+                    fallbackSequence.set(1L);
+                } else {
+                    fallbackSequence.accumulateAndGet(nextId, Math::max);
                 }
                 return nextId;
             }
@@ -81,11 +101,6 @@ public class TransactionSequenceService {
             log.warn("[TxSeqSvc] Redis 채번 실패, 인메모리 원자 시퀀스로 폴백: err={}", e.getMessage());
         }
 
-        long fallbackNext = fallbackSequence.incrementAndGet();
-        if (fallbackNext > MAX_TRANSACTION_ID) {
-            fallbackSequence.set(1L);
-            return 1L;
-        }
-        return fallbackNext;
+        return fallbackSequence.updateAndGet(cur -> cur >= MAX_TRANSACTION_ID ? 1L : cur + 1L);
     }
 }

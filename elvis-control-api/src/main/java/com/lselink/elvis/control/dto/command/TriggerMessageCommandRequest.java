@@ -1,14 +1,18 @@
 package com.lselink.elvis.control.dto.command;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * 충전기 전문 즉시 보고 트리거 요청 DTO (TriggerMessage)
  */
 public class TriggerMessageCommandRequest {
 
     /** 대상 충전기 식별자 (예: "00000001") */
+    @NotBlank(message = "chargeBoxId는 필수입니다.")
     private String chargeBoxId;
 
     /** 요청할 전문 유형 (예: "StatusNotification", "MeterValues", "Heartbeat") */
+    @NotBlank(message = "requestedMessage는 필수입니다.")
     private String requestedMessage;
 
     /** 특정 커넥터 대상일 경우 번호 (선택적: 1, 2) */

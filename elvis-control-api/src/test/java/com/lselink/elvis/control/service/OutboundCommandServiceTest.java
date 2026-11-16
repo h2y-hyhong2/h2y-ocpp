@@ -22,6 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -194,5 +195,15 @@ class OutboundCommandServiceTest {
         // then
         assertThat(result.getChargeBoxId()).isEqualTo("00000001");
         verify(kafkaTemplate, times(1)).send(eq("ocpp-outbound-commands"), eq("00000001"), any(String.class));
+    }
+
+    @Test
+    @DisplayName("8자리 숫자 형식이 아닌 chargeBoxId 입력 시 예외 발생 검증")
+    void invalid_chargeBoxId_throws_exception() {
+        RemoteStartCommandRequest request = new RemoteStartCommandRequest("INVALID-ID", 1, "RFID-1001");
+
+        assertThatThrownBy(() -> commandService.remoteStart(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("8자리 숫자");
     }
 }

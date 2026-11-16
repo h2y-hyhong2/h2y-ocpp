@@ -1,5 +1,5 @@
 server:
-  port: ${API_PORT:9082}
+  port: ${ELVIS_API_PORT:${API_PORT:9082}}
 
 spring:
   application:
@@ -60,8 +60,6 @@ decorator:
       logging: slf4j
 
 logging:
-  file:
-    name: ${ELVIS_LOG_DIR:D:/elvis-lite/logs}/api.log
   level:
     root: INFO
     com.lselink.elvis.control: DEBUG

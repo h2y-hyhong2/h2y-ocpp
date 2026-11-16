@@ -129,8 +129,41 @@ class BillingCdrControllerTest {
         assertThat(content).startsWith("\uFEFF");
         // 헤더 확인
         assertThat(content).contains("트랜잭션ID,충전기ID,충전소ID,충전소명,커넥터ID,회원태그,시작시각,종료시각,충전량(kWh),단가(원),결제금액(원),결제상태,종료사유,충전시간(분)");
-        // 데이터 레코드 확인
-        assertThat(content).contains("1001,00000001,000000,\"안양 스마트하이퍼 차징 스테이션\",1,RFID_CARD_01,2026-10-26 10:00:00,2026-10-26 10:45:00,25.50,345.00,8798.00,PAID,Local,45.0");
+        // 데이터 레코드 확인 (모든 문자열 셀 안전한 따옴표 래핑)
+        assertThat(content).contains("1001,\"00000001\",\"000000\",\"안양 스마트하이퍼 차징 스테이션\",1,\"RFID_CARD_01\",\"2026-10-26 10:00:00\",\"2026-10-26 10:45:00\",25.50,345.00,8798.00,\"PAID\",\"Local\",45.0");
+    }
+
+    @Test
+    @DisplayName("CSV 내보내기 시 콤마, 개행 및 수식 인젝션(=, +, -, @) 이스케이프 검증")
+    void testExportCdrCsvSanitization() throws IOException {
+        CdrResponseDto dangerousItem = CdrResponseDto.builder()
+                .transactionId(1002L)
+                .chargeBoxId("00000001")
+                .stationId("000000")
+                .stationName("안양, \"테스트\"\n충전소")
+                .connectorId(1)
+                .userTag("=CMD|'/C calc'!A0")
+                .startTime("2026-10-26 11:00:00")
+                .stopTime("2026-10-26 11:10:00")
+                .kwh(new BigDecimal("5.00"))
+                .unitPrice(new BigDecimal("300.00"))
+                .totalAmount(new BigDecimal("1500.00"))
+                .paymentStatus("+PAID")
+                .stopReason("@Remote")
+                .durationMinutes(10.0)
+                .build();
+
+        when(cdrService.getAllFilteredCdr(any(CdrSearchCondition.class)))
+                .thenReturn(Collections.singletonList(dangerousItem));
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        controller.exportCdrCsv(new CdrSearchCondition(), response);
+
+        String content = response.getContentAsString();
+        assertThat(content).contains("\"안양, \"\"테스트\"\"\n충전소\"");
+        assertThat(content).contains("\"'=CMD|'/C calc'!A0\"");
+        assertThat(content).contains("\"'+PAID\"");
+        assertThat(content).contains("\"'@Remote\"");
     }
 
     @Test

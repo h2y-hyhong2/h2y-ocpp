@@ -64,6 +64,10 @@ const rawPayloadText = ref('{\n  "connectorId": 1,\n  "errorCode": "NoError",\n 
 // 액션 변경 시 기본 템플릿 JSON 동기화
 function onActionChange() {
   const c = targetCharger.value
+  const connId = c.activeConnectorId || 1
+  const activeConn = c.connectors?.find(g => g.connectorId === connId)
+  const activeTxId = activeConn?.transactionId ?? c.transactionId ?? null
+
   switch (selectedAction.value) {
     case 'BootNotification':
       rawPayloadText.value = JSON.stringify({
@@ -71,7 +75,7 @@ function onActionChange() {
         chargePointModel: c.model,
         chargePointSerialNumber: `${c.id}-SN`,
         chargeBoxSerialNumber: c.id,
-        firmwareVersion: '1.0.0-RELEASE',
+        firmwareVersion: c.firmwareVer || '1.0.0-RELEASE',
         iccid: '8982000000000000001'
       }, null, 2)
       break
@@ -80,7 +84,7 @@ function onActionChange() {
       break
     case 'StatusNotification':
       rawPayloadText.value = JSON.stringify({
-        connectorId: c.activeConnectorId || 1,
+        connectorId: connId,
         errorCode: 'NoError',
         status: manualStatus.value,
         timestamp: new Date().toISOString()
@@ -93,7 +97,7 @@ function onActionChange() {
       break
     case 'StartTransaction':
       rawPayloadText.value = JSON.stringify({
-        connectorId: c.activeConnectorId || 1,
+        connectorId: connId,
         idTag: manualRfid.value,
         meterStart: manualMeterWh.value,
         timestamp: new Date().toISOString()
@@ -101,14 +105,14 @@ function onActionChange() {
       break
     case 'MeterValues':
       rawPayloadText.value = JSON.stringify({
-        connectorId: c.activeConnectorId || 1,
-        transactionId: c.transactionId || 1001,
+        connectorId: connId,
+        ...(activeTxId != null ? { transactionId: activeTxId } : {}),
         meterValue: [
           {
             timestamp: new Date().toISOString(),
             sampledValue: [
               { value: String(c.meterValueWh), measurand: 'Energy.Active.Import.Register', unit: 'Wh' },
-              { value: String(c.soc), measurand: 'SoC', unit: 'Percent' },
+              { value: String(activeConn?.socPercent ?? c.soc), measurand: 'SoC', unit: 'Percent' },
               { value: String(c.powerKw * 1000), measurand: 'Power.Active.Import', unit: 'W' }
             ]
           }
@@ -120,7 +124,7 @@ function onActionChange() {
         idTag: manualRfid.value,
         meterStop: manualMeterWh.value + 1500,
         timestamp: new Date().toISOString(),
-        transactionId: c.transactionId || 1001,
+        transactionId: activeTxId,
         reason: manualStopReason.value
       }, null, 2)
       break
@@ -168,7 +172,7 @@ function sendManualCall() {
     // 템플릿 폼 기반 발송
     switch (selectedAction.value) {
       case 'BootNotification':
-        store.sendBootNotification(targetCharger.value.vendor, targetCharger.value.model, '1.0.0', cid)
+        store.sendBootNotification(targetCharger.value.vendor, targetCharger.value.model, targetCharger.value.firmwareVer || '1.0.0-RELEASE', cid)
         break
       case 'Heartbeat':
         store.sendHeartbeat(cid)
@@ -238,7 +242,9 @@ function handleAbortScenario() {
           class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
           :class="activeTab === 'message' ? 'bg-sky-50 text-sky-700 border border-sky-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
         >
-          <span>📨</span>
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+          </svg>
           <span class="truncate">전문 제어</span>
         </button>
 
@@ -248,7 +254,10 @@ function handleAbortScenario() {
           class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
           :class="activeTab === 'automation' ? 'bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
         >
-          <span>⚙️</span>
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
           <span class="truncate">자동화 설정</span>
         </button>
 
@@ -258,7 +267,9 @@ function handleAbortScenario() {
           class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
           :class="activeTab === 'scenario' ? 'bg-indigo-50 text-indigo-700 border border-indigo-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
         >
-          <span>🚀</span>
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+          </svg>
           <span class="truncate">시나리오</span>
         </button>
 
@@ -268,7 +279,9 @@ function handleAbortScenario() {
           class="py-2 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
           :class="activeTab === 'verify' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'"
         >
-          <span>🧪</span>
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <span class="truncate">과제 검증</span>
         </button>
       </div>
@@ -281,32 +294,35 @@ function handleAbortScenario() {
       <!-- 컴팩트 자동화 현황 요약 바 (자동화 설정 탭 바로가기) -->
       <div class="px-3 py-2 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs select-none">
         <div class="flex items-center gap-1.5 overflow-hidden text-xs">
-          <span class="text-xs shrink-0">⚙️</span>
+          <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
           <span class="font-bold text-slate-700 shrink-0 hidden sm:inline">자동 전문:</span>
           <div class="flex items-center gap-1 text-[10px] font-mono overflow-x-auto scrollbar-none">
             <span
               class="px-1.5 py-0.5 rounded font-semibold border"
               :class="targetCharger.autoHeartbeat ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
             >
-              💓 HB: {{ targetCharger.autoHeartbeat ? `${targetCharger.heartbeatIntervalSec || 60}s` : 'OFF' }}
+              HB: {{ targetCharger.autoHeartbeat ? `${targetCharger.heartbeatIntervalSec || 60}s` : 'OFF' }}
             </span>
             <span
               class="px-1.5 py-0.5 rounded font-semibold border"
               :class="targetCharger.autoBootOnConnect ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
             >
-              🚀 기동: {{ targetCharger.autoBootOnConnect ? 'ON' : 'OFF' }}
+              기동: {{ targetCharger.autoBootOnConnect ? 'ON' : 'OFF' }}
             </span>
             <span
               class="px-1.5 py-0.5 rounded font-semibold border"
               :class="targetCharger.autoReply ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
             >
-              🤖 응답: {{ targetCharger.autoReply ? 'ON' : 'OFF' }}
+              응답: {{ targetCharger.autoReply ? 'ON' : 'OFF' }}
             </span>
             <span
               class="px-1.5 py-0.5 rounded font-semibold border"
               :class="targetCharger.autoMeterValues ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-400 border-slate-200'"
             >
-              📊 계측: {{ targetCharger.autoMeterValues ? `${targetCharger.autoMeterIntervalSec || 10}s` : 'OFF' }}
+              계측: {{ targetCharger.autoMeterValues ? `${targetCharger.autoMeterIntervalSec || 10}s` : 'OFF' }}
             </span>
           </div>
         </div>
@@ -436,7 +452,7 @@ function handleAbortScenario() {
           <textarea
             v-model="rawPayloadText"
             rows="8"
-            class="w-full bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+            class="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-lg font-mono text-xs focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
           ></textarea>
         </div>
 
@@ -489,18 +505,20 @@ function handleAbortScenario() {
             <button
               type="button"
               @click="handleManualPreset(targetCharger.id)"
-              class="px-2.5 py-1 rounded-md border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold cursor-pointer transition-colors shadow-2xs"
+              class="px-2.5 py-1 rounded-md border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold cursor-pointer transition-colors shadow-2xs inline-flex items-center gap-1"
               title="이 충전기의 모든 자동화(Heartbeat, Auto-Boot, Auto-Reply, Auto-Meter) 정지"
             >
-              🛑 전체 OFF
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              <span>전체 OFF</span>
             </button>
             <button
               type="button"
               @click="handleAutoPreset(targetCharger.id)"
-              class="px-2.5 py-1 rounded-md border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold cursor-pointer transition-colors shadow-2xs"
+              class="px-2.5 py-1 rounded-md border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold cursor-pointer transition-colors shadow-2xs inline-flex items-center gap-1"
               title="이 충전기의 표준 자동화(Heartbeat 60s, Auto-Boot, Auto-Reply) 가동"
             >
-              ⚡ 전체 ON
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+              <span>전체 ON</span>
             </button>
           </div>
 
@@ -512,7 +530,7 @@ function handleAbortScenario() {
               class="px-2.5 py-1 rounded-md border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold cursor-pointer transition-colors shadow-2xs"
               title="등록된 모든 충전기의 자동화를 일괄 활성화"
             >
-              🌐 전사 전체 ON
+              전사 전체 ON
             </button>
             <button
               type="button"
@@ -520,7 +538,7 @@ function handleAbortScenario() {
               class="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer transition-colors shadow-2xs"
               title="등록된 모든 충전기를 완전 수동 통제 모드로 전환"
             >
-              🔒 전사 전체 OFF
+              전사 전체 OFF
             </button>
           </div>
         </div>
@@ -533,7 +551,11 @@ function handleAbortScenario() {
       >
         <div class="flex items-start justify-between gap-2">
           <div class="flex items-start gap-2.5">
-            <span class="text-xl flex-shrink-0 mt-0.5">💓</span>
+            <span class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+              </svg>
+            </span>
             <div>
               <div class="flex items-center gap-2">
                 <h4 class="text-xs font-bold text-slate-900">1. 자동 Heartbeat 주기 발송 (Keep-Alive)</h4>
@@ -574,7 +596,7 @@ function handleAbortScenario() {
               <option :value="120">120초 (2분)</option>
               <option :value="300">300초 (5분)</option>
             </select>
-            <span class="text-[10px] text-slate-400 font-sans hidden sm:inline">(CSMS 타임아웃: 180s)</span>
+            <span class="text-[10px] text-slate-400 font-sans hidden sm:inline">(CSMS 타임아웃: 90s)</span>
           </div>
 
           <div class="flex items-center gap-1.5">
@@ -588,7 +610,7 @@ function handleAbortScenario() {
               :class="targetCharger.connected ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 cursor-pointer' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'"
               title="지금 즉시 1회 Heartbeat 전문 전송"
             >
-              ⚡ 1회 즉시 전송
+              1회 즉시 전송
             </button>
           </div>
         </div>
@@ -601,7 +623,11 @@ function handleAbortScenario() {
       >
         <div class="flex items-start justify-between gap-2">
           <div class="flex items-start gap-2.5">
-            <span class="text-xl flex-shrink-0 mt-0.5">🚀</span>
+            <span class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+              </svg>
+            </span>
             <div>
               <div class="flex items-center gap-2">
                 <h4 class="text-xs font-bold text-slate-900">2. 연결 시 기동전문 자동 발송 (Auto-Boot)</h4>
@@ -643,7 +669,7 @@ function handleAbortScenario() {
               :class="targetCharger.connected ? 'bg-white hover:bg-slate-50 text-sky-700 border-sky-200 cursor-pointer' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'"
               title="지금 기동 시퀀스를 수동으로 즉시 발송합니다."
             >
-              🚀 기동 시퀀스 즉시 실행
+              기동 시퀀스 즉시 실행
             </button>
           </div>
         </div>
@@ -656,7 +682,11 @@ function handleAbortScenario() {
       >
         <div class="flex items-start justify-between gap-2">
           <div class="flex items-start gap-2.5">
-            <span class="text-xl flex-shrink-0 mt-0.5">📊</span>
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+              </svg>
+            </span>
             <div>
               <div class="flex items-center gap-2">
                 <h4 class="text-xs font-bold text-slate-900">3. 충전 중 계측치(MeterValues) 주기 발송</h4>
@@ -708,7 +738,7 @@ function handleAbortScenario() {
               :class="targetCharger.connected ? 'bg-white hover:bg-slate-50 text-indigo-700 border-indigo-200 cursor-pointer' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'"
               title="지금 즉시 1회 MeterValues 전문 전송"
             >
-              📊 1회 계측 전송
+              1회 계측 전송
             </button>
           </div>
         </div>
@@ -729,7 +759,11 @@ function handleAbortScenario() {
       >
         <div class="flex items-start justify-between gap-2">
           <div class="flex items-start gap-2.5">
-            <span class="text-xl flex-shrink-0 mt-0.5">🤖</span>
+            <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+              </svg>
+            </span>
             <div>
               <div class="flex items-center gap-2">
                 <h4 class="text-xs font-bold text-slate-900">4. 관제 원격 명령(CALL) 자동응답 (Auto-Reply Engine)</h4>
@@ -792,7 +826,11 @@ function handleAbortScenario() {
       <div class="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-2.5">
         <div class="flex items-start justify-between gap-2">
           <div class="flex items-start gap-2.5">
-            <span class="text-xl flex-shrink-0 mt-0.5">⚡</span>
+            <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+              </svg>
+            </span>
             <div>
               <div class="flex items-center gap-2">
                 <h4 class="text-xs font-bold text-slate-900">5. 커넥터 상태 변화 자동 통지 (StatusNotification Policy)</h4>
@@ -842,10 +880,11 @@ function handleAbortScenario() {
               <button
                 @click="store.sendStatusNotification('Faulted', 'EVCommunicationError', targetCharger.id)"
                 :disabled="!targetCharger.connected"
-                class="px-2 py-1 text-[10px] font-bold rounded bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 cursor-pointer shadow-2xs"
+                class="px-2 py-1 text-[10px] font-bold rounded bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 cursor-pointer shadow-2xs inline-flex items-center gap-1"
                 title="통신 장애 오류 모의 발송"
               >
-                ⚠️ Faulted (장애모의)
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                <span>Faulted (장애모의)</span>
               </button>
             </div>
           </div>
@@ -908,14 +947,20 @@ function handleAbortScenario() {
           class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-2xs"
           :class="targetCharger.connected ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
         >
-          <span>🚀 [{{ targetCharger.id }}] 원클릭 시나리오 기동</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+          </svg>
+          <span>[{{ targetCharger.id }}] 원클릭 시나리오 기동</span>
         </button>
         <button
           v-else
           @click="handleAbortScenario"
           class="flex-1 py-2.5 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
         >
-          <span>⏹️ 시나리오 긴급 중단</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+          </svg>
+          <span>시나리오 긴급 중단</span>
         </button>
       </div>
     </div>

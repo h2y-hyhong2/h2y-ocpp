@@ -50,13 +50,14 @@ public class MemberAuthCacheServiceImpl implements MemberAuthCacheService {
         }
 
         String idTag = rawIdTag.trim().toUpperCase();
+        LocalDateTime now = LocalDateTime.now();
 
         // ─── 1. L1 로컬 인메모리 캐시 조회 (Caffeine, 목표 < 0.5ms) ─────────────
         IdTagInfo l1Cached = caffeineTagCache.getIfPresent(idTag);
         if (l1Cached != null) {
-            log.debug("[AuthCache] L1 Caffeine 캐시 적중: idTag={}, status={}", idTag, l1Cached.getStatus());
-            l1Cached.setCacheTier("L1_CAFFEINE");
-            return l1Cached;
+            IdTagInfo copy = copyWithTierAndExpiryCheck(l1Cached, "L1_CAFFEINE", now);
+            log.debug("[AuthCache] L1 Caffeine 캐시 적중: idTag={}, status={}", idTag, copy.getStatus());
+            return copy;
         }
 
         // ─── 2. L2 분산 캐시 조회 (Redis, 목표 2~4ms) ─────────────────────────
@@ -64,50 +65,48 @@ public class MemberAuthCacheServiceImpl implements MemberAuthCacheService {
         try {
             Object redisObj = redisCacheTemplate.opsForValue().get(redisKey);
             if (redisObj instanceof IdTagInfo redisCached) {
-                log.debug("[AuthCache] L2 Redis 캐시 적중: idTag={}, status={}", idTag, redisCached.getStatus());
-                // L1 로컬 캐시 백필 (Backfill)
-                caffeineTagCache.put(idTag, redisCached);
-                redisCached.setCacheTier("L2_REDIS");
-                return redisCached;
+                IdTagInfo cacheEntry = copyWithTierAndExpiryCheck(redisCached, null, now);
+                caffeineTagCache.put(idTag, cacheEntry);
+                IdTagInfo response = copyWithTierAndExpiryCheck(redisCached, "L2_REDIS", now);
+                log.debug("[AuthCache] L2 Redis 캐시 적중: idTag={}, status={}", idTag, response.getStatus());
+                return response;
             }
         } catch (Exception e) {
             // Redis 장애 또는 Read Timeout 시 DB 직행 폴백 (장애 전파 방지)
             log.warn("[AuthCache] L2 Redis 캐시 조회 실패 (DB 직접 폴백 진행): idTag={}, err={}", idTag, e.getMessage());
         }
 
-        // ─── 3. L3 마스터 RDBMS 조회 (MySQL tb_rfid_card, 목표 8~15ms) ──────────
+        // ─── 3. L3 마스터 RDBMS 조회 (MySQL rfid_card, 목표 8~15ms) ──────────
         log.info("[AuthCache] L1/L2 Cache Miss -> L3 DB 원장 조회: idTag={}", idTag);
         Optional<RfidCard> cardOpt = rfidCardRepository.findByIdTagAndIsDeletedFalse(idTag);
 
-        IdTagInfo result;
+        IdTagInfo cachedValue;
         if (cardOpt.isPresent()) {
             RfidCard card = cardOpt.get();
-            AuthorizationStatus status = card.evaluateStatus(LocalDateTime.now());
+            AuthorizationStatus status = card.evaluateStatus(now);
 
-            result = IdTagInfo.builder()
+            cachedValue = IdTagInfo.builder()
                     .status(status)
                     .expiryDate(card.getExpiryDate())
                     .parentIdTag(card.getParentIdTag())
-                    .cacheTier("L3_DB")
                     .build();
 
             // L2 분산 캐시 적재 (TTL 1시간)
-            cacheToRedis(redisKey, result, REDIS_TTL_SECONDS);
+            cacheToRedis(redisKey, cachedValue, REDIS_TTL_SECONDS);
 
         } else {
             // 마스터에 미존재하는 미인가/미등록 태그
-            result = IdTagInfo.builder()
+            cachedValue = IdTagInfo.builder()
                     .status(AuthorizationStatus.Invalid)
-                    .cacheTier("L3_DB")
                     .build();
 
             // Negative Caching: 무차별 공격에 의한 DB 과부하 방지 (10초 단기 캐싱)
-            cacheToRedis(redisKey, result, NEGATIVE_TTL_SECONDS);
+            cacheToRedis(redisKey, cachedValue, NEGATIVE_TTL_SECONDS);
         }
 
-        // L1 로컬 캐시 백필
-        caffeineTagCache.put(idTag, result);
-        return result;
+        // L1 로컬 캐시 백필 (공유 객체 불변 유지, 반환본에만 cacheTier 부여)
+        caffeineTagCache.put(idTag, cachedValue);
+        return copyWithTierAndExpiryCheck(cachedValue, "L3_DB", now);
     }
 
     @Override
@@ -128,6 +127,25 @@ public class MemberAuthCacheServiceImpl implements MemberAuthCacheService {
         } catch (Exception e) {
             log.error("[AuthCache] Redis 캐시 삭제 실패: idTag={}, err={}", idTag, e.getMessage());
         }
+    }
+
+    /**
+     * 공유 캐시 객체를 변이시키지 않도록 새 인스턴스로 복사하고 캐시 적중 시 만료일시를 재평가
+     */
+    private IdTagInfo copyWithTierAndExpiryCheck(IdTagInfo source, String tier, LocalDateTime now) {
+        AuthorizationStatus effectiveStatus = source.getStatus();
+        if (effectiveStatus == AuthorizationStatus.Accepted
+                && source.getExpiryDate() != null
+                && source.getExpiryDate().isBefore(now)) {
+            effectiveStatus = AuthorizationStatus.Expired;
+        }
+        return IdTagInfo.builder()
+                .status(effectiveStatus)
+                .expiryDate(source.getExpiryDate())
+                .parentIdTag(source.getParentIdTag())
+                .cacheTier(tier)
+                .latencyMs(source.getLatencyMs())
+                .build();
     }
 
     private void cacheToRedis(String key, IdTagInfo info, long ttlSeconds) {

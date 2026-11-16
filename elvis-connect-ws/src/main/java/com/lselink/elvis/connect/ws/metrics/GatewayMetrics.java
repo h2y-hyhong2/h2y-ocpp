@@ -75,4 +75,10 @@ public class GatewayMetrics {
     public Timer getPacketProcessingTimer() {
         return packetProcessingTimer;
     }
+
+    public void recordPacketProcessingLatency(long durationNanos) {
+        if (packetProcessingTimer != null && durationNanos >= 0) {
+            packetProcessingTimer.record(durationNanos, java.util.concurrent.TimeUnit.NANOSECONDS);
+        }
+    }
 }

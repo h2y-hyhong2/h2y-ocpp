@@ -21,18 +21,31 @@ const combinedId = computed(() => {
 })
 
 function handleSave() {
-  const fullId = combinedId.value
+  const rawSt = stationId.value.trim()
+  const rawCp = chargerId.value.trim()
+  if (!/^\d{1,6}$/.test(rawSt)) {
+    alert('충전소 ID는 000000~999999 범위의 6자리 이하 숫자여야 합니다.')
+    return
+  }
+  if (!/^\d{1,2}$/.test(rawCp) || Number(rawCp) < 1 || Number(rawCp) > 99) {
+    alert('충전기 ID는 01~99 범위의 숫자여야 합니다.')
+    return
+  }
+
+  const paddedSt = rawSt.padStart(6, '0')
+  const paddedCp = rawCp.padStart(2, '0')
+  const fullId = `${paddedSt}${paddedCp}`
   if (fullId.length !== 8) {
     alert('충전소 6자리 + 충전기 2자리(총 8자리)를 올바르게 입력해주세요.')
     return
   }
 
-  const defaultName = name.value.trim() || `충전소 ${stationId.value} - ${chargerId.value}호기 (${powerKw.value}kW)`
+  const defaultName = name.value.trim() || `충전소 ${paddedSt} - ${paddedCp}호기 (${powerKw.value}kW)`
 
   const success = store.addCharger({
     id: fullId,
-    stationId: stationId.value.padStart(6, '0'),
-    chargerId: chargerId.value.padStart(2, '0'),
+    stationId: paddedSt,
+    chargerId: paddedCp,
     name: defaultName,
     wsUrl: wsUrl.value.trim(),
     vendor: vendor.value.trim(),
@@ -52,7 +65,11 @@ function handleSave() {
       <!-- 모달 헤더 -->
       <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="text-base">➕</span>
+          <span class="w-5 h-5 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </span>
           <h3 class="text-xs font-bold text-slate-900 tracking-tight">신규 가상 충전기 인스턴스 등록</h3>
         </div>
         <button

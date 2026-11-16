@@ -102,7 +102,7 @@ function handleContextSendBootNotification() {
   if (!contextCharger.value) return
   const c = contextCharger.value
   closeContextMenu()
-  store.sendBootNotification(c.vendor, c.model, '1.0.0', c.id)
+  store.sendBootNotification(c.vendor, c.model, c.firmwareVer || '1.0.0-RELEASE', c.id)
 }
 
 function handleContextSendHeartbeat() {
@@ -194,7 +194,7 @@ const stationGroups = computed<StationGroup[]>(() => {
     items.sort((a, b) => a.id.localeCompare(b.id))
     result.push({
       stationId: stId,
-      stationName: items[0]?.name.split('-')[0]?.trim() || `충전소 ${stId}`,
+      stationName: items[0]?.stationName || items[0]?.name.split('-')[0]?.trim() || `충전소 ${stId}`,
       chargers: items
     })
   })
@@ -364,7 +364,9 @@ function getChargerListCardClass(c: ChargerInstance) {
     <div class="p-3 bg-slate-50 border-b border-slate-200 flex flex-col gap-2 flex-shrink-0">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2 min-w-0">
-          <span class="text-base shrink-0">🏢</span>
+          <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+          </svg>
           <h2 class="text-xs font-bold text-slate-900 tracking-tight shrink-0">충전기 현황</h2>
           <!-- MySQL 실데이터 연동 상태 뱃지 -->
           <div
@@ -392,24 +394,32 @@ function getChargerListCardClass(c: ChargerInstance) {
             class="px-2 py-0.5 text-[11px] font-bold rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 shadow-2xs transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
             title="MySQL 백엔드 API(9082)에서 충전기 마스터 목록 최신화"
           >
-            <span :class="store.isMysqlSyncing.value ? 'animate-spin' : ''">🔄</span>
+            <svg class="w-3 h-3" :class="store.isMysqlSyncing.value ? 'animate-spin' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
             <span class="hidden md:inline">{{ store.isMysqlSyncing.value ? '동기화중' : 'DB 동기화' }}</span>
           </button>
 
           <button
             v-if="totalErrorCount > 0"
             @click="store.clearAllErrors"
-            class="px-2 py-0.5 text-[11px] font-medium rounded border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+            class="px-2 py-0.5 text-[11px] font-medium rounded border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1"
             title="오류 상태 초기화"
           >
-            🧹 오류 ({{ totalErrorCount }})
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>오류 ({{ totalErrorCount }})</span>
           </button>
           <button
             @click="emit('open-add-modal')"
             class="px-2 py-0.5 text-[11px] font-bold rounded bg-sky-600 text-white hover:bg-sky-700 shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
             title="신규 충전기 등록"
           >
-            <span>➕ 등록</span>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span>등록</span>
           </button>
         </div>
       </div>
@@ -419,17 +429,23 @@ function getChargerListCardClass(c: ChargerInstance) {
         <div class="flex items-center bg-slate-200/70 p-0.5 rounded-md text-[11px] font-medium">
           <button
             @click="viewMode = 'matrix'"
-            class="px-2.5 py-0.5 rounded transition-all cursor-pointer"
+            class="px-2.5 py-0.5 rounded transition-all cursor-pointer inline-flex items-center gap-1"
             :class="viewMode === 'matrix' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
           >
-            📊 매트릭스
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+            <span>매트릭스</span>
           </button>
           <button
             @click="viewMode = 'list'"
-            class="px-2.5 py-0.5 rounded transition-all cursor-pointer"
+            class="px-2.5 py-0.5 rounded transition-all cursor-pointer inline-flex items-center gap-1"
             :class="viewMode === 'list' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
           >
-            📋 리스트
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+            </svg>
+            <span>리스트</span>
           </button>
         </div>
 
@@ -578,14 +594,18 @@ function getChargerListCardClass(c: ChargerInstance) {
               class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded text-xs"
               title="충전기 설정 수정"
             >
-              ✏️
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+              </svg>
             </button>
             <button
               @click="handleDelete($event, c.id)"
               class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded text-xs"
               title="충전기 삭제"
             >
-              🗑️
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
             </button>
           </div>
         </div>
@@ -662,7 +682,9 @@ function getChargerListCardClass(c: ChargerInstance) {
         <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
           <div class="flex items-center gap-2 min-w-0">
             <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-              ⚡
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+              </svg>
             </div>
             <div class="flex flex-col min-w-0">
               <div class="flex items-center gap-1.5">
@@ -701,7 +723,12 @@ function getChargerListCardClass(c: ChargerInstance) {
           <!-- 2-1. 실시간 메트릭 2x2 카드 -->
           <div class="p-3 bg-slate-50/50">
             <div class="text-[10px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
-              <span>📊 실시간 운전 메트릭</span>
+              <span class="inline-flex items-center gap-1">
+                <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+                실시간 운전 메트릭
+              </span>
               <span class="font-mono text-[9px] text-slate-400">포트 #{{ contextCharger.activeConnectorId || 1 }} 기준</span>
             </div>
             <div class="grid grid-cols-2 gap-1.5 text-[11px]">
@@ -738,7 +765,7 @@ function getChargerListCardClass(c: ChargerInstance) {
           <!-- 2-2. 듀얼 커넥터 (충전건) 현황 및 포트 전환 -->
           <div class="p-3">
             <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] font-bold text-slate-500">🔌 커넥터 (충전건) 현황</span>
+              <span class="text-[10px] font-bold text-slate-500">커넥터 (충전건) 현황</span>
               <span class="text-[9px] text-sky-600 font-medium">클릭 시 활성 포트 전환</span>
             </div>
             <div class="space-y-1.5">
@@ -786,7 +813,7 @@ function getChargerListCardClass(c: ChargerInstance) {
 
           <!-- 2-3. 하드웨어 스펙 요약 정보 -->
           <div class="p-3 bg-slate-50/40 text-[10px]">
-            <span class="font-bold text-slate-500 block mb-1.5">📋 기기 스펙 & 네트워크</span>
+            <span class="font-bold text-slate-500 block mb-1.5">기기 스펙 & 네트워크</span>
             <div class="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-slate-600 bg-white p-2 rounded-lg border border-slate-200">
               <div><span class="text-slate-400">제조사:</span> {{ contextCharger.vendor }}</div>
               <div><span class="text-slate-400">모델명:</span> {{ contextCharger.model }}</div>
@@ -800,7 +827,7 @@ function getChargerListCardClass(c: ChargerInstance) {
 
           <!-- 2-4. 빠른 제어 & 전문 발송 액션들 -->
           <div class="p-2 space-y-1">
-            <span class="px-1 text-[10px] font-bold text-slate-400 block uppercase tracking-wider">⚡ 빠른 전문 제어</span>
+            <span class="px-1 text-[10px] font-bold text-slate-400 block uppercase tracking-wider">빠른 전문 제어</span>
 
             <!-- 1) WebSocket 연결 / 해제 -->
             <button
@@ -809,7 +836,10 @@ function getChargerListCardClass(c: ChargerInstance) {
               :class="contextCharger.connected ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'"
             >
               <div class="flex items-center gap-2">
-                <span>{{ contextCharger.connected ? '🔌' : '⚡' }}</span>
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path v-if="contextCharger.connected" stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 11-12.728 0M12 3v9" />
+                  <path v-else stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
                 <span>{{ contextCharger.connected ? 'WebSocket 연결 해제' : 'WebSocket 즉시 연결' }}</span>
               </div>
               <span class="text-[9px] font-mono opacity-80">{{ contextCharger.connected ? 'DISCONNECT' : 'CONNECT' }}</span>
@@ -821,7 +851,9 @@ function getChargerListCardClass(c: ChargerInstance) {
               class="w-full px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100 flex items-center justify-between transition-colors cursor-pointer border border-transparent hover:border-slate-200"
             >
               <div class="flex items-center gap-2">
-                <span>📡</span>
+                <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" />
+                </svg>
                 <span>실시간 패킷 터미널 필터링</span>
               </div>
               <span class="text-[9px] font-mono text-slate-400">[{{ contextCharger.id }}]</span>
@@ -834,7 +866,9 @@ function getChargerListCardClass(c: ChargerInstance) {
               title="부팅 기동 4대 전문(Boot, Preparing, Available, Heartbeat) 순차 자동 발송"
             >
               <div class="flex items-center gap-2">
-                <span>🚀</span>
+                <svg class="w-3.5 h-3.5 text-sky-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                </svg>
                 <span>기동 4단계 연속 발송</span>
               </div>
               <span class="text-[9px] font-mono text-sky-600">Boot+상태+HB</span>
@@ -846,21 +880,21 @@ function getChargerListCardClass(c: ChargerInstance) {
                 @click="handleContextSendBootNotification"
                 class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>📨</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
                 <span class="truncate">Boot 발송</span>
               </button>
               <button
                 @click="handleContextSendHeartbeat"
                 class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>💓</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                 <span class="truncate">Heartbeat 1회</span>
               </button>
               <button
                 @click="handleContextSendMeterValues"
                 class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>📊</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
                 <span class="truncate">MeterValues 전송</span>
               </button>
               <button
@@ -868,7 +902,7 @@ function getChargerListCardClass(c: ChargerInstance) {
                 class="px-2 py-1.5 rounded-md text-left text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between transition-colors cursor-pointer"
               >
                 <div class="flex items-center gap-1.5 truncate">
-                  <span>🔄</span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
                   <span>HB 자동</span>
                 </div>
                 <span
@@ -922,7 +956,10 @@ function getChargerListCardClass(c: ChargerInstance) {
               @click="handleContextOpenEdit"
               class="flex-1 px-2.5 py-1.5 rounded-lg text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             >
-              <span>⚙️</span>
+              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
               <span>마스터 정보 관리</span>
             </button>
             <button
@@ -930,7 +967,9 @@ function getChargerListCardClass(c: ChargerInstance) {
               class="px-2.5 py-1.5 rounded-lg text-rose-600 bg-white hover:bg-rose-50 border border-rose-200 font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
               title="충전기 인스턴스 삭제"
             >
-              <span>🗑️</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
               <span>삭제</span>
             </button>
           </div>

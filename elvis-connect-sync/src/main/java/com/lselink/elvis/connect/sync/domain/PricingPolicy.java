@@ -15,64 +15,64 @@ import java.time.LocalDateTime;
  * [전사 코딩 표준 준수: Lombok 배제, 순수 자바 엔티티 및 Builder 패턴 구현]
  */
 @Entity
-@Table(name = "tb_pricing_policy")
+@Table(name = "pricing_policy")
 public class PricingPolicy {
 
     /**
      * 요금 정책 식별자 (PK)
      */
     @Id
-    @Column(name = "POLICY_ID", length = 32, nullable = false)
+    @Column(name = "policy_id", length = 32, nullable = false)
     private String policyId;
 
     /**
      * 요금 정책 명칭
      */
-    @Column(name = "POLICY_NAME", length = 64, nullable = false)
+    @Column(name = "policy_name", length = 64, nullable = false)
     private String policyName;
 
     /**
      * 정책 유형 (TOU, FLAT, DYNAMIC)
      */
-    @Column(name = "POLICY_TYPE", length = 32, nullable = false)
+    @Column(name = "policy_type", length = 32, nullable = false)
     private String policyType = "TOU";
 
     /**
      * 기본 요금 (접속료, 원)
      */
-    @Column(name = "BASIC_FEE", precision = 12, scale = 2, nullable = false)
+    @Column(name = "basic_fee", precision = 12, scale = 2, nullable = false)
     private BigDecimal basicFee = BigDecimal.ZERO.setScale(2);
 
     /**
      * 무료 충전 제공 시간 (분 단위)
      */
-    @Column(name = "FREE_MINUTES", nullable = false)
+    @Column(name = "free_minutes", nullable = false)
     private int freeMinutes = 0;
 
     /**
      * 완충 후 미출차 점유 페널티 단가 (원/분)
      */
-    @Column(name = "PENALTY_PER_MINUTE", precision = 12, scale = 2, nullable = false)
+    @Column(name = "penalty_per_minute", precision = 12, scale = 2, nullable = false)
     private BigDecimal penaltyPerMinute = BigDecimal.ZERO.setScale(2);
 
     /**
      * 활성 여부
      */
-    @Column(name = "IS_ACTIVE", nullable = false)
+    @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
     /**
      * 정책 상세 설명
      */
-    @Column(name = "DESCRIPTION", length = 255)
+    @Column(name = "description", length = 255)
     private String description;
 
     @CreationTimestamp
-    @Column(name = "REG_DT", nullable = false, updatable = false)
+    @Column(name = "reg_dt", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
     @UpdateTimestamp
-    @Column(name = "UPDT_DT", nullable = false)
+    @Column(name = "updt_dt", nullable = false)
     private LocalDateTime updtDt;
 
     protected PricingPolicy() {}

@@ -8,37 +8,37 @@ import java.time.LocalDateTime;
 public class ChargerEntity {
 
     @Id
-    @Column(name = "CHARGE_BOX_ID", length = 50)
+    @Column(name = "charge_box_id", length = 50)
     private String chargeBoxId;
 
-    @Column(name = "ST_ID", nullable = false, length = 20)
+    @Column(name = "st_id", nullable = false, length = 20)
     private String stId;
 
-    @Column(name = "CP_ID", nullable = false, length = 10)
+    @Column(name = "cp_id", nullable = false, length = 10)
     private String cpId;
 
-    @Column(name = "VENDOR", nullable = false, length = 50)
+    @Column(name = "vendor", nullable = false, length = 50)
     private String vendor;
 
-    @Column(name = "MODEL", nullable = false, length = 50)
+    @Column(name = "model", nullable = false, length = 50)
     private String model;
 
-    @Column(name = "SPEC", nullable = false, length = 50)
+    @Column(name = "spec", nullable = false, length = 50)
     private String spec;
 
-    @Column(name = "PROTOCOL", length = 30)
+    @Column(name = "protocol", length = 30)
     private String protocol;
 
-    @Column(name = "FIRMWARE_VER", length = 50)
+    @Column(name = "firmware_ver", length = 50)
     private String firmwareVer;
 
-    @Column(name = "USE_YN", length = 1)
+    @Column(name = "use_yn", length = 1)
     private String useYn;
 
-    @Column(name = "REG_DT")
+    @Column(name = "reg_dt")
     private LocalDateTime regDt;
 
-    @Column(name = "UPDT_DT")
+    @Column(name = "updt_dt")
     private LocalDateTime updtDt;
 
     public ChargerEntity() {

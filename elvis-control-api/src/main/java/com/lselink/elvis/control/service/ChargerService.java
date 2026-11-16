@@ -12,16 +12,23 @@ import com.lselink.elvis.control.repository.ChargerRepository;
 import com.lselink.elvis.control.repository.ConnectorStatusRepository;
 import com.lselink.elvis.control.repository.CorpRepository;
 import com.lselink.elvis.control.repository.StationRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
 public class ChargerService {
+
+    private static final DateTimeFormatter HEARTBEAT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final ChargerRepository chargerRepository;
     private final ConnectorStatusRepository connectorStatusRepository;
@@ -46,149 +53,24 @@ public class ChargerService {
             chargers = chargerRepository.findAllByOrderByChargeBoxIdAsc();
         }
 
-        List<StationEntity> stationList = stationRepository.findAll();
-        Map<String, StationEntity> stationMap = stationList.stream()
+        Map<String, StationEntity> stationMap = stationRepository.findAll().stream()
                 .collect(Collectors.toMap(StationEntity::getStId, s -> s, (s1, s2) -> s1));
-
-        List<CorpEntity> corpList = corpRepository.findAll();
-        Map<String, CorpEntity> corpMap = corpList.stream()
+        Map<String, CorpEntity> corpMap = corpRepository.findAll().stream()
                 .collect(Collectors.toMap(CorpEntity::getCorpId, c -> c, (c1, c2) -> c1));
-
-        List<ConnectorStatusEntity> connectorList = connectorStatusRepository.findAll();
-        Map<String, List<ConnectorStatusEntity>> connectorGroupByBox = connectorList.stream()
+        Map<String, List<ConnectorStatusEntity>> connectorGroupByBox = connectorStatusRepository.findAll().stream()
                 .collect(Collectors.groupingBy(ConnectorStatusEntity::getChargeBoxId));
 
         List<ChargerResponseDto> resultList = new ArrayList<>();
-
         for (ChargerEntity chg : chargers) {
-            String boxId = chg.getChargeBoxId();
             StationEntity st = stationMap.get(chg.getStId());
+            CorpEntity corp = (st != null) ? corpMap.get(st.getCorpId()) : null;
+            List<ConnectorStatusEntity> conns = connectorGroupByBox.getOrDefault(chg.getChargeBoxId(), Collections.emptyList());
 
-            String stationName = "";
-            String corpId = "";
-            String corpName = "";
-            String corpShortName = "";
-            if (st != null) {
-                stationName = st.getName();
-                corpId = st.getCorpId();
-                CorpEntity corp = corpMap.get(corpId);
-                if (corp != null) {
-                    corpName = corp.getCorpName();
-                    corpShortName = corp.getShortName();
-                }
-            }
-
-            List<ConnectorStatusEntity> conns = connectorGroupByBox.getOrDefault(boxId, Collections.emptyList());
-
-            // 커넥터 상세 목록 변환 (듀얼 커넥터 지원)
-            List<ConnectorDetailDto> connectorDtos = new ArrayList<>();
-            for (ConnectorStatusEntity c : conns) {
-                String cHeartbeat = "방금 전 (실시간 DB)";
-                if (c.getLastHeartbeat() != null) {
-                    cHeartbeat = c.getLastHeartbeat().toString();
-                }
-
-                ConnectorDetailDto cDto = ConnectorDetailDto.builder()
-                        .connectorId(c.getConnectorId())
-                        .status(c.getStatus())
-                        .powerKw(c.getPowerKw() != null ? c.getPowerKw() : BigDecimal.ZERO)
-                        .voltageV(c.getVoltageV() != null ? c.getVoltageV() : BigDecimal.ZERO)
-                        .currentA(c.getCurrentA() != null ? c.getCurrentA() : BigDecimal.ZERO)
-                        .socPercent(c.getSocPercent() != null ? c.getSocPercent() : 0)
-                        .batteryTempC(c.getBatteryTempC() != null ? c.getBatteryTempC() : 25)
-                        .carModel(c.getCarModel())
-                        .userTag(c.getUserTag())
-                        .accumulatedKwh(c.getAccumulatedKwh() != null ? c.getAccumulatedKwh() : BigDecimal.ZERO)
-                        .chargingMinutes(c.getChargingMinutes() != null ? c.getChargingMinutes() : 0)
-                        .lastHeartbeat(cHeartbeat)
-                        .build();
-                connectorDtos.add(cDto);
-            }
-
-            // 대표 커넥터(1번 또는 첫번째) 상태 추출
-            ConnectorStatusEntity conn = null;
-            if (!conns.isEmpty()) {
-                conn = conns.get(0);
-            }
-
-            String curStatus = "연결안됨";
-            BigDecimal powerKw = BigDecimal.ZERO;
-            BigDecimal voltageV = BigDecimal.ZERO;
-            BigDecimal currentA = BigDecimal.ZERO;
-            int socPercent = 0;
-            int batteryTempC = 25;
-            String carModel = null;
-            String userTag = null;
-            BigDecimal accumulatedKwh = BigDecimal.ZERO;
-            int chargingMinutes = 0;
-
-            if (conn != null) {
-                curStatus = conn.getStatus();
-                if (conn.getPowerKw() != null) {
-                    powerKw = conn.getPowerKw();
-                }
-                if (conn.getVoltageV() != null) {
-                    voltageV = conn.getVoltageV();
-                }
-                if (conn.getCurrentA() != null) {
-                    currentA = conn.getCurrentA();
-                }
-                if (conn.getSocPercent() != null) {
-                    socPercent = conn.getSocPercent();
-                }
-                if (conn.getBatteryTempC() != null) {
-                    batteryTempC = conn.getBatteryTempC();
-                }
-                carModel = conn.getCarModel();
-                userTag = conn.getUserTag();
-                if (conn.getAccumulatedKwh() != null) {
-                    accumulatedKwh = conn.getAccumulatedKwh();
-                }
-                if (conn.getChargingMinutes() != null) {
-                    chargingMinutes = conn.getChargingMinutes();
-                }
-            }
-
-            // 상태 필터링
-            boolean statusMatches = false;
-            if (status == null || status.equalsIgnoreCase("ALL")) {
-                statusMatches = true;
-            } else if (status.equals(curStatus)) {
-                statusMatches = true;
-            }
-
-            if (statusMatches) {
-                ChargerResponseDto dto = ChargerResponseDto.builder()
-                        .id(boxId + "-1")
-                        .chargeBoxId(boxId)
-                        .stId(chg.getStId())
-                        .stationName(stationName)
-                        .corpId(corpId)
-                        .corpName(corpName)
-                        .corpShortName(corpShortName)
-                        .cpId(chg.getCpId())
-                        .connectorId(1)
-                        .status(curStatus)
-                        .spec(chg.getSpec())
-                        .powerKw(powerKw)
-                        .voltageV(voltageV)
-                        .currentA(currentA)
-                        .socPercent(socPercent)
-                        .batteryTempC(batteryTempC)
-                        .vendor(chg.getVendor())
-                        .model(chg.getModel())
-                        .carModel(carModel)
-                        .userTag(userTag)
-                        .protocol(chg.getProtocol())
-                        .lastHeartbeat("방금 전 (실시간 DB)")
-                        .accumulatedKwh(accumulatedKwh)
-                        .chargingMinutes(chargingMinutes)
-                        .connectors(connectorDtos)
-                        .build();
+            ChargerResponseDto dto = toChargerResponseDto(chg, st, corp, conns);
+            if (status == null || status.equalsIgnoreCase("ALL") || status.equals(dto.getStatus())) {
                 resultList.add(dto);
             }
         }
-
         return resultList;
     }
 
@@ -197,159 +79,56 @@ public class ChargerService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 충전기입니다: " + chargeBoxId));
 
         StationEntity st = stationRepository.findById(chg.getStId()).orElse(null);
-        String stationName = "";
-        String corpId = "";
-        String corpName = "";
-        String corpShortName = "";
-        if (st != null) {
-            stationName = st.getName();
-            corpId = st.getCorpId();
-            CorpEntity corp = corpRepository.findById(corpId).orElse(null);
-            if (corp != null) {
-                corpName = corp.getCorpName();
-                corpShortName = corp.getShortName();
-            }
-        }
-
+        CorpEntity corp = (st != null) ? corpRepository.findById(st.getCorpId()).orElse(null) : null;
         List<ConnectorStatusEntity> conns = connectorStatusRepository.findByChargeBoxId(chargeBoxId);
-        List<ConnectorDetailDto> connectorDtos = new ArrayList<>();
-        for (ConnectorStatusEntity c : conns) {
-            String cHeartbeat = "방금 전 (실시간 DB)";
-            if (c.getLastHeartbeat() != null) {
-                cHeartbeat = c.getLastHeartbeat().toString();
-            }
 
-            ConnectorDetailDto cDto = ConnectorDetailDto.builder()
-                    .connectorId(c.getConnectorId())
-                    .status(c.getStatus())
-                    .powerKw(c.getPowerKw() != null ? c.getPowerKw() : BigDecimal.ZERO)
-                    .voltageV(c.getVoltageV() != null ? c.getVoltageV() : BigDecimal.ZERO)
-                    .currentA(c.getCurrentA() != null ? c.getCurrentA() : BigDecimal.ZERO)
-                    .socPercent(c.getSocPercent() != null ? c.getSocPercent() : 0)
-                    .batteryTempC(c.getBatteryTempC() != null ? c.getBatteryTempC() : 25)
-                    .carModel(c.getCarModel())
-                    .userTag(c.getUserTag())
-                    .accumulatedKwh(c.getAccumulatedKwh() != null ? c.getAccumulatedKwh() : BigDecimal.ZERO)
-                    .chargingMinutes(c.getChargingMinutes() != null ? c.getChargingMinutes() : 0)
-                    .lastHeartbeat(cHeartbeat)
-                    .build();
-            connectorDtos.add(cDto);
-        }
-
-        ConnectorStatusEntity conn = null;
-        if (!conns.isEmpty()) {
-            conn = conns.get(0);
-        }
-
-        String curStatus = "연결안됨";
-        BigDecimal powerKw = BigDecimal.ZERO;
-        BigDecimal voltageV = BigDecimal.ZERO;
-        BigDecimal currentA = BigDecimal.ZERO;
-        int socPercent = 0;
-        int batteryTempC = 25;
-        String carModel = null;
-        String userTag = null;
-        BigDecimal accumulatedKwh = BigDecimal.ZERO;
-        int chargingMinutes = 0;
-
-        if (conn != null) {
-            curStatus = conn.getStatus();
-            if (conn.getPowerKw() != null) {
-                powerKw = conn.getPowerKw();
-            }
-            if (conn.getVoltageV() != null) {
-                voltageV = conn.getVoltageV();
-            }
-            if (conn.getCurrentA() != null) {
-                currentA = conn.getCurrentA();
-            }
-            if (conn.getSocPercent() != null) {
-                socPercent = conn.getSocPercent();
-            }
-            if (conn.getBatteryTempC() != null) {
-                batteryTempC = conn.getBatteryTempC();
-            }
-            carModel = conn.getCarModel();
-            userTag = conn.getUserTag();
-            if (conn.getAccumulatedKwh() != null) {
-                accumulatedKwh = conn.getAccumulatedKwh();
-            }
-            if (conn.getChargingMinutes() != null) {
-                chargingMinutes = conn.getChargingMinutes();
-            }
-        }
-
-        return ChargerResponseDto.builder()
-                .id(chargeBoxId + "-1")
-                .chargeBoxId(chargeBoxId)
-                .stId(chg.getStId())
-                .stationName(stationName)
-                .corpId(corpId)
-                .corpName(corpName)
-                .corpShortName(corpShortName)
-                .cpId(chg.getCpId())
-                .connectorId(1)
-                .status(curStatus)
-                .spec(chg.getSpec())
-                .powerKw(powerKw)
-                .voltageV(voltageV)
-                .currentA(currentA)
-                .socPercent(socPercent)
-                .batteryTempC(batteryTempC)
-                .vendor(chg.getVendor())
-                .model(chg.getModel())
-                .carModel(carModel)
-                .userTag(userTag)
-                .protocol(chg.getProtocol())
-                .lastHeartbeat("방금 전 (실시간 DB)")
-                .accumulatedKwh(accumulatedKwh)
-                .chargingMinutes(chargingMinutes)
-                .connectors(connectorDtos)
-                .build();
+        return toChargerResponseDto(chg, st, corp, conns);
     }
 
     public PageResponse<ChargerResponseDto> getPagedChargers(String stId, String status, String keyword, int page, int size) {
         int safePage = Math.max(0, page);
-        int safeSize = (size <= 0) ? 10 : size;
+        int safeSize = (size <= 0) ? 10 : Math.min(size, 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
 
-        List<ChargerResponseDto> all = getChargers(stId, status);
+        Page<ChargerEntity> chargerPage = chargerRepository.searchChargers(stId, status, keyword, pageable);
+        List<ChargerEntity> content = chargerPage.getContent();
 
-        List<ChargerResponseDto> filtered = new ArrayList<>();
-        String trimmedKeyword = (keyword != null) ? keyword.trim().toLowerCase() : "";
-
-        for (ChargerResponseDto c : all) {
-            if (trimmedKeyword.isEmpty()) {
-                filtered.add(c);
-            } else {
-                boolean matchBox = c.getChargeBoxId() != null && c.getChargeBoxId().toLowerCase().contains(trimmedKeyword);
-                boolean matchStName = c.getStationName() != null && c.getStationName().toLowerCase().contains(trimmedKeyword);
-                boolean matchCorp = c.getCorpName() != null && c.getCorpName().toLowerCase().contains(trimmedKeyword);
-                boolean matchVendor = c.getVendor() != null && c.getVendor().toLowerCase().contains(trimmedKeyword);
-                boolean matchModel = c.getModel() != null && c.getModel().toLowerCase().contains(trimmedKeyword);
-
-                if (matchBox || matchStName || matchCorp || matchVendor || matchModel) {
-                    filtered.add(c);
-                }
-            }
+        if (content.isEmpty()) {
+            return PageResponse.of(Collections.emptyList(), safePage, safeSize,
+                    chargerPage.getTotalElements(), chargerPage.getTotalPages(), chargerPage.isLast());
         }
 
-        long totalElements = filtered.size();
-        int totalPages = (int) Math.ceil((double) totalElements / safeSize);
-        if (totalPages == 0) {
-            totalPages = 1;
+        Set<String> stIds = content.stream()
+                .map(ChargerEntity::getStId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, StationEntity> stationMap = stationRepository.findAllById(stIds).stream()
+                .collect(Collectors.toMap(StationEntity::getStId, s -> s, (s1, s2) -> s1));
+
+        Set<String> corpIds = stationMap.values().stream()
+                .map(StationEntity::getCorpId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, CorpEntity> corpMap = corpRepository.findAllById(corpIds).stream()
+                .collect(Collectors.toMap(CorpEntity::getCorpId, c -> c, (c1, c2) -> c1));
+
+        Set<String> boxIds = content.stream()
+                .map(ChargerEntity::getChargeBoxId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, List<ConnectorStatusEntity>> connectorGroupByBox = connectorStatusRepository.findByChargeBoxIdIn(boxIds).stream()
+                .collect(Collectors.groupingBy(ConnectorStatusEntity::getChargeBoxId));
+
+        List<ChargerResponseDto> dtos = new ArrayList<>(content.size());
+        for (ChargerEntity chg : content) {
+            StationEntity st = stationMap.get(chg.getStId());
+            CorpEntity corp = (st != null) ? corpMap.get(st.getCorpId()) : null;
+            List<ConnectorStatusEntity> conns = connectorGroupByBox.getOrDefault(chg.getChargeBoxId(), Collections.emptyList());
+            dtos.add(toChargerResponseDto(chg, st, corp, conns));
         }
 
-        int fromIndex = safePage * safeSize;
-        List<ChargerResponseDto> pageContent;
-        if (fromIndex >= totalElements) {
-            pageContent = new ArrayList<>();
-        } else {
-            int toIndex = Math.min(fromIndex + safeSize, (int) totalElements);
-            pageContent = new ArrayList<>(filtered.subList(fromIndex, toIndex));
-        }
-
-        boolean isLast = (safePage >= totalPages - 1);
-        return PageResponse.of(pageContent, safePage, safeSize, totalElements, totalPages, isLast);
+        return PageResponse.of(dtos, safePage, safeSize,
+                chargerPage.getTotalElements(), chargerPage.getTotalPages(), chargerPage.isLast());
     }
 
     public ChargerSummaryDto getChargerSummary() {
@@ -381,11 +160,23 @@ public class ChargerService {
                 disconnected++;
             }
 
-            if (c.getPowerKw() != null) {
-                totalPowerKw = totalPowerKw.add(c.getPowerKw());
-            }
-            if (c.getAccumulatedKwh() != null) {
-                totalAccumulatedKwh = totalAccumulatedKwh.add(c.getAccumulatedKwh());
+            List<ConnectorDetailDto> connectors = c.getConnectors();
+            if (connectors != null && !connectors.isEmpty()) {
+                for (ConnectorDetailDto conn : connectors) {
+                    if (conn.getPowerKw() != null) {
+                        totalPowerKw = totalPowerKw.add(conn.getPowerKw());
+                    }
+                    if (conn.getAccumulatedKwh() != null) {
+                        totalAccumulatedKwh = totalAccumulatedKwh.add(conn.getAccumulatedKwh());
+                    }
+                }
+            } else {
+                if (c.getPowerKw() != null) {
+                    totalPowerKw = totalPowerKw.add(c.getPowerKw());
+                }
+                if (c.getAccumulatedKwh() != null) {
+                    totalAccumulatedKwh = totalAccumulatedKwh.add(c.getAccumulatedKwh());
+                }
             }
         }
 
@@ -403,19 +194,113 @@ public class ChargerService {
 
     @Transactional
     public boolean executeRemoteAction(String chargeBoxId, String action) {
+        if (chargeBoxId == null || chargeBoxId.isBlank() || !chargerRepository.existsById(chargeBoxId)) {
+            return false;
+        }
+
         List<ConnectorStatusEntity> conns = connectorStatusRepository.findByChargeBoxId(chargeBoxId);
-        if (!conns.isEmpty()) {
-            for (ConnectorStatusEntity conn : conns) {
-                if ("RemoteStartTransaction".equalsIgnoreCase(action)) {
-                    conn.setStatus("충전중");
-                } else if ("RemoteStopTransaction".equalsIgnoreCase(action)) {
-                    conn.setStatus("충전완료");
-                } else if ("Reset".equalsIgnoreCase(action) || "UnlockConnector".equalsIgnoreCase(action)) {
-                    conn.setStatus("충전대기");
-                }
-                connectorStatusRepository.save(conn);
-            }
+        if (conns.isEmpty()) {
+            return false;
+        }
+
+        String targetStatus;
+        if ("RemoteStartTransaction".equalsIgnoreCase(action)) {
+            targetStatus = "충전중";
+        } else if ("RemoteStopTransaction".equalsIgnoreCase(action)) {
+            targetStatus = "충전완료";
+        } else if ("Reset".equalsIgnoreCase(action)
+                || "RemoteReset".equalsIgnoreCase(action)
+                || "UnlockConnector".equalsIgnoreCase(action)) {
+            targetStatus = "충전대기";
+        } else {
+            return false;
+        }
+
+        for (ConnectorStatusEntity conn : conns) {
+            conn.setStatus(targetStatus);
+            connectorStatusRepository.save(conn);
         }
         return true;
+    }
+
+    private ChargerResponseDto toChargerResponseDto(ChargerEntity chg,
+                                                    StationEntity st,
+                                                    CorpEntity corp,
+                                                    List<ConnectorStatusEntity> rawConns) {
+        String boxId = chg.getChargeBoxId();
+        String stationName = (st != null && st.getName() != null) ? st.getName() : "";
+        String corpId = (st != null && st.getCorpId() != null) ? st.getCorpId() : "";
+        String corpName = (corp != null && corp.getCorpName() != null) ? corp.getCorpName() : "";
+        String corpShortName = (corp != null && corp.getShortName() != null) ? corp.getShortName() : "";
+
+        List<ConnectorStatusEntity> sortedConns = (rawConns == null || rawConns.isEmpty())
+                ? Collections.emptyList()
+                : rawConns.stream()
+                        .sorted(Comparator.comparing(ConnectorStatusEntity::getConnectorId, Comparator.nullsLast(Integer::compareTo)))
+                        .toList();
+
+        List<ConnectorDetailDto> connectorDtos = new ArrayList<>(sortedConns.size());
+        for (ConnectorStatusEntity c : sortedConns) {
+            connectorDtos.add(ConnectorDetailDto.builder()
+                    .connectorId(c.getConnectorId())
+                    .status(c.getStatus())
+                    .powerKw(c.getPowerKw() != null ? c.getPowerKw() : BigDecimal.ZERO)
+                    .voltageV(c.getVoltageV() != null ? c.getVoltageV() : BigDecimal.ZERO)
+                    .currentA(c.getCurrentA() != null ? c.getCurrentA() : BigDecimal.ZERO)
+                    .socPercent(c.getSocPercent() != null ? c.getSocPercent() : 0)
+                    .batteryTempC(c.getBatteryTempC() != null ? c.getBatteryTempC() : 25)
+                    .carModel(c.getCarModel())
+                    .userTag(c.getUserTag())
+                    .accumulatedKwh(c.getAccumulatedKwh() != null ? c.getAccumulatedKwh() : BigDecimal.ZERO)
+                    .chargingMinutes(c.getChargingMinutes() != null ? c.getChargingMinutes() : 0)
+                    .lastHeartbeat(formatHeartbeat(c.getLastHeartbeat()))
+                    .build());
+        }
+
+        ConnectorStatusEntity repConn = sortedConns.isEmpty() ? null : sortedConns.get(0);
+        int repConnectorId = (repConn != null && repConn.getConnectorId() != null) ? repConn.getConnectorId() : 1;
+        String curStatus = (repConn != null && repConn.getStatus() != null) ? repConn.getStatus() : "연결안됨";
+        BigDecimal powerKw = (repConn != null && repConn.getPowerKw() != null) ? repConn.getPowerKw() : BigDecimal.ZERO;
+        BigDecimal voltageV = (repConn != null && repConn.getVoltageV() != null) ? repConn.getVoltageV() : BigDecimal.ZERO;
+        BigDecimal currentA = (repConn != null && repConn.getCurrentA() != null) ? repConn.getCurrentA() : BigDecimal.ZERO;
+        int socPercent = (repConn != null && repConn.getSocPercent() != null) ? repConn.getSocPercent() : 0;
+        int batteryTempC = (repConn != null && repConn.getBatteryTempC() != null) ? repConn.getBatteryTempC() : 25;
+        String carModel = (repConn != null) ? repConn.getCarModel() : null;
+        String userTag = (repConn != null) ? repConn.getUserTag() : null;
+        BigDecimal accumulatedKwh = (repConn != null && repConn.getAccumulatedKwh() != null) ? repConn.getAccumulatedKwh() : BigDecimal.ZERO;
+        int chargingMinutes = (repConn != null && repConn.getChargingMinutes() != null) ? repConn.getChargingMinutes() : 0;
+        String repHeartbeat = (repConn != null) ? formatHeartbeat(repConn.getLastHeartbeat()) : "-";
+
+        return ChargerResponseDto.builder()
+                .id(boxId + "-" + repConnectorId)
+                .chargeBoxId(boxId)
+                .stId(chg.getStId())
+                .stationName(stationName)
+                .corpId(corpId)
+                .corpName(corpName)
+                .corpShortName(corpShortName)
+                .cpId(chg.getCpId())
+                .connectorId(repConnectorId)
+                .status(curStatus)
+                .spec(chg.getSpec())
+                .powerKw(powerKw)
+                .voltageV(voltageV)
+                .currentA(currentA)
+                .socPercent(socPercent)
+                .batteryTempC(batteryTempC)
+                .vendor(chg.getVendor())
+                .model(chg.getModel())
+                .carModel(carModel)
+                .userTag(userTag)
+                .protocol(chg.getProtocol())
+                .lastHeartbeat(repHeartbeat)
+                .accumulatedKwh(accumulatedKwh)
+                .chargingMinutes(chargingMinutes)
+                .connectors(connectorDtos)
+                .build();
+    }
+
+    private String formatHeartbeat(LocalDateTime lastHeartbeat) {
+        return lastHeartbeat != null ? lastHeartbeat.format(HEARTBEAT_FORMATTER) : "-";
     }
 }

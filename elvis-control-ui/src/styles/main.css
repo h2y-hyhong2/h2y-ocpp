@@ -24,7 +24,7 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   전역 폰트: 한글 Pretendard + 영문/숫자/모노 Inconsolata
+   전역 폰트: 한글 Pretendard + 영문/숫자/모노 JetBrains Mono & Inconsolata
    ========================================================================== */
 *, *::before, *::after,
 html, body, #app,
@@ -36,7 +36,7 @@ table, th, td, div, span, p, h1, h2, h3, h4, h5, h6, a, label {
 }
 
 code, kbd, samp, pre, .font-mono, .matrix-cell {
-  font-family: 'Inconsolata', 'Pretendard', 'D2Coding', Consolas, monospace !important;
+  font-family: 'JetBrains Mono', 'Inconsolata', 'Pretendard', 'D2Coding', Consolas, monospace !important;
 }
 
 /* 5대 멀티 테마 디자인 토큰 시스템 */
@@ -131,6 +131,7 @@ code, kbd, samp, pre, .font-mono, .matrix-cell {
   --amber-neon: #fbbf24;
   --rose-neon: #f43f5e;
   --violet-neon: #06b6d4;
+  --text-bright: #ecfdf5;
   --text-main: #f0fdf4;
   --text-muted: #a7f3d0;
   --text-dim: #6ee7b7;
@@ -155,6 +156,7 @@ code, kbd, samp, pre, .font-mono, .matrix-cell {
   --amber-neon: #fbbf24;
   --rose-neon: #f43f5e;
   --violet-neon: #a855f7;
+  --text-bright: #faf5ff;
   --text-main: #faf5ff;
   --text-muted: #d8b4fe;
   --text-dim: #a855f7;
@@ -179,6 +181,7 @@ code, kbd, samp, pre, .font-mono, .matrix-cell {
   --amber-neon: #d97706;
   --rose-neon: #f43f5e;
   --violet-neon: #fb923c;
+  --text-bright: #fffbeb;
   --text-main: #fffbeb;
   --text-muted: #fde68a;
   --text-dim: #d97706;
@@ -194,19 +197,11 @@ code, kbd, samp, pre, .font-mono, .matrix-cell {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-base);
   color: var(--text-main);
   height: 100vh;
   overflow: hidden;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.font-display {
-  font-family: 'Outfit', sans-serif;
-}
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
 }
 
 /* Custom Scrollbar */
@@ -519,5 +514,5 @@ body {
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 .table-theme tr:hover td {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(2, 132, 199, 0.04);
 }

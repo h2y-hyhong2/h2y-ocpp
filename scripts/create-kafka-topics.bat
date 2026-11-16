@@ -13,7 +13,7 @@ if exist "%SCRIPT_DIR%..\config\paths.env" (
 )
 set BOOTSTRAP=localhost:%KAFKA_PORT%
 
-rem 1순위: JDK 21 LTS 우선 강제 지정
+rem 1순위: JDK 25 LTS 우선 강제 지정
 if exist "D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1" (
     set "JAVA_HOME=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1"
     set "PATH=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1\bin;%PATH%"
@@ -47,9 +47,9 @@ call "%KAFKA_HOME%\bin\windows\kafka-topics.bat" --create --if-not-exists --boot
 echo [3/4] ocpp-ui-notifications 토픽 생성 (Partitions: 4)...
 call "%KAFKA_HOME%\bin\windows\kafka-topics.bat" --create --if-not-exists --bootstrap-server %BOOTSTRAP% --topic ocpp-ui-notifications --partitions 4 --replication-factor 1
 
-:: 4. ocpp-raw-events.DLT (Dead Letter, 2 Partitions)
-echo [4/4] ocpp-raw-events.DLT 토픽 생성 (Partitions: 2)...
-call "%KAFKA_HOME%\bin\windows\kafka-topics.bat" --create --if-not-exists --bootstrap-server %BOOTSTRAP% --topic ocpp-raw-events.DLT --partitions 2 --replication-factor 1
+:: 4. ocpp-dlt (Dead Letter, 2 Partitions)
+echo [4/4] ocpp-dlt 토픽 생성 (Partitions: 2)...
+call "%KAFKA_HOME%\bin\windows\kafka-topics.bat" --create --if-not-exists --bootstrap-server %BOOTSTRAP% --topic ocpp-dlt --partitions 2 --replication-factor 1
 
 echo ========================================================
 echo  토픽 목록 확인:

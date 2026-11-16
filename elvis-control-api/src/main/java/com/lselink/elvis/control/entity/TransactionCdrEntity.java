@@ -10,46 +10,46 @@ public class TransactionCdrEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "TRANSACTION_ID")
+    @Column(name = "transaction_id")
     private Long transactionId;
 
-    @Column(name = "CHARGE_BOX_ID", nullable = false, length = 50)
+    @Column(name = "charge_box_id", nullable = false, length = 50)
     private String chargeBoxId;
 
-    @Column(name = "CONNECTOR_ID", nullable = false)
+    @Column(name = "connector_id", nullable = false)
     private Integer connectorId;
 
-    @Column(name = "USER_TAG", nullable = false, length = 50)
+    @Column(name = "user_tag", nullable = false, length = 50)
     private String userTag;
 
-    @Column(name = "START_TIME", nullable = false)
+    @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
-    @Column(name = "STOP_TIME")
+    @Column(name = "stop_time")
     private LocalDateTime stopTime;
 
-    @Column(name = "METER_START_WH")
+    @Column(name = "meter_start_wh")
     private Long meterStartWh;
 
-    @Column(name = "METER_STOP_WH")
+    @Column(name = "meter_stop_wh")
     private Long meterStopWh;
 
-    @Column(name = "TOTAL_KWH", precision = 10, scale = 2)
+    @Column(name = "total_kwh", precision = 10, scale = 2)
     private BigDecimal totalKwh;
 
-    @Column(name = "UNIT_PRICE", precision = 8, scale = 2)
+    @Column(name = "unit_price", precision = 8, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(name = "TOTAL_AMOUNT", precision = 12, scale = 2)
+    @Column(name = "total_amount", precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(name = "PAYMENT_STATUS", length = 20)
+    @Column(name = "payment_status", length = 20)
     private String paymentStatus;
 
-    @Column(name = "STOP_REASON", length = 50)
+    @Column(name = "stop_reason", length = 50)
     private String stopReason;
 
-    @Column(name = "REG_DT")
+    @Column(name = "reg_dt")
     private LocalDateTime regDt;
 
     public TransactionCdrEntity() {}

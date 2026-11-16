@@ -12,7 +12,7 @@ spring:
 
   # RDBMS (MySQL 9.71) 접속 설정
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/${DB_NAME:elvis-lite}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/${DB_NAME:elvis_lite}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: ${MYSQL_USER:elvis}
     password: ${MYSQL_PASSWORD:elvis1234!}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -25,6 +25,7 @@ spring:
 
   jpa:
     open-in-view: false
+    show-sql: false
     hibernate:
       ddl-auto: none
     properties:
@@ -32,16 +33,43 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: false
 
-  # Kafka 메시징 연동 (하향 제어 명령 발행)
+  # Kafka Consumer & Producer 설정
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:elvis-control-group}
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: 1
+      retries: 3
 
+# CSMS Lite 관제 알림, 하향 커맨드 및 JWT 보안 설정
 elvis:
-  jwt:
-    secret: "elvis-csms-poc-jwt-super-secret-key-2026-very-long-secure-key"
-    expiration-ms: 86400000
+  control:
+    kafka:
+      notification-topic: ${KAFKA_NOTIFICATION_TOPIC:ocpp-ui-notifications}
+      outbound-topic: ${KAFKA_OUTBOUND_TOPIC:ocpp-outbound-commands}
+    notification:
+      buffer-size: ${NOTIFICATION_BUFFER_SIZE:50}
+    jwt:
+      secret: ${JWT_SECRET:c2VjdXJlLWVsdmlzLWNzbXMtbGl0ZS1qd3Qta2V5LTIwMjYtMjU2Yml0LXNlY3JldA==}
+      access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY:3600}
+      refresh-token-validity-seconds: ${JWT_REFRESH_TOKEN_VALIDITY:604800}
+
+# P6Spy SQL 파라미터 인라인 치환 및 Pretty 포매팅 설정
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      multiline: true
+      logging: slf4j
 
 logging:
   level:
     root: INFO
-    com.lselink.elvis.control.api: DEBUG
+    com.lselink.elvis.control: DEBUG
+    p6spy: INFO

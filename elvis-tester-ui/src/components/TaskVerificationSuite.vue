@@ -40,7 +40,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 8.5',
     featureId: 'COMMON-0060',
     reqId: 'REQ-001, REQ-004',
-    docFileName: '✅ S08-COMMON-0060-TE-01 백엔드 런타임 & Gradle 멀티모듈 스캐폴딩 검증.md',
+    docFileName: 'S08-COMMON-0060-TE-01 백엔드 런타임 & Gradle 멀티모듈 스캐폴딩 검증.md',
     description: 'Java 25 OpenJDK Virtual Threads 런타임 환경 구성 및 Gradle 8.x 멀티모듈 루트 프로젝트 빌드 무결성 검증',
     sequenceSteps: [
       'Java 25 가상 스레드(Virtual Threads) 런타임 호환성 점검',
@@ -58,10 +58,10 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 8.5',
     featureId: 'COMMON-0060',
     reqId: 'REQ-001, REQ-004',
-    docFileName: '✅ S08-COMMON-0060-TE-02 Kafka 4.3.1 KRaft 메시지 브로커 검증.md',
+    docFileName: 'S08-COMMON-0060-TE-02 Kafka 4.3.1 KRaft 메시지 브로커 검증.md',
     description: 'Zookeeper 없는 경량 KRaft 모드 Kafka 브로커 구동 및 ocpp-raw-events 인바운드 토픽 파티셔닝 검증',
     sequenceSteps: [
-      'KRaft 모드 Kafka 4.3.1 포터블 바이너리 기동 상태 점검 (포트 9092)',
+      'KRaft 모드 Kafka 4.3.1 포터블 바이너리 기동 상태 점검 (포트 19092)',
       '핵심 토픽(ocpp-raw-events, ocpp-ui-notifications, ocpp-dlt) 파티션/복제본 확인',
       'Producer ➔ Consumer 무손실 메시지 발행 및 소비 레이턴시(5ms 미만) 검증'
     ],
@@ -76,7 +76,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 8.5',
     featureId: 'COMMON-0060',
     reqId: 'REQ-001, REQ-004',
-    docFileName: '✅ S08-COMMON-0060-TE-03 DB 인프라 (MySQL 9.71) 환경 검증.md',
+    docFileName: 'S08-COMMON-0060-TE-03 DB 인프라 (MySQL 9.71) 환경 검증.md',
     description: 'MySQL 9.71 UTF8MB4/KST 기본 스키마 DDL 및 연결성 검증',
     sequenceSteps: [
       'MySQL 9.71 연결 및 핵심 테이블(OCPP_STATION, OCPP_CHARGER, OCPP_TRANSACTION) DDL 검증',
@@ -93,7 +93,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 8.5',
     featureId: 'COMMON-0060',
     reqId: 'REQ-001, REQ-004, REQ-024',
-    docFileName: '✅ S08-COMMON-0060-TE-04 프론트엔드 런타임 & Tauri 데스크톱 환경 검증.md',
+    docFileName: 'S08-COMMON-0060-TE-04 프론트엔드 런타임 & Tauri 데스크톱 환경 검증.md',
     description: 'Node.js 24 + pnpm 환경 및 Tauri 2.0 (Rust/WebView2) 크로스플랫폼 데스크톱 윈도우 연동 검증',
     sequenceSteps: [
       'Node.js 24 및 pnpm 모듈 의존성 정합성 확인',
@@ -111,7 +111,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 8.5',
     featureId: 'COMMON-0060',
     reqId: 'REQ-001, REQ-004, REQ-024',
-    docFileName: '✅ S08-COMMON-0060-TE-05 UI 디자인 시스템 & 에셋 파이프라인 및 기동 스크립트 검증.md',
+    docFileName: 'S08-COMMON-0060-TE-05 UI 디자인 시스템 & 에셋 파이프라인 및 기동 스크립트 검증.md',
     description: 'Tailwind CSS 라이트 테마 표준 토큰, LS E-Link 벡터 SVG 에셋 및 원클릭 기동 스크립트 검증',
     sequenceSteps: [
       'Tailwind CSS 디자인 토큰(라이트 기본 테마: slate-50/white) 렌더링 검증',
@@ -131,7 +131,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 9',
     featureId: 'WS-0010',
     reqId: 'REQ-004, REQ-005',
-    docFileName: '✅ S09-WS-0010-TE 게이트웨이 기본 프로젝트 구조(스캐폴딩) 검증.md',
+    docFileName: 'S09-WS-0010-TE 게이트웨이 기본 프로젝트 구조(스캐폴딩) 검증.md',
     description: 'Netty/Spring WebSocket 기반 2,000개 세션 수용 게이트웨이 기본 프로젝트 구조 검증',
     sequenceSteps: [
       'Spring WebSocket 핸들러 바인딩(/ocpp/{chargeBoxId}) 및 엔드포인트 검증',
@@ -149,7 +149,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 10',
     featureId: 'WS-0020',
     reqId: 'REQ-007',
-    docFileName: '✅ S10-WS-0020-TE WS Handshake & Auth 검증.md',
+    docFileName: 'S10-WS-0020-TE WS Handshake & Auth 검증.md',
     description: 'chargeBoxId 8자리 식별 체계 및 HTTP Basic Auth/토큰 인터셉터 차단 검증 (TC-WS-01)',
     sequenceSteps: [
       '충전기 식별자 8자리(ST_ID 6자리 + CP_ID 2자리) 정규화 검증',
@@ -167,7 +167,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 11',
     featureId: 'WS-0030',
     reqId: 'REQ-008',
-    docFileName: '✅ S11-WS-0030-TE 세션 맵 & 헬스체크 검증.md',
+    docFileName: 'S11-WS-0030-TE 세션 맵 & 헬스체크 검증.md',
     description: 'ConcurrentHashMap 기반 세션 관리 및 Ping/Pong 30초 헬스체크, 타임아웃 세션 자동 정리 검증',
     sequenceSteps: [
       'chargeBoxId ↔ WebSocketSession 1:1 매핑 동시성 스레드 안전성 확인',
@@ -185,7 +185,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 12',
     featureId: 'WS-0040',
     reqId: 'REQ-009',
-    docFileName: '✅ S12-WS-0040-TE Kafka 인바운드 Producer 검증.md',
+    docFileName: 'S12-WS-0040-TE Kafka 인바운드 Producer 검증.md',
     description: '인바운드 OCPP 전문(Boot/Status/Meter)의 ocpp-raw-events Kafka 토픽 논블로킹 발행 검증',
     sequenceSteps: [
       '수신된 OCPP CALL 전문의 메시지 타입(2) 및 Action 헤더 파싱',
@@ -203,7 +203,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 13',
     featureId: 'WS-0050',
     reqId: 'REQ-010',
-    docFileName: '✅ S13-WS-0050-TE 하향 Listener & WS 중계 검증.md',
+    docFileName: 'S13-WS-0050-TE 하향 Listener & WS 중계 검증.md',
     description: '관제/서버 원격 제어 커맨드(RemoteStart/Stop/Reset)의 웹소켓 단말 하향 프록시 중계 검증',
     sequenceSteps: [
       'Kafka ocpp-downstream 토픽 또는 인메모리 커맨드 큐 리스닝',
@@ -221,7 +221,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 14',
     featureId: 'WS-0060',
     reqId: 'REQ-017',
-    docFileName: '✅ S14-WS-0060-TE 메트릭 수집 핸들러 검증.md',
+    docFileName: 'S14-WS-0060-TE 메트릭 수집 핸들러 검증.md',
     description: '게이트웨이 인입 패킷 TPS, 동시 접속 단말 수 및 소켓 에러 카운터 실시간 메트릭 집계 검증',
     sequenceSteps: [
       'Micrometer / Actuator 기반 실시간 연결 소켓 메트릭 카운팅',
@@ -239,7 +239,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 15',
     featureId: 'WS-0070',
     reqId: 'REQ-004, REQ-009',
-    docFileName: '✅ S15-WS-0070-TE Kafka Failover WS 차단 검증.md',
+    docFileName: 'S15-WS-0070-TE Kafka Failover WS 차단 검증.md',
     description: 'Kafka 브로커 일시 장애 시 메모리 버퍼 오버플로우 방지를 위한 서킷 브레이커 및 백프레셔 검증',
     sequenceSteps: [
       'Kafka Producer 연결 실패 감지 서킷 브레이커 동작 확인',
@@ -259,7 +259,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 16',
     featureId: 'SYNC-0010',
     reqId: 'REQ-004, REQ-005',
-    docFileName: '✅ S16-SYNC-0010-TE Consumer 기본 프로젝트 구조(스캐폴딩) 검증.md',
+    docFileName: 'S16-SYNC-0010-TE Consumer 기본 프로젝트 구조(스캐폴딩) 검증.md',
     description: 'Java 25 가상 스레드(Virtual Threads) 기반 고성능 Kafka Consumer 파이프라인 검증',
     sequenceSteps: [
       'Virtual Threads 풀(Executors.newVirtualThreadPerTaskExecutor) 바인딩',
@@ -277,7 +277,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 17',
     featureId: 'SYNC-0020',
     reqId: 'REQ-009',
-    docFileName: '✅ S17-SYNC-0020-TE Kafka Consumer & 파서 검증.md',
+    docFileName: 'S17-SYNC-0020-TE Kafka Consumer & 파서 검증.md',
     description: 'OCPP JSON 역직렬화 및 8대 핵심 Action DTO(Boot/Status/Authorize/Tx 등) 자동 파싱 검증',
     sequenceSteps: [
       'Kafka ocpp-raw-events 토픽 메시지 수신',
@@ -295,7 +295,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 18',
     featureId: 'SYNC-0030',
     reqId: 'REQ-008',
-    docFileName: '✅ S18-SYNC-0030-TE 실시간 상태 UPDATE 검증.md',
+    docFileName: 'S18-SYNC-0030-TE 실시간 상태 UPDATE 검증.md',
     description: 'StatusNotification 수신 시 충전기/커넥터 9대 상태 MariaDB 실시간 반영 및 트랜잭션 검증',
     sequenceSteps: [
       'StatusNotification 수신 (Available, Preparing, Charging 등)',
@@ -313,7 +313,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 19',
     featureId: 'SYNC-0040',
     reqId: 'REQ-010',
-    docFileName: '✅ S19-SYNC-0040-TE 거래 세션 생성 & 종료 검증.md',
+    docFileName: 'S19-SYNC-0040-TE 거래 세션 생성 & 종료 검증.md',
     description: 'StartTransaction(세션 개시/전역 TRN_ID 채번) 및 StopTransaction(정산 세션 종료) 검증',
     sequenceSteps: [
       'StartTransaction 수신 시 전역 단일 시퀀스(TRN_ID) 원자적 발급',
@@ -331,7 +331,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 20',
     featureId: 'SYNC-0070',
     reqId: 'REQ-010',
-    docFileName: '✅ S20-SYNC-0070-TE Authorize 회원 인증 처리 검증.md',
+    docFileName: 'S20-SYNC-0070-TE Authorize 회원 인증 처리 검증.md',
     description: 'RFID 태그 기반 4대 회원 유형(법인, 일반, 현장, 로밍) 인증 및 IdTagInfo 응답 검증 (TC-SYNC-01)',
     sequenceSteps: [
       'Authorize 요청 전문 수신 (idTag 파라미터)',
@@ -349,7 +349,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 21',
     featureId: 'SYNC-0080',
     reqId: 'REQ-011',
-    docFileName: '✅ S21-SYNC-0080-TE TOU 요금 연산 & CDR 영속화 검증.md',
+    docFileName: 'S21-SYNC-0080-TE TOU 요금 연산 & CDR 영속화 검증.md',
     description: '계절별/시간대별(TOU) 요금 단가 적용, 충전 요금 자동 연산 및 과금 원장(CDR) 적재 검증',
     sequenceSteps: [
       '충전 거래 세션 종료 이벤트 수신',
@@ -367,7 +367,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 23',
     featureId: 'SYNC-0060',
     reqId: 'REQ-016',
-    docFileName: '✅ S23-SYNC-0060-TE 장애 감지 & Kafka 알림 Producer 검증.md',
+    docFileName: 'S23-SYNC-0060-TE 장애 감지 & Kafka 알림 Producer 검증.md',
     description: 'Faulted/Error 상태 수신 시 장애 이벤트 즉시 감지 및 ocpp-ui-notifications 알림 발행 검증',
     sequenceSteps: [
       'StatusNotification(Faulted) 또는 긴급 고장 에러코드 수신',
@@ -385,7 +385,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 24',
     featureId: 'SYNC-0100',
     reqId: 'REQ-003',
-    docFileName: 'tasks/✅ S24-SYNC-0100-AN DLT 및 메시지 재처리 분석.md',
+    docFileName: 'tasks/S24-SYNC-0100-AN DLT 및 메시지 재처리 분석.md',
     description: '파싱/적재 실패 패킷 Dead Letter Topic(ocpp-dlt) 분기 및 지연 재시도 백오프 모듈 검증',
     sequenceSteps: [
       '비정상 포맷 또는 DB 락 타임아웃 패킷 인입 시뮬레이션',
@@ -405,10 +405,10 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 25',
     featureId: 'API-0010',
     reqId: 'REQ-017',
-    docFileName: '✅ S25-API-0010-TE Spring Boot 프로젝트 스캐폴딩 검증.md',
+    docFileName: 'S25-API-0010-TE Spring Boot 프로젝트 스캐폴딩 검증.md',
     description: 'ApiResponse, PageResponse 공통 규격, 전역 예외 처리(GlobalExceptionHandler) 및 CORS 검증',
     sequenceSteps: [
-      'Spring Boot 3.4 / Java 21 기반 elvis-control-api 모듈 기동 및 포트 9082 수신 확인',
+      'Spring Boot 3.4 / Java 25 기반 elvis-control-api 모듈 기동 및 포트 9082 수신 확인',
       '전역 공통 응답 포맷(ApiResponse<T>) 및 에러 핸들러 정상 래핑 확인',
       'Tauri 데스크톱(http://localhost:1421, 1422) CORS 허용 헤더 검증'
     ],
@@ -423,7 +423,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 26',
     featureId: 'API-0020',
     reqId: 'REQ-017',
-    docFileName: '✅ S26-API-0020-TE 자산 및 실시간 상태 API 검증.md',
+    docFileName: 'S26-API-0020-TE 자산 및 실시간 상태 API 검증.md',
     description: '충전소/충전기 페이징 조회, 단건 상세, 듀얼 커넥터 계측 데이터 및 운영 통계(KPI) API 검증',
     sequenceSteps: [
       '충전소/충전기 목록 페이징(PageResponse) 및 검색 필터링 검증',
@@ -443,7 +443,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 10',
     featureId: 'PT-0010',
     reqId: 'REQ-017',
-    docFileName: '✅ S10-PT-0010-TE 데스크톱 메인 프레임 & 반응형 레이아웃 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S10-PT-0010-TE 데스크톱 메인 프레임 & 반응형 레이아웃 프로토타입 다중 샘플 검증.md',
     description: 'prototype/PAGE-DASH-01.html Tauri 윈도우 조작 및 인라인 SVG 내비게이션 렌더링 검증',
     sequenceSteps: [
       'Tauri 커스텀 윈도우 컨트롤러(최소화/최대화/종료) 인터랙션 확인',
@@ -461,7 +461,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 10',
     featureId: 'PT-0020',
     reqId: 'REQ-017',
-    docFileName: '✅ S10-PT-0020-TE 상태 요약 카드 컴포넌트 인터랙티브 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S10-PT-0020-TE 상태 요약 카드 컴포넌트 인터랙티브 프로토타입 다중 샘플 검증.md',
     description: '충전중/대기중/고장 실시간 집계 카드 및 런처 트레이 퀵메뉴 동기화 검증',
     sequenceSteps: [
       '충전 자산 실시간 상태 카운팅 배지 렌더링',
@@ -479,7 +479,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 10',
     featureId: 'PT-0030',
     reqId: 'REQ-017',
-    docFileName: '✅ S10-PT-0030-TE 실시간 전력 단가 ECharts 차트 시각화 프로토타입 샘플 검증.md',
+    docFileName: 'S10-PT-0030-TE 실시간 전력 단가 ECharts 차트 시각화 프로토타입 샘플 검증.md',
     description: '실시간 전력량 부하 곡선 및 TOU 단가 변화 ECharts 시계열 차트 인터랙션 검증',
     sequenceSteps: [
       'ECharts 시계열 캔버스 초기화 및 툴팁 인터랙션 확인',
@@ -497,7 +497,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 11',
     featureId: 'PT-0050',
     reqId: 'REQ-018',
-    docFileName: '✅ S11-PT-0050-TE 충전기 모니터링 그리드 및 필터 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S11-PT-0050-TE 충전기 모니터링 그리드 및 필터 프로토타입 다중 샘플 검증.md',
     description: 'prototype/PAGE-CHG-01.html 충전기 목록 페이징 그리드 및 다중 검색 필터 검증',
     sequenceSteps: [
       '충전소/충전기 자산 목록 가상 스크롤 페이징 검증',
@@ -515,7 +515,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 11',
     featureId: 'PT-0060',
     reqId: 'REQ-020',
-    docFileName: '✅ S11-PT-0060-TE 충전기 원격 제어 모달 및 상세 드로어 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S11-PT-0060-TE 충전기 원격 제어 모달 및 상세 드로어 프로토타입 다중 샘플 검증.md',
     description: 'POPUP-CHG-CONTROL-01 원격 제어 모달 및 Slide Drawer 상세 정보 렌더링 검증',
     sequenceSteps: [
       '원격 커맨드(RemoteStart, RemoteStop, Reset, Unlock) 선택 모달 오픈',
@@ -533,7 +533,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 11',
     featureId: 'PT-0070',
     reqId: 'REQ-016',
-    docFileName: '✅ S11-PT-0070-TE 실시간 알림 토스트 & 드로어 컴포넌트 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S11-PT-0070-TE 실시간 알림 토스트 & 드로어 컴포넌트 프로토타입 다중 샘플 검증.md',
     description: '우측 상단 실시간 이벤트 토스트 알림 및 알림 히스토리 드로어 컴포넌트 검증',
     sequenceSteps: [
       '장애/이벤트 발생 시 실시간 토스트 팝업 자동 노출 및 타이머 소멸',
@@ -551,7 +551,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 12',
     featureId: 'PT-0080',
     reqId: 'REQ-019',
-    docFileName: '✅ S12-PT-0080-TE 충전 거래 이력 그리드 & CDR 엑셀 다운로드 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S12-PT-0080-TE 충전 거래 이력 그리드 & CDR 엑셀 다운로드 프로토타입 다중 샘플 검증.md',
     description: 'prototype/PAGE-CDR-01.html 충전 거래 세션 조건 검색 및 CDR 엑셀 내보내기 검증',
     sequenceSteps: [
       '기간별/충전소별 거래 세션 검색 그리드 렌더링',
@@ -569,7 +569,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 12',
     featureId: 'PT-0090',
     reqId: 'REQ-012, REQ-018',
-    docFileName: '✅ S12-PT-0090-TE 1초 주기 시계열 미터값 분석 인터랙티브 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S12-PT-0090-TE 1초 주기 시계열 미터값 분석 인터랙티브 프로토타입 다중 샘플 검증.md',
     description: 'prototype/PAGE-SESSION-01.html 1초 주기 시계열 전압/전류/SoC 정밀 다중 차트 검증',
     sequenceSteps: [
       '1초 주기 초고속 시계열 계측값 다중 라인 차트 동기화',
@@ -587,7 +587,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 12',
     featureId: 'PT-0100',
     reqId: 'REQ-021, REQ-022',
-    docFileName: '✅ S12-PT-0100-TE OCPP 통신로그 raw JSON 뷰어 & 실시간 통신 로그 확인(WireTap) 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S12-PT-0100-TE OCPP 통신로그 raw JSON 뷰어 & 실시간 통신 로그 확인(WireTap) 프로토타입 다중 샘플 검증.md',
     description: '실시간 패킷 스트림 WireTap 모니터링 및 OCPP CALL/CALLRESULT raw JSON 뷰어 검증',
     sequenceSteps: [
       '특정 충전기 선택 시 실시간 패킷 스트리밍(WireTap) 활성화',
@@ -605,7 +605,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 12',
     featureId: 'PT-0110',
     reqId: 'REQ-011',
-    docFileName: '✅ S12-PT-0110-TE 요금 정책(TOU) 설정 및 충전소 단가 매핑 프로토타입 다중 샘플 검증.md',
+    docFileName: 'S12-PT-0110-TE 요금 정책(TOU) 설정 및 충전소 단가 매핑 프로토타입 다중 샘플 검증.md',
     description: '계절별(봄여름가을겨울) 및 24시간 시간대별 단가 매핑 테이블 UI 검증',
     sequenceSteps: [
       '계절별 3단계(경부하, 중간부하, 최대부하) 단가 입력 폼 렌더링',
@@ -625,7 +625,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 45',
     featureId: 'SIM-0010',
     reqId: 'REQ-004, REQ-005',
-    docFileName: '✅ S45-SIM-0010-TE 가상 충전기 시뮬레이터 검증.md',
+    docFileName: 'S45-SIM-0010-TE 가상 충전기 시뮬레이터 검증.md',
     description: '동시 1,000대 가상 충전기 동시 연결 부하 및 트랜잭션 시나리오 100% 검증 (TC-SIM-01)',
     sequenceSteps: [
       '가상 충전기 1,000대(2,000 커넥터) 동시 연결 웹소켓 세션 수립',
@@ -661,7 +661,7 @@ const taskItems = ref<WbsTaskVerifyItem[]>([
     sprint: 'Sprint 48',
     featureId: 'DEP-0010',
     reqId: 'REQ-023 ~ REQ-027',
-    docFileName: '✅ S48-DEP-0010-TE 폐쇄망 VM 검증 및 이관 완료 검증.md',
+    docFileName: 'S48-DEP-0010-TE 폐쇄망 VM 검증 및 이관 완료 검증.md',
     description: '외부 인터넷 차단 환경 내 오프라인 단일 패키지 무인 설치 및 인프라 전 구성요소 기동 검증',
     sequenceSteps: [
       '인터넷 단절 폐쇄망 VM 내 단일 패키지 무인 압축 해제',
@@ -680,13 +680,13 @@ const searchQuery = ref<string>('')
 const isRunningAll = ref(false)
 
 const moduleList = [
-  { key: 'ALL', label: '전체 보기', icon: '🌐' },
-  { key: 'WS', label: 'WS 게이트웨이', icon: '⚡' },
-  { key: 'SYNC', label: '동기화/트랜잭션', icon: '🔄' },
-  { key: 'API', label: '관제/통계 API', icon: '📡' },
-  { key: 'PT', label: '관제 프로토타입', icon: '🖥️' },
-  { key: 'COMMON', label: '기반 인프라', icon: '⚙️' },
-  { key: 'SIM', label: '시뮬레이터/통합', icon: '🚀' }
+  { key: 'ALL', label: '전체 보기' },
+  { key: 'WS', label: 'WS 게이트웨이' },
+  { key: 'SYNC', label: '동기화/트랜잭션' },
+  { key: 'API', label: '관제/통계 API' },
+  { key: 'PT', label: '관제 프로토타입' },
+  { key: 'COMMON', label: '기반 인프라' },
+  { key: 'SIM', label: '시뮬레이터/통합' }
 ]
 
 function onSearchInput(val: string) {
@@ -788,26 +788,54 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
       const chargerRes = await fetch(`${apiBase}/${targetId}`, { headers: { Accept: 'application/json' } }).catch(() => null)
       const summaryRes = await fetch(`${apiBase}/summary`, { headers: { Accept: 'application/json' } }).catch(() => null)
       const elapsed = Math.round(performance.now() - startTime)
+      const chargerOk = Boolean(chargerRes?.ok)
+      const summaryOk = Boolean(summaryRes?.ok)
+      const allOk = chargerOk && summaryOk
+
       task.elapsedMs = elapsed
       task.testedAt = new Date().toLocaleTimeString('ko-KR')
-      task.status = 'pass'
-      task.resultSummary = `✅ PASS: [${task.id}] 자산 단건 상세 및 듀얼 커넥터/KPI 실시간 검증 완료 (${elapsed}ms)`
+      task.status = allOk ? 'pass' : 'fail'
+      task.resultSummary = allOk
+        ? `PASS: [${task.id}] 자산 단건 상세 및 듀얼 커넥터/KPI 실시간 검증 완료 (${elapsed}ms)`
+        : `FAIL: [${task.id}] API 호출 실패 (charger=${chargerRes?.status ?? 'NETWORK_ERR'}, summary=${summaryRes?.status ?? 'NETWORK_ERR'}, ${elapsed}ms)`
       task.responsePayload = JSON.stringify(
         {
           wbsTaskId: task.id,
           taskTitle: task.title,
           testedChargerId: targetId,
-          status: 'PASSED',
+          status: allOk ? 'PASSED' : 'FAILED',
           elapsedMs: elapsed,
-          chargerHttpOk: chargerRes?.ok ?? true,
-          summaryHttpOk: summaryRes?.ok ?? true,
+          chargerHttpOk: chargerOk,
+          chargerStatus: chargerRes?.status ?? null,
+          summaryHttpOk: summaryOk,
+          summaryStatus: summaryRes?.status ?? null,
           testedAt: new Date().toISOString()
         },
         null,
         2
       )
       return
-    } catch {}
+    } catch (err: any) {
+      const elapsed = Math.round(performance.now() - startTime)
+      task.elapsedMs = elapsed
+      task.testedAt = new Date().toLocaleTimeString('ko-KR')
+      task.status = 'fail'
+      task.resultSummary = `FAIL: [${task.id}] API 검증 중 예외 발생 (${err?.message || 'Unknown Error'})`
+      task.responsePayload = JSON.stringify(
+        {
+          wbsTaskId: task.id,
+          taskTitle: task.title,
+          testedChargerId: targetId,
+          status: 'FAILED',
+          error: err?.message || String(err),
+          elapsedMs: elapsed,
+          testedAt: new Date().toISOString()
+        },
+        null,
+        2
+      )
+      return
+    }
   }
 
   // [S25-API-0010-TE] REST API 스캐폴딩 검증
@@ -815,24 +843,48 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
     try {
       const healthRes = await fetch('http://localhost:9082/actuator/health', { headers: { Accept: 'application/json' } }).catch(() => null)
       const elapsed = Math.round(performance.now() - startTime)
+      const healthOk = Boolean(healthRes?.ok)
+
       task.elapsedMs = elapsed
       task.testedAt = new Date().toLocaleTimeString('ko-KR')
-      task.status = 'pass'
-      task.resultSummary = `✅ PASS: [${task.id}] Spring Boot 3.4 REST API 및 Actuator 헬스체크 통과 (${elapsed}ms)`
+      task.status = healthOk ? 'pass' : 'fail'
+      task.resultSummary = healthOk
+        ? `PASS: [${task.id}] Spring Boot 3.4 REST API 및 Actuator 헬스체크 통과 (${elapsed}ms)`
+        : `FAIL: [${task.id}] Spring Boot Actuator 헬스체크 실패 (status=${healthRes?.status ?? 'CONNECTION_REFUSED'}, ${elapsed}ms)`
       task.responsePayload = JSON.stringify(
         {
           wbsTaskId: task.id,
           taskTitle: task.title,
-          status: 'PASSED',
+          status: healthOk ? 'PASSED' : 'FAILED',
           elapsedMs: elapsed,
-          healthStatus: healthRes?.ok ? 'UP' : 'STANDBY',
+          healthStatus: healthOk ? 'UP' : 'DOWN',
+          httpStatus: healthRes?.status ?? null,
           testedAt: new Date().toISOString()
         },
         null,
         2
       )
       return
-    } catch {}
+    } catch (err: any) {
+      const elapsed = Math.round(performance.now() - startTime)
+      task.elapsedMs = elapsed
+      task.testedAt = new Date().toLocaleTimeString('ko-KR')
+      task.status = 'fail'
+      task.resultSummary = `FAIL: [${task.id}] Actuator 헬스체크 예외 발생 (${err?.message || 'Unknown Error'})`
+      task.responsePayload = JSON.stringify(
+        {
+          wbsTaskId: task.id,
+          taskTitle: task.title,
+          status: 'FAILED',
+          error: err?.message || String(err),
+          elapsedMs: elapsed,
+          testedAt: new Date().toISOString()
+        },
+        null,
+        2
+      )
+      return
+    }
   }
 
   // 기타 태스크 기본 시뮬레이션 지연 실행 (50ms ~ 250ms)
@@ -844,7 +896,7 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
   task.testedAt = new Date().toLocaleTimeString('ko-KR')
 
   task.status = 'pass'
-  task.resultSummary = `✅ PASS: [${task.id}] 검증 시퀀스 전수 통과 (${elapsed}ms)`
+  task.resultSummary = `PASS: [${task.id}] 검증 시퀀스 전수 통과 (${elapsed}ms)`
 
   task.responsePayload = JSON.stringify(
     {
@@ -931,7 +983,7 @@ function copyPayload(payload?: string) {
           </span>
         </div>
         <p class="text-[11px] text-slate-500 mt-1">
-          WBS TE(테스트/검증) 공정 34개 항목의 정합성, 처리 성능 및 아키텍처 규격을 원클릭으로 검증합니다.
+          WBS TE(테스트/검증) 공정 {{ taskItems.length }}개 항목의 정합성, 처리 성능 및 아키텍처 규격을 원클릭으로 검증합니다.
         </p>
       </div>
 
@@ -953,7 +1005,10 @@ function copyPayload(payload?: string) {
           @click="stopAllTasks"
           class="flex-1 sm:flex-initial px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
         >
-          <span>⏹️ 검증 중단</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="6" y="6" width="12" height="12" rx="1" />
+          </svg>
+          <span>검증 중단</span>
         </button>
 
         <button
@@ -1008,7 +1063,6 @@ function copyPayload(payload?: string) {
               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
           "
         >
-          <span>{{ mod.icon }}</span>
           <span>{{ mod.label }}</span>
           <span
             class="text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold"
@@ -1021,7 +1075,9 @@ function copyPayload(payload?: string) {
 
       <!-- 검색 입력창 (한글 IME 실시간 @input 반응, 토큰 검색, 건수 배지 및 리셋) -->
       <div class="relative flex items-center">
-        <span class="absolute left-3 text-slate-400 text-xs pointer-events-none select-none">🔍</span>
+        <svg class="w-3.5 h-3.5 absolute left-3 text-slate-400 pointer-events-none select-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+        </svg>
         <input
           :value="searchQuery"
           @input="onSearchInput(($event.target as HTMLInputElement).value)"
@@ -1046,7 +1102,11 @@ function copyPayload(payload?: string) {
     <div class="space-y-2.5 max-h-[580px] overflow-y-auto pr-1">
       <!-- 검색 결과 없을 때 Empty State -->
       <div v-if="filteredTasks.length === 0" class="py-10 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 space-y-2">
-        <div class="text-2xl">🔍</div>
+        <div class="flex justify-center text-slate-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+          </svg>
+        </div>
         <div class="text-xs font-bold text-slate-700">일치하는 과제 검증 항목이 없습니다</div>
         <p class="text-[11px] text-slate-400">
           검색어 <span class="font-bold text-slate-600 font-mono">"{{ searchQuery }}"</span>
@@ -1058,7 +1118,7 @@ function copyPayload(payload?: string) {
             @click="selectedModule = 'ALL'"
             class="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 cursor-pointer"
           >
-            🌐 전체 모듈에서 찾기 ({{ moduleCounts.ALL }}건)
+            전체 모듈에서 찾기 ({{ moduleCounts.ALL }}건)
           </button>
           <button
             @click="clearSearch"
@@ -1109,23 +1169,23 @@ function copyPayload(payload?: string) {
           <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0 flex-wrap">
             <span
               v-if="task.status === 'pass'"
-              class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1"
+              class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1.5"
             >
-              <span>✅</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
               <span>PASS</span>
             </span>
             <span
               v-else-if="task.status === 'fail'"
-              class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1"
+              class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1.5"
             >
-              <span>🔴</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
               <span>FAIL</span>
             </span>
             <span
               v-else-if="task.status === 'running'"
-              class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 animate-pulse flex items-center gap-1"
+              class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 animate-pulse flex items-center gap-1.5"
             >
-              <span>⏳</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
               <span>RUNNING</span>
             </span>
             <span
@@ -1200,12 +1260,15 @@ function copyPayload(payload?: string) {
               <span class="text-[10px] font-bold font-mono text-slate-500">Verification Result Payload (JSON)</span>
               <button
                 @click="copyPayload(task.responsePayload)"
-                class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 cursor-pointer"
+                class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 cursor-pointer flex items-center gap-1"
               >
-                📋 전체 복사
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span>전체 복사</span>
               </button>
             </div>
-            <pre class="bg-slate-900 text-emerald-400 p-3 rounded-lg font-mono text-[11px] leading-relaxed overflow-x-auto max-h-56 scrollbar-thin">{{ task.responsePayload }}</pre>
+            <pre class="bg-slate-50 text-slate-800 border border-slate-200 p-3 rounded-lg font-mono text-[11px] leading-relaxed overflow-x-auto max-h-56 scrollbar-thin">{{ task.responsePayload }}</pre>
             <div class="text-[10px] text-slate-400 font-mono flex items-center justify-between">
               <span>연관 산출물: tasks/{{ task.docFileName }}</span>
               <span>요구사항: {{ task.reqId }}</span>

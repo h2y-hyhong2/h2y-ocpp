@@ -1,5 +1,6 @@
 package com.lselink.elvis.connect.sync.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -55,7 +56,11 @@ public class AuthorizeServiceImpl implements AuthorizeService {
         long startNano = System.nanoTime();
         String chargeBoxId = msg.getChargeBoxId();
         String uniqueId = msg.getUniqueId();
-        String rawIdTag = msg.getPayload().path("idTag").asText();
+        JsonNode payload = msg.getPayload();
+        JsonNode idTagNode = payload != null ? payload.path("idTag") : null;
+        String rawIdTag = (idTagNode != null && !idTagNode.isMissingNode() && !idTagNode.isNull())
+                ? idTagNode.asText("")
+                : "";
 
         log.info("[Authorize] 회원 인증 요청 수신: chargeBoxId={}, uniqueId={}, idTag={}",
                 chargeBoxId, uniqueId, rawIdTag);
@@ -71,6 +76,7 @@ public class AuthorizeServiceImpl implements AuthorizeService {
                 .chargeBoxId(chargeBoxId)
                 .action("Authorize")
                 .commandPayload(callResultJson)
+                .messageId(uniqueId)
                 .build();
 
         kafkaTemplate.send(outboundTopic, chargeBoxId, outboundCmd)
@@ -88,8 +94,8 @@ public class AuthorizeServiceImpl implements AuthorizeService {
         long elapsedNano = System.nanoTime() - startNano;
         authAuditLogService.logAuthAsync(chargeBoxId, uniqueId, rawIdTag, idTagInfo, elapsedNano);
 
-        log.info("[Authorize] 인증 처리 완료: chargeBoxId={}, status={}, latency={:.2f}ms, tier={}",
-                chargeBoxId, idTagInfo.getStatus(), elapsedNano / 1_000_000.0, idTagInfo.getCacheTier());
+        log.info("[Authorize] 인증 처리 완료: chargeBoxId={}, status={}, latency={}ms, tier={}",
+                chargeBoxId, idTagInfo.getStatus(), String.format("%.2f", elapsedNano / 1_000_000.0), idTagInfo.getCacheTier());
     }
 
     /**

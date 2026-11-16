@@ -8,16 +8,19 @@
 
 ```text
 config/
+├── paths.env                  # 공통 스토리지 경로(DATA/LOG) 및 서비스 포트 환경변수
 ├── mysql/
-│   └── my.ini                 # MySQL 9.71 인코딩(utf8mb4), 타임존(KST), 커넥션 풀(500) 설정
+│   ├── my.ini                 # MySQL 9.71 인코딩(utf8mb4), 타임존(KST), 커넥션 풀(500) 설정
+│   ├── 01_schema.sql          # ISO 11179 통합 DDL 스키마 및 호환 뷰 정의
+│   └── 02_seed_data.sql       # 초기 기준정보 및 듀얼건 시드 데이터
 ├── kafka/
 │   └── server.properties      # Apache Kafka 4.3.1 KRaft 단독 모드 브로커/리스너 설정
 ├── connect-ws/
-│   └── application.yml        # WebSocket Gateway 포트(8080), Kafka 토픽, 세션 타임아웃
+│   └── application.yml        # WebSocket Gateway 포트(9080), Kafka 토픽, 세션 타임아웃
 ├── connect-sync/
-│   └── application.yml        # Parser & Sync Engine DB 연결 및 컨슈머 설정
+│   └── application.yml        # Parser & Sync Engine 포트(9081), DB 연결 및 컨슈머 설정
 ├── control-api/
-│   └── application.yml        # Admin REST API 포트(8081), JWT 시크릿, DB 접속 설정
+│   └── application.yml        # Admin REST API 포트(9082), JWT 시크릿, DB 접속 설정
 └── README.md                  # 본 가이드 문서
 ```
 
@@ -38,7 +41,9 @@ kafka-server-start.bat config/kafka/server.properties
 ### 2.3 Spring Boot 마이크로서비스 (`elvis-connect-ws` 등)
 배포 시 외부에 노출된 `config/` 디렉터리의 설정을 최우선으로 로딩하도록 실행합니다:
 ```cmd
-java -jar elvis-connect-ws-1.0.0.jar --spring.config.additional-location=file:./config/connect-ws/application.yml
+java -jar elvis-connect-ws-1.0.0-SNAPSHOT.jar --spring.config.additional-location=file:./config/connect-ws/application.yml
+java -jar elvis-connect-sync-1.0.0-SNAPSHOT.jar --spring.config.additional-location=file:./config/connect-sync/application.yml
+java -jar elvis-control-api-1.0.0-SNAPSHOT.jar --spring.config.additional-location=file:./config/control-api/application.yml
 ```
 
 ---

@@ -10,47 +10,47 @@ import java.time.LocalDateTime;
 public class ConnectorStatusEntity {
 
     @Id
-    @Column(name = "CHARGE_BOX_ID", nullable = false, length = 50)
+    @Column(name = "charge_box_id", nullable = false, length = 50)
     private String chargeBoxId;
 
     @Id
-    @Column(name = "CONNECTOR_ID", nullable = false)
+    @Column(name = "connector_id", nullable = false)
     private Integer connectorId = 1;
 
-    @Column(name = "STATUS", nullable = false, length = 32)
+    @Column(name = "status", nullable = false, length = 32)
     private String status;
 
-    @Column(name = "POWER_KW", precision = 8, scale = 2)
+    @Column(name = "power_kw", precision = 8, scale = 2)
     private BigDecimal powerKw = BigDecimal.ZERO;
 
-    @Column(name = "VOLTAGE_V", precision = 8, scale = 2)
+    @Column(name = "voltage_v", precision = 8, scale = 2)
     private BigDecimal voltageV = BigDecimal.ZERO;
 
-    @Column(name = "CURRENT_A", precision = 8, scale = 2)
+    @Column(name = "current_a", precision = 8, scale = 2)
     private BigDecimal currentA = BigDecimal.ZERO;
 
-    @Column(name = "SOC_PERCENT")
+    @Column(name = "soc_percent")
     private Integer socPercent = 0;
 
-    @Column(name = "BATTERY_TEMP_C")
+    @Column(name = "battery_temp_c")
     private Integer batteryTempC = 25;
 
-    @Column(name = "CAR_MODEL", length = 50)
+    @Column(name = "car_model", length = 50)
     private String carModel;
 
-    @Column(name = "USER_TAG", length = 50)
+    @Column(name = "user_tag", length = 50)
     private String userTag;
 
-    @Column(name = "ACCUMULATED_KWH", precision = 10, scale = 2)
+    @Column(name = "accumulated_kwh", precision = 10, scale = 2)
     private BigDecimal accumulatedKwh = BigDecimal.ZERO;
 
-    @Column(name = "CHARGING_MINUTES")
+    @Column(name = "charging_minutes")
     private Integer chargingMinutes = 0;
 
-    @Column(name = "LAST_HEARTBEAT")
+    @Column(name = "last_heartbeat")
     private LocalDateTime lastHeartbeat;
 
-    @Column(name = "UPDT_DT")
+    @Column(name = "updt_dt")
     private LocalDateTime updtDt;
 
     public ConnectorStatusEntity() {

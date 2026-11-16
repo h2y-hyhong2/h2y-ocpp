@@ -8,11 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 충전기 실시간 상태 UPDATE 서비스 (Sprint 18: S18-SYNC-0030-CO)
  * <p>
- * OCPP StatusNotification / Heartbeat 수신 시 MySQL tb_connector_status 테이블을
+ * OCPP StatusNotification / Heartbeat 수신 시 MySQL connector_status 테이블을
  * ON DUPLICATE KEY UPDATE 방식으로 단일 문장 Upsert 처리.
  * </p>
  *
@@ -59,8 +60,11 @@ public class ConnectorStatusService {
 
         try {
             int    connectorId = msg.getPayload().path("connectorId").asInt(0);
-            String status      = msg.getPayload().path("status").asText("Unknown");
-            String errorCode   = msg.getPayload().path("errorCode").asText(null);
+            String status      = nullIfEmpty(msg.getPayload().path("status").asText(null));
+            if (status == null) {
+                status = "Unknown";
+            }
+            String errorCode   = nullIfEmpty(msg.getPayload().path("errorCode").asText(null));
             String vendorId    = nullIfEmpty(msg.getPayload().path("vendorId").asText(null));
             String info        = nullIfEmpty(msg.getPayload().path("info").asText(null));
 
@@ -122,8 +126,16 @@ public class ConnectorStatusService {
         String uniqueId = msg.getUniqueId();
 
         try {
+            LocalDateTime now = LocalDateTime.now();
             // BootNotification: 커넥터 0번 상태를 Available로 초기화
-            repository.upsertStatus(chargeBoxId, 0, "Available", "NoError", null, "Booted", LocalDateTime.now());
+            repository.upsertStatus(chargeBoxId, 0, "Available", "NoError", null, "Booted", now);
+
+            // AGENTS.md §4: 기본 듀얼건(커넥터 1, 2) 미존재 시 초기 레코드 생성
+            for (int connectorId : List.of(1, 2)) {
+                if (repository.findByChargeBoxIdAndConnectorId(chargeBoxId, connectorId).isEmpty()) {
+                    repository.upsertStatus(chargeBoxId, connectorId, "Available", "NoError", null, "Booted", now);
+                }
+            }
 
             log.info("[StatusSvc] BootNotification 초기화 완료: chargeBoxId={}", chargeBoxId);
 

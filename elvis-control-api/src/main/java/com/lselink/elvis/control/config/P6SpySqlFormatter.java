@@ -28,7 +28,7 @@ public class P6SpySqlFormatter implements MessageFormattingStrategy {
 
     @PostConstruct
     public void setLogMessageFormat() {
-        P6SpyOptions.getActiveInstance().setLogMessageFormat(this.getClass().getName());
+        P6SpyOptions.getActiveInstance().setLogMessageFormat(P6SpySqlFormatter.class.getName());
     }
 
     @Override

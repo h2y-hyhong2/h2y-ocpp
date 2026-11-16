@@ -167,15 +167,27 @@ async function fetchChargersFromMysql(): Promise<boolean> {
 
     const fetchedList = json.data.map(mapDtoToChargerInstance)
 
-    // 기존 연결 상태 보존 병합
+    // 기존 연결 상태 및 커넥터 상태 보존 병합
     const mergedList = fetchedList.map(newC => {
       const existing = chargers.find(c => c.id === newC.id)
       if (existing) {
+        const mergedConnectors = (newC.connectors || []).map(nc => {
+          const exConn = existing.connectors?.find(ec => ec.connectorId === nc.connectorId)
+          if (!exConn) return nc
+          return {
+            ...nc,
+            status: existing.connected ? exConn.status : nc.status,
+            transactionId: exConn.transactionId ?? nc.transactionId ?? null,
+            socPercent: exConn.socPercent ?? nc.socPercent,
+            accumulatedKwh: exConn.accumulatedKwh ?? nc.accumulatedKwh
+          }
+        })
         return {
           ...newC,
           connected: existing.connected,
           connecting: existing.connecting,
           status: existing.connected ? existing.status : newC.status,
+          connectors: mergedConnectors.length >= 2 ? mergedConnectors : existing.connectors,
           activeConnectorId: existing.activeConnectorId || 1,
           transactionId: existing.transactionId,
           meterValueWh: existing.meterValueWh,
@@ -194,7 +206,10 @@ async function fetchChargersFromMysql(): Promise<boolean> {
       return newC
     })
 
-    chargers.splice(0, chargers.length, ...mergedList)
+    // 로컬에서만 추가된 충전기(MySQL 미등록 항목) 보존
+    const fetchedIds = new Set(mergedList.map(c => c.id))
+    const localOnlyChargers = chargers.filter(c => !fetchedIds.has(c.id))
+    chargers.splice(0, chargers.length, ...mergedList, ...localOnlyChargers)
     if (!chargers.some(c => c.id === selectedChargerId.value) && chargers.length > 0) {
       selectedChargerId.value = chargers[0].id
     }
@@ -228,7 +243,7 @@ const socketMap = new Map<string, WebSocket>()
 const heartbeatTimerMap = new Map<string, any>()
 const autoMeterTimerMap = new Map<string, any>()
 const abortFlagMap = new Map<string, boolean>()
-const pendingRequests = new Map<string, { action: string; sentAt: number; chargerId: string }>()
+const pendingRequests = new Map<string, { action: string; sentAt: number; chargerId: string; connectorId?: number; transactionId?: number | null }>()
 
 function saveChargersToStorage() {
   try {
@@ -275,7 +290,7 @@ function addLog(entry: Omit<OcppLogEntry, 'id' | 'timestamp'>) {
     }
   }
 
-  const badge = entry.direction === 'SEND' ? '📤 [SEND]' : entry.direction === 'RECV' ? '📥 [RECV]' : '⚙️ [SYS]'
+  const badge = entry.direction === 'SEND' ? '[SEND]' : entry.direction === 'RECV' ? '[RECV]' : '[SYS]'
   const cid = entry.chargerId ? `[${entry.chargerId}]` : ''
   const act = entry.action ? `[${entry.action}]` : ''
   console.log(`${badge} ${cid} ${act}`, parsedJson)
@@ -323,33 +338,81 @@ export function useVirtualCharger() {
   }
 
   function addCharger(item: Partial<ChargerInstance>) {
-    const stId = (item.stationId || '000000').padStart(6, '0')
-    const cpId = (item.chargerId || '01').padStart(2, '0')
-    const fullId = item.id || `${stId}${cpId}`
+    const rawSt = String(item.stationId ?? '000000').trim()
+    const rawCp = String(item.chargerId ?? '01').trim()
+    if (!/^\d{1,6}$/.test(rawSt)) {
+      alert('충전소 ID(ST_ID)는 000000~999999 범위의 6자리 이하 숫자여야 합니다.')
+      return false
+    }
+    if (!/^\d{1,2}$/.test(rawCp) || Number(rawCp) < 1 || Number(rawCp) > 99) {
+      alert('충전기 ID(CP_ID)는 01~99 범위의 숫자여야 합니다.')
+      return false
+    }
+
+    const stId = rawSt.padStart(6, '0')
+    const cpId = rawCp.padStart(2, '0')
+    const fullId = `${stId}${cpId}`
 
     if (chargers.some(c => c.id === fullId)) {
       alert(`이미 존재하는 충전기 식별자입니다: [${fullId}]`)
       return false
     }
 
+    const powerKw = Number(item.powerKw) > 0 ? Number(item.powerKw) : 350
+    const halfKw = Math.round(powerKw / 2)
+    const defaultConnectors = (item.connectors && item.connectors.length >= 2)
+      ? item.connectors
+      : [
+          {
+            connectorId: 1,
+            status: 'Unavailable' as OcppChargePointStatus,
+            transactionId: null,
+            type: 'DC콤보1 (CCS1)',
+            maxPowerKw: halfKw,
+            voltageV: 800,
+            currentA: 250,
+            socPercent: 0,
+            batteryTempC: 25,
+            carModel: '아이오닉5 (현대)',
+            userTag: 'CARD-CORP-9901',
+            accumulatedKwh: 0
+          },
+          {
+            connectorId: 2,
+            status: 'Unavailable' as OcppChargePointStatus,
+            transactionId: null,
+            type: 'DC콤보1 (CCS1)',
+            maxPowerKw: halfKw,
+            voltageV: 800,
+            currentA: 250,
+            socPercent: 0,
+            batteryTempC: 25,
+            carModel: 'EV6 (기아)',
+            userTag: 'CARD-USER-1001',
+            accumulatedKwh: 0
+          }
+        ]
+
     const newInst: ChargerInstance = {
       id: fullId,
       name: item.name || `${stId} 충전소 ${cpId}호기`,
       stationId: stId,
       chargerId: cpId,
+      stationName: item.stationName || `${stId} 충전소`,
+      corpName: item.corpName || '(주)LS E-Link',
+      addr: item.addr || '',
+      spec: item.spec || `${powerKw}kW 초급속 듀얼 (DC콤보1)`,
+      protocol: item.protocol || 'OCPP 1.6-J',
+      firmwareVer: item.firmwareVer || '1.0.0-RELEASE',
+      useYn: item.useYn || 'Y',
       wsUrl: item.wsUrl || 'ws://127.0.0.1:9080/ocpp',
       vendor: item.vendor || 'LS E-Link',
       model: item.model || 'ELVIS-HPC-350K',
-      powerKw: item.powerKw || 350,
-      status: 'Available',
+      powerKw,
+      status: 'Unavailable',
       connected: false,
       connecting: false,
-      connectors: (item.connectors && item.connectors.length >= 2)
-        ? item.connectors
-        : [
-            { connectorId: 1, status: 'Available' },
-            { connectorId: 2, status: 'Available' }
-          ],
+      connectors: defaultConnectors,
       activeConnectorId: 1,
       transactionId: null,
       meterValueWh: 100000,
@@ -375,10 +438,37 @@ export function useVirtualCharger() {
 
   function updateCharger(id: string, updates: Partial<ChargerInstance>) {
     const idx = chargers.findIndex(c => c.id === id)
-    if (idx !== -1) {
-      Object.assign(chargers[idx], updates)
-      saveChargersToStorage()
+    if (idx === -1) return false
+
+    const nextId = updates.id || id
+    if (nextId !== id && chargers.some((c, i) => i !== idx && c.id === nextId)) {
+      alert(`이미 존재하는 충전기 식별자입니다: [${nextId}]`)
+      return false
     }
+
+    Object.assign(chargers[idx], updates)
+    if (nextId !== id) {
+      if (selectedChargerId.value === id) {
+        selectedChargerId.value = nextId
+      }
+      const ws = socketMap.get(id)
+      if (ws) {
+        socketMap.delete(id)
+        socketMap.set(nextId, ws)
+      }
+      const hb = heartbeatTimerMap.get(id)
+      if (hb) {
+        heartbeatTimerMap.delete(id)
+        heartbeatTimerMap.set(nextId, hb)
+      }
+      const mt = autoMeterTimerMap.get(id)
+      if (mt) {
+        autoMeterTimerMap.delete(id)
+        autoMeterTimerMap.set(nextId, mt)
+      }
+    }
+    saveChargersToStorage()
+    return true
   }
 
   function setActiveConnector(connectorId: number, targetId?: string) {
@@ -422,7 +512,7 @@ export function useVirtualCharger() {
     c.connecting = true
 
     try {
-      const ws = new WebSocket(fullUrl)
+      const ws = new WebSocket(fullUrl, ['ocpp1.6'])
       socketMap.set(cid, ws)
 
       ws.onopen = () => {
@@ -573,7 +663,9 @@ export function useVirtualCharger() {
     pendingRequests.set(messageId, {
       action,
       sentAt: performance.now(),
-      chargerId: cid
+      chargerId: cid,
+      connectorId: typeof payload?.connectorId === 'number' ? payload.connectorId : undefined,
+      transactionId: typeof payload?.transactionId === 'number' ? payload.transactionId : undefined
     })
 
     ws.send(rawPacket)
@@ -626,7 +718,7 @@ export function useVirtualCharger() {
         if (req) {
           latency = Math.round(performance.now() - req.sentAt)
           action = `${req.action}.conf`
-          handleActionConf(cid, req.action, payload)
+          handleActionConf(cid, req.action, payload, req)
           pendingRequests.delete(messageId)
         }
 
@@ -696,7 +788,12 @@ export function useVirtualCharger() {
     })
   }
 
-  function handleActionConf(cid: string, action: string, payload: any) {
+  function handleActionConf(
+    cid: string,
+    action: string,
+    payload: any,
+    reqMeta?: { connectorId?: number; transactionId?: number | null }
+  ) {
     const c = chargers.find(item => item.id === cid)
     if (!c) return
 
@@ -715,24 +812,48 @@ export function useVirtualCharger() {
         }
         break
       case 'StartTransaction':
-        if (payload.transactionId) {
+        if (payload.transactionId != null) {
+          const targetConnId = reqMeta?.connectorId ?? c.activeConnectorId ?? 1
+          const startConn = c.connectors.find(g => g.connectorId === targetConnId)
+          if (startConn) {
+            startConn.transactionId = payload.transactionId
+            startConn.status = 'Charging'
+          }
           c.transactionId = payload.transactionId
           c.status = 'Charging'
-          const conn = c.connectors.find(g => g.connectorId === c.activeConnectorId)
-          if (conn) conn.status = 'Charging'
           // 충전 시작 시 autoMeterValues가 켜져 있으면 자동 계측치 발송 시작
           if (c.autoMeterValues) {
             startAutoMeterTimer(cid)
           }
         }
         break
-      case 'StopTransaction':
-        c.transactionId = null
-        c.status = 'Available'
-        const conn = c.connectors.find(g => g.connectorId === c.activeConnectorId)
-        if (conn) conn.status = 'Available'
-        stopAutoMeterTimer(cid)
+      case 'StopTransaction': {
+        const stoppedTxId = reqMeta?.transactionId
+        let stopConn = stoppedTxId != null
+          ? c.connectors.find(g => g.transactionId === stoppedTxId)
+          : undefined
+        if (!stopConn) {
+          const fallbackConnId = reqMeta?.connectorId ?? c.activeConnectorId ?? 1
+          stopConn = c.connectors.find(g => g.connectorId === fallbackConnId)
+        }
+        if (stopConn) {
+          stopConn.transactionId = null
+          stopConn.status = 'Available'
+        }
+
+        const otherCharging = c.connectors.find(
+          g => g.connectorId !== stopConn?.connectorId && (g.status === 'Charging' || g.transactionId != null)
+        )
+        if (otherCharging) {
+          c.transactionId = otherCharging.transactionId ?? null
+          c.status = 'Charging'
+        } else {
+          c.transactionId = null
+          c.status = 'Available'
+          stopAutoMeterTimer(cid)
+        }
         break
+      }
       case 'StatusNotification':
         break
     }
@@ -763,26 +884,50 @@ export function useVirtualCharger() {
           setTimeout(() => connect(cid), 1500)
         }, 800)
         break
-      case 'RemoteStartTransaction':
+      case 'RemoteStartTransaction': {
+        const targetConnId = typeof payload?.connectorId === 'number' && payload.connectorId > 0
+          ? payload.connectorId
+          : (c?.activeConnectorId || 1)
+        const targetConn = c?.connectors.find(g => g.connectorId === targetConnId)
+        if (c && typeof payload?.connectorId === 'number' && payload.connectorId > 0 && !targetConn) {
+          sendCallResult(cid, messageId, { status: 'Rejected' })
+          break
+        }
+        if (c && targetConn) {
+          c.activeConnectorId = targetConnId
+        }
         sendCallResult(cid, messageId, { status: 'Accepted' })
         setTimeout(() => {
           if (c) {
             c.status = 'Preparing'
-            sendStatusNotification('Preparing', 'NoError', cid)
+            sendStatusNotification('Preparing', 'NoError', cid, targetConnId)
             setTimeout(() => {
-              sendStartTransaction(payload.idTag || 'CARD-USER-1001', c.meterValueWh, cid)
+              sendStartTransaction(payload?.idTag || 'CARD-USER-1001', c.meterValueWh, cid, targetConnId)
             }, 1000)
           }
         }, 500)
         break
-      case 'RemoteStopTransaction':
+      }
+      case 'RemoteStopTransaction': {
+        const reqTxId = typeof payload?.transactionId === 'number' ? payload.transactionId : null
+        const matchedConn = reqTxId != null
+          ? c?.connectors.find(g => g.transactionId === reqTxId)
+          : c?.connectors.find(g => g.transactionId != null)
+        const hasMatch = Boolean(
+          c && (matchedConn || (reqTxId != null && c.transactionId === reqTxId))
+        )
+        if (!c || !hasMatch) {
+          sendCallResult(cid, messageId, { status: 'Rejected' })
+          break
+        }
+        const txToStop = reqTxId ?? matchedConn?.transactionId ?? c.transactionId
+        const connToStop = matchedConn?.connectorId ?? c.activeConnectorId
         sendCallResult(cid, messageId, { status: 'Accepted' })
         setTimeout(() => {
-          if (c) {
-            sendStopTransaction('APP-REMOTE-STOP', 'Remote', cid)
-          }
+          sendStopTransaction('APP-REMOTE-STOP', 'Remote', cid, connToStop, txToStop)
         }, 500)
         break
+      }
       case 'UnlockConnector':
         sendCallResult(cid, messageId, { status: 'Unlocked' })
         break
@@ -811,18 +956,32 @@ export function useVirtualCharger() {
           unknownKey: []
         })
         break
-      case 'TriggerMessage':
-        sendCallResult(cid, messageId, { status: 'Accepted' })
-        if (payload.requestedMessage === 'StatusNotification') {
-          sendStatusNotification(c ? c.status : 'Available', 'NoError', cid)
-        } else if (payload.requestedMessage === 'Heartbeat') {
+      case 'TriggerMessage': {
+        const reqMsg = payload?.requestedMessage
+        const triggerConnId = typeof payload?.connectorId === 'number' && payload.connectorId > 0
+          ? payload.connectorId
+          : (c?.activeConnectorId || 1)
+        const triggerConn = c?.connectors.find(g => g.connectorId === triggerConnId)
+
+        if (reqMsg === 'StatusNotification') {
+          sendCallResult(cid, messageId, { status: 'Accepted' })
+          sendStatusNotification(triggerConn?.status || c?.status || 'Available', 'NoError', cid, triggerConnId)
+        } else if (reqMsg === 'Heartbeat') {
+          sendCallResult(cid, messageId, { status: 'Accepted' })
           sendHeartbeat(cid)
-        } else if (payload.requestedMessage === 'BootNotification') {
-          sendBootNotification(c?.vendor, c?.model, '1.0.0', cid)
-        } else if (payload.requestedMessage === 'MeterValues') {
-          sendMeterValues(500, cid)
+        } else if (reqMsg === 'BootNotification') {
+          sendCallResult(cid, messageId, { status: 'Accepted' })
+          sendBootNotification(c?.vendor, c?.model, c?.firmwareVer, cid)
+        } else if (reqMsg === 'MeterValues') {
+          sendCallResult(cid, messageId, { status: 'Accepted' })
+          sendMeterValues(500, cid, triggerConnId)
+        } else if (reqMsg === 'DiagnosticsStatusNotification' || reqMsg === 'FirmwareStatusNotification') {
+          sendCallResult(cid, messageId, { status: 'NotImplemented' })
+        } else {
+          sendCallResult(cid, messageId, { status: 'Rejected' })
         }
         break
+      }
       default:
         sendCallResult(cid, messageId, { status: 'Accepted' })
         break
@@ -831,7 +990,7 @@ export function useVirtualCharger() {
 
   // ─── 간편 단축 전문 발송 함수들 ───────────────────────────────────
 
-  function sendBootNotification(vendor = 'LS E-Link', model = 'ELVIS-HPC-350K', firmware = 'v1.0.0', targetId?: string) {
+  function sendBootNotification(vendor?: string, model?: string, firmware?: string, targetId?: string) {
     const cid = targetId || selectedChargerId.value
     const c = chargers.find(item => item.id === cid)
     return sendCall('BootNotification', {
@@ -839,7 +998,7 @@ export function useVirtualCharger() {
       chargePointModel: model || (c?.model ?? 'ELVIS-HPC-350K'),
       chargePointSerialNumber: `${cid}-SN`,
       chargeBoxSerialNumber: cid,
-      firmwareVersion: firmware,
+      firmwareVersion: firmware || (c?.firmwareVer ?? '1.0.0-RELEASE'),
       iccid: '8982000000000000001',
       imsi: '450000000000001',
       meterType: 'ELVIS-DIGITAL-01',
@@ -852,16 +1011,17 @@ export function useVirtualCharger() {
     return sendCall('Heartbeat', {}, cid)
   }
 
-  function sendStatusNotification(status: string, errorCode = 'NoError', targetId?: string) {
+  function sendStatusNotification(status: string, errorCode = 'NoError', targetId?: string, connectorIdOverride?: number) {
     const cid = targetId || selectedChargerId.value
     const c = chargers.find(item => item.id === cid)
+    const connId = connectorIdOverride ?? c?.activeConnectorId ?? 1
     if (c) {
       c.status = status as OcppChargePointStatus
-      const conn = c.connectors.find(g => g.connectorId === c.activeConnectorId)
+      const conn = c.connectors.find(g => g.connectorId === connId)
       if (conn) conn.status = status as OcppChargePointStatus
     }
     return sendCall('StatusNotification', {
-      connectorId: c?.activeConnectorId || 1,
+      connectorId: connId,
       errorCode,
       status,
       timestamp: new Date().toISOString()
@@ -873,32 +1033,43 @@ export function useVirtualCharger() {
     return sendCall('Authorize', { idTag }, cid)
   }
 
-  function sendStartTransaction(idTag: string, meterStart?: number, targetId?: string) {
+  function sendStartTransaction(idTag: string, meterStart?: number, targetId?: string, connectorIdOverride?: number) {
     const cid = targetId || selectedChargerId.value
     const c = chargers.find(item => item.id === cid)
     const startVal = meterStart ?? (c?.meterValueWh ?? 100000)
+    const connId = connectorIdOverride ?? c?.activeConnectorId ?? 1
     if (c) c.meterValueWh = startVal
 
     return sendCall('StartTransaction', {
-      connectorId: c?.activeConnectorId || 1,
+      connectorId: connId,
       idTag,
       meterStart: startVal,
       timestamp: new Date().toISOString()
     }, cid)
   }
 
-  function sendMeterValues(incrementWh = 500, targetId?: string) {
+  function sendMeterValues(incrementWh = 500, targetId?: string, connectorIdOverride?: number) {
     const cid = targetId || selectedChargerId.value
     const c = chargers.find(item => item.id === cid)
     if (!c) return null
 
+    const connId = connectorIdOverride ?? c.activeConnectorId ?? 1
+    const conn = c.connectors.find(g => g.connectorId === connId)
+    const txId = conn?.transactionId ?? c.transactionId
+
     c.meterValueWh += incrementWh
-    c.soc = Math.min(100, c.soc + 1)
+    const currentSoc = conn?.socPercent ?? c.soc
+    const nextSoc = Math.min(100, currentSoc + 1)
+    c.soc = nextSoc
+    if (conn) {
+      conn.socPercent = nextSoc
+      conn.accumulatedKwh = Number(((conn.accumulatedKwh || 0) + incrementWh / 1000).toFixed(3))
+    }
     const nowIso = new Date().toISOString()
 
     return sendCall('MeterValues', {
-      connectorId: c.activeConnectorId || 1,
-      transactionId: c.transactionId || 1001,
+      connectorId: connId,
+      ...(txId != null ? { transactionId: txId } : {}),
       meterValue: [
         {
           timestamp: nowIso,
@@ -911,7 +1082,7 @@ export function useVirtualCharger() {
               unit: 'Wh'
             },
             {
-              value: String(c.soc),
+              value: String(nextSoc),
               context: 'Sample.Periodic',
               format: 'Raw',
               measurand: 'SoC',
@@ -944,10 +1115,31 @@ export function useVirtualCharger() {
     }, cid)
   }
 
-  function sendStopTransaction(idTag = 'CARD-CORP-9901', reason = 'Local', targetId?: string) {
+  function sendStopTransaction(
+    idTag = 'CARD-CORP-9901',
+    reason = 'Local',
+    targetId?: string,
+    connectorIdOverride?: number,
+    transactionIdOverride?: number | null
+  ) {
     const cid = targetId || selectedChargerId.value
     const c = chargers.find(item => item.id === cid)
-    const txId = c?.transactionId || 1001
+    const connId = connectorIdOverride ?? c?.activeConnectorId ?? 1
+    const conn = c?.connectors.find(g => g.connectorId === connId)
+    const txId = transactionIdOverride ?? conn?.transactionId ?? c?.transactionId
+
+    if (txId == null) {
+      addLog({
+        chargerId: cid,
+        direction: 'ERR',
+        messageType: 0,
+        messageId: 'ERR-NO-TX',
+        action: 'StopTransaction',
+        payload: { error: '진행 중인 transactionId가 없습니다.' },
+        raw: `[STOP_FAIL] [${cid}] 활성 트랜잭션이 없어 StopTransaction을 전송할 수 없습니다.`
+      })
+      return null
+    }
 
     return sendCall('StopTransaction', {
       idTag,
@@ -967,7 +1159,7 @@ export function useVirtualCharger() {
               unit: 'Wh'
             },
             {
-              value: String(c?.soc || 80),
+              value: String(conn?.socPercent ?? c?.soc ?? 80),
               context: 'Transaction.End',
               format: 'Raw',
               measurand: 'SoC',
@@ -1163,7 +1355,7 @@ export function useVirtualCharger() {
       messageId: 'SYS-MANUAL-' + Date.now(),
       action: 'FULL_MANUAL_MODE',
       payload: { autoHeartbeat: false, autoBootOnConnect: false, autoReply: false, autoMeterValues: false },
-      raw: '🛑 [완전 수동 모드 활성화] 모든 충전기의 자동 전문(Heartbeat 주기 발송, 접속 시 자동 기동, 서버 CALL 자동응답, 계측치 주기 발송)이 일괄 정지되었습니다. 모든 전문을 수동으로 통제할 수 있습니다.'
+      raw: '[완전 수동 모드 활성화] 모든 충전기의 자동 전문(Heartbeat 주기 발송, 접속 시 자동 기동, 서버 CALL 자동응답, 계측치 주기 발송)이 일괄 정지되었습니다. 모든 전문을 수동으로 통제할 수 있습니다.'
     })
   }
 
@@ -1188,7 +1380,7 @@ export function useVirtualCharger() {
       messageId: 'SYS-AUTO-' + Date.now(),
       action: 'FULL_AUTO_MODE',
       payload: { autoHeartbeat: true, autoBootOnConnect: true, autoReply: true, autoMeterValues: true },
-      raw: '⚡ [표준 자동화 모드 활성화] 모든 충전기의 자동 Heartbeat(60초), 접속 시 기동 시퀀스, 관제 CALL 자동응답(Accepted), 계측치 자동 전송이 일괄 활성화되었습니다.'
+      raw: '[표준 자동화 모드 활성화] 모든 충전기의 자동 Heartbeat(60초), 접속 시 기동 시퀀스, 관제 CALL 자동응답(Accepted), 계측치 자동 전송이 일괄 활성화되었습니다.'
     })
   }
 
@@ -1201,11 +1393,12 @@ export function useVirtualCharger() {
   async function runFullChargeScenario(userType = 'C', idTag = 'CARD-CORP-9901', targetId?: string) {
     const cid = targetId || selectedChargerId.value
     const c = chargers.find(item => item.id === cid)
-    if (!c) return
-    if (!c.connected || c.scenarioRunning) {
-      if (!c.connected) connect(cid)
+    if (!c || c.scenarioRunning) return
+    if (!c.connected) {
+      connect(cid)
       await delay(800)
     }
+    if (!c.connected || c.scenarioRunning) return
 
     c.scenarioRunning = true
     c.scenarioProgress = 0
@@ -1225,7 +1418,7 @@ export function useVirtualCharger() {
       // Step 1: BootNotification
       c.scenarioStep = '1/8: 부팅 및 기동 통보 (BootNotification)'
       c.scenarioProgress = 12
-      sendBootNotification(c.vendor, c.model, '1.0.0', cid)
+      sendBootNotification(c.vendor, c.model, c.firmwareVer || '1.0.0-RELEASE', cid)
       await delay(1200)
       if (abortFlagMap.get(cid)) return
 
@@ -1353,12 +1546,16 @@ export function useVirtualCharger() {
       connect(cid)
       await delay(800)
     }
-    sendBootNotification(c.vendor, c.model, '1.0.0', cid)
+    if (!c.connected) return
+    sendBootNotification(c.vendor, c.model, c.firmwareVer || '1.0.0-RELEASE', cid)
     await delay(1000)
+    if (!c.connected) return
     sendStatusNotification('Preparing', 'NoError', cid)
     await delay(800)
+    if (!c.connected) return
     sendStatusNotification('Available', 'NoError', cid)
     await delay(800)
+    if (!c.connected) return
     sendHeartbeat(cid)
   }
 

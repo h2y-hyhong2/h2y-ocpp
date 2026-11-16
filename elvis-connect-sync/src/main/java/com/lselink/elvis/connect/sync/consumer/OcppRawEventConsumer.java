@@ -7,6 +7,7 @@ import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
 import com.lselink.elvis.connect.sync.service.AuthorizeService;
 import com.lselink.elvis.connect.sync.service.ConnectorStatusService;
 import com.lselink.elvis.connect.sync.service.DltRecoveryService;
+import com.lselink.elvis.connect.sync.service.OcppResponseSender;
 import com.lselink.elvis.connect.sync.service.TransactionSessionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +15,9 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.concurrent.Executor;
 
 /**
- * Kafka ocpp-raw-events 토픽을 소비하여 Virtual Threads로 비동기 파싱 및 전처리 파이프라인 수행
+ * Kafka ocpp-raw-events 토픽을 소비하여 chargeBoxId 파티션 순서를 보장하며 동기 처리하는 파이프라인 컨슈머
  *
  * <p>Sprint 17: OCPP 메시지 파서 연계</p>
  * <p>Sprint 18: StatusNotification / Heartbeat / BootNotification → MySQL Upsert 연계</p>
@@ -33,22 +33,19 @@ public class OcppRawEventConsumer {
     private static final int MAX_RETRY_ATTEMPTS = 3;
     private static final long INITIAL_BACKOFF_MS = 1000L;
 
-    private final Executor virtualThreadExecutor;
     private final OcppMessageParser ocppMessageParser;
     private final ConnectorStatusService connectorStatusService;
     private final TransactionSessionService transactionSessionService;
     private final AuthorizeService authorizeService;
     private final DltRecoveryService dltRecoveryService;
-    private final com.lselink.elvis.connect.sync.service.OcppResponseSender ocppResponseSender;
+    private final OcppResponseSender ocppResponseSender;
 
-    public OcppRawEventConsumer(Executor virtualThreadExecutor,
-                               OcppMessageParser ocppMessageParser,
-                               ConnectorStatusService connectorStatusService,
-                               TransactionSessionService transactionSessionService,
-                               AuthorizeService authorizeService,
-                               DltRecoveryService dltRecoveryService,
-                               com.lselink.elvis.connect.sync.service.OcppResponseSender ocppResponseSender) {
-        this.virtualThreadExecutor = virtualThreadExecutor;
+    public OcppRawEventConsumer(OcppMessageParser ocppMessageParser,
+                                ConnectorStatusService connectorStatusService,
+                                TransactionSessionService transactionSessionService,
+                                AuthorizeService authorizeService,
+                                DltRecoveryService dltRecoveryService,
+                                OcppResponseSender ocppResponseSender) {
         this.ocppMessageParser = ocppMessageParser;
         this.connectorStatusService = connectorStatusService;
         this.transactionSessionService = transactionSessionService;
@@ -62,26 +59,27 @@ public class OcppRawEventConsumer {
             groupId = "${spring.kafka.consumer.group-id:elvis-connect-sync-group}"
     )
     public void consumeRawEvent(OcppRawEventEnvelope envelope) {
-        // Java 25 가상 스레드로 작업 비동기 위임 (I/O 병목 및 블로킹 분리)
-        virtualThreadExecutor.execute(() -> {
-            try {
-                processEnvelope(envelope);
-            } catch (Exception e) {
-                log.error("[SyncConsumer] 패킷 처리 최종 예외: chargeBoxId={}, error={}",
-                        envelope.getChargeBoxId(), e.getMessage(), e);
-            }
-        });
+        if (envelope == null) {
+            log.warn("[SyncConsumer] null OcppRawEventEnvelope 수신 무시");
+            return;
+        }
+        try {
+            processEnvelope(envelope);
+        } catch (Exception e) {
+            log.error("[SyncConsumer] 패킷 처리 최종 예외: chargeBoxId={}, error={}",
+                    envelope.getChargeBoxId(), e.getMessage(), e);
+        }
     }
 
     private void processEnvelope(OcppRawEventEnvelope envelope) {
+        if (envelope == null) {
+            return;
+        }
         String chargeBoxId = envelope.getChargeBoxId();
         String rawPayload = envelope.getRawPayload();
-        int payloadLength = 0;
-        if (rawPayload != null) {
-            payloadLength = rawPayload.length();
-        }
+        int payloadLength = rawPayload != null ? rawPayload.length() : 0;
 
-        log.debug("[SyncConsumer] 가상스레드[{}] 패킷 수신: chargeBoxId={}, len={}",
+        log.debug("[SyncConsumer] 스레드[{}] 패킷 수신: chargeBoxId={}, len={}",
                 Thread.currentThread().getName(), chargeBoxId, payloadLength);
 
         // ─── 1단계: OCPP 파서 (Sprint 17) ───────────────────────────────────────────
@@ -100,8 +98,16 @@ public class OcppRawEventConsumer {
             return;
         }
 
-        // ─── 2단계: 비즈니스 디스패치 및 지수 백오프 재시도 (Sprint 24) ────────────
         OcppParsedMessage msg = parsedOpt.get();
+
+        // CALLRESULT(3) / CALLERROR(4)는 단말이 CSMS 명령에 응답한 정상 프레임이므로 DLT로 보내지 않고 정상 종료
+        if (msg.isCallResultOrError()) {
+            log.debug("[SyncConsumer] 단말 OCPP 응답 수신 (정상 무시): chargeBoxId={}, type={}, uniqueId={}, raw={}",
+                    chargeBoxId, msg.getMessageType(), msg.getUniqueId(), msg.getRaw());
+            return;
+        }
+
+        // ─── 2단계: 비즈니스 디스패치 및 지수 백오프 재시도 (Sprint 24) ────────────
         dispatchActionWithRetry(msg, envelope);
     }
 
@@ -123,15 +129,12 @@ public class OcppRawEventConsumer {
             } catch (Exception e) {
                 ErrorCategory errorCategory = ErrorCategory.classify(e);
                 String errorClass = e.getClass().getSimpleName();
-                String errorMessage = e.getMessage();
-                if (errorMessage == null) {
-                    errorMessage = "No detail message";
-                }
+                String errorMessage = e.getMessage() != null ? e.getMessage() : "No detail message";
 
-                // 1) 즉시 격리 대상 (문법 에러, 잘못된 인자, 비즈니스 검증 실패)
-                if (errorCategory == ErrorCategory.NON_RETRYABLE) {
-                    log.warn("[SyncConsumer] Non-retryable 에러 감지 → DLT 즉시 격리: chargeBoxId={}, action={}, error={}",
-                            chargeBoxId, action, errorClass);
+                // 1) 재시도 불가(NON_RETRYABLE) 또는 비즈니스 예외(BUSINESS_LOGIC)는 즉시 DLT 격리
+                if (errorCategory != ErrorCategory.TRANSIENT) {
+                    log.warn("[SyncConsumer] {} 에러 감지 → DLT 즉시 격리: chargeBoxId={}, action={}, error={}",
+                            errorCategory, chargeBoxId, action, errorClass);
                     dltRecoveryService.isolateFailure(
                             chargeBoxId,
                             action,

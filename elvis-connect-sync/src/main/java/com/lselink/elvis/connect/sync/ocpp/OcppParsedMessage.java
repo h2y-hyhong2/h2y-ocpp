@@ -1,7 +1,11 @@
 package com.lselink.elvis.connect.sync.ocpp;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
 public class OcppParsedMessage {
+
+    /** OCPP 메시지 타입 (2: CALL, 3: CALLRESULT, 4: CALLERROR) */
+    private final int messageType;
 
     /** 충전기 식별자 */
     private final String chargeBoxId;
@@ -19,15 +23,24 @@ public class OcppParsedMessage {
     private final String raw;
 
     public OcppParsedMessage(String chargeBoxId, String uniqueId, String action, JsonNode payload) {
-        this(chargeBoxId, uniqueId, action, payload, null);
+        this(2, chargeBoxId, uniqueId, action, payload, null);
     }
 
     public OcppParsedMessage(String chargeBoxId, String uniqueId, String action, JsonNode payload, String raw) {
+        this(2, chargeBoxId, uniqueId, action, payload, raw);
+    }
+
+    public OcppParsedMessage(int messageType, String chargeBoxId, String uniqueId, String action, JsonNode payload, String raw) {
+        this.messageType = messageType;
         this.chargeBoxId = chargeBoxId;
         this.uniqueId = uniqueId;
         this.action = action;
         this.payload = payload;
         this.raw = raw;
+    }
+
+    public int getMessageType() {
+        return messageType;
     }
 
     public String getChargeBoxId() {
@@ -50,16 +63,30 @@ public class OcppParsedMessage {
         return raw != null ? raw : (payload != null ? payload.toString() : "");
     }
 
+    public boolean isCall() {
+        return messageType == 2;
+    }
+
+    public boolean isCallResultOrError() {
+        return messageType == 3 || messageType == 4;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
 
     public static class Builder {
+        private int messageType = 2;
         private String chargeBoxId;
         private String uniqueId;
         private String action;
         private JsonNode payload;
         private String raw;
+
+        public Builder messageType(int messageType) {
+            this.messageType = messageType;
+            return this;
+        }
 
         public Builder chargeBoxId(String chargeBoxId) {
             this.chargeBoxId = chargeBoxId;
@@ -87,7 +114,7 @@ public class OcppParsedMessage {
         }
 
         public OcppParsedMessage build() {
-            return new OcppParsedMessage(chargeBoxId, uniqueId, action, payload, raw);
+            return new OcppParsedMessage(messageType, chargeBoxId, uniqueId, action, payload, raw);
         }
     }
 }

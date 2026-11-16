@@ -34,19 +34,26 @@ public enum ErrorCategory {
             return NON_RETRYABLE;
         }
 
-        String exName = ex.getClass().getName();
-        String exMsg = ex.getMessage();
-        if (exMsg == null) {
-            exMsg = "";
+        // 프로그래밍/검증 오류 (NPE, 잘못된 인자 등) -> NON_RETRYABLE (재시도 불필요)
+        if (ex instanceof NullPointerException
+                || ex instanceof IllegalArgumentException
+                || ex instanceof IllegalStateException
+                || ex instanceof ClassCastException
+                || ex instanceof IndexOutOfBoundsException) {
+            return NON_RETRYABLE;
         }
 
+        String exName = ex.getClass().getName();
+
         // 역직렬화 / JSON 문법 / 파싱 에러 -> NON_RETRYABLE
-        if (exName.contains("Json") || exName.contains("Parse") || exName.contains("Deserialization")) {
+        if (exName.contains("Json") || exName.contains("Parse") || exName.contains("Deserialization")
+                || exName.contains("Conversion") || exName.contains("Mapping")) {
             return NON_RETRYABLE;
         }
 
         // DB 락 / 타임아웃 / 커넥션 고갈 -> TRANSIENT
-        if (exName.contains("Lock") || exName.contains("Timeout") || exName.contains("Deadlock") || exName.contains("Connection")) {
+        if (exName.contains("Lock") || exName.contains("Timeout") || exName.contains("Deadlock")
+                || exName.contains("Connection") || exName.contains("Transient")) {
             return TRANSIENT;
         }
 

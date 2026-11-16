@@ -8,12 +8,12 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
-import com.lselink.elvis.connect.ws.session.LocalSessionStore;
-import org.springframework.web.socket.CloseStatus;
-
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 충전기로부터 수신된 OCPP Raw JSON 패킷을 Kafka ocpp-raw-events 토픽으로 비동기 발행
@@ -24,13 +24,13 @@ public class InboundRawEventProducer {
 
     private static final Logger log = LoggerFactory.getLogger(InboundRawEventProducer.class);
 
-    private final KafkaTemplate<String, OcppRawEventEnvelope> kafkaTemplate;
-    private final LocalSessionStore sessionStore;
+    private static final int FAILURE_THRESHOLD = 5;
+    private static final Duration CIRCUIT_OPEN_DURATION = Duration.ofSeconds(30);
 
-    public InboundRawEventProducer(KafkaTemplate<String, OcppRawEventEnvelope> kafkaTemplate,
-                                  LocalSessionStore sessionStore) {
+    private final KafkaTemplate<String, OcppRawEventEnvelope> kafkaTemplate;
+
+    public InboundRawEventProducer(KafkaTemplate<String, OcppRawEventEnvelope> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
-        this.sessionStore = sessionStore;
     }
 
     @Value("${elvis.gateway.kafka.inbound-topic:ocpp-raw-events}")
@@ -38,7 +38,7 @@ public class InboundRawEventProducer {
 
     private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
     private final AtomicBoolean kafkaHealthy = new AtomicBoolean(true);
-    private static final int FAILURE_THRESHOLD = 5;
+    private final AtomicReference<Instant> circuitOpenedAt = new AtomicReference<>();
 
     /**
      * 비동기 이벤트 발행 (I/O 루프 블로킹 방지)
@@ -55,11 +55,16 @@ public class InboundRawEventProducer {
                 log.error("[InboundProducer] Kafka 발행 실패 (연속 {}회): chargeBoxId={}, topic={}, error={}",
                         failures, partitionKey, inboundTopic, ex.getMessage(), ex);
 
-                if (failures >= FAILURE_THRESHOLD && kafkaHealthy.compareAndSet(true, false)) {
-                    log.error("[InboundProducer] ⚠️ Kafka Broker 장애 감지! Failover 서킷 오픈 - 단말 소켓 차단 및 로컬 버퍼링 유도");
+                if (failures >= FAILURE_THRESHOLD) {
+                    circuitOpenedAt.set(Instant.now());
+                    if (kafkaHealthy.compareAndSet(true, false)) {
+                        log.error("[InboundProducer] ⚠️ Kafka Broker 장애 감지! Failover 서킷 오픈 ({}초 후 Half-Open 재시도) - 단말 소켓 차단 및 로컬 버퍼링 유도",
+                                CIRCUIT_OPEN_DURATION.toSeconds());
+                    }
                 }
             } else {
                 consecutiveFailures.set(0);
+                circuitOpenedAt.set(null);
                 if (kafkaHealthy.compareAndSet(false, true)) {
                     log.info("[InboundProducer] 🟢 Kafka Broker 정상 복구 감지 - 서비스 정상화");
                 }
@@ -71,7 +76,21 @@ public class InboundRawEventProducer {
         return future;
     }
 
+    /**
+     * Kafka 브로커 헬스 상태 반환 (서킷 오픈 후 쿨다운 경과 시 Half-Open 프로브 허용으로 영구 잠금 방지)
+     */
     public boolean isKafkaHealthy() {
-        return kafkaHealthy.get();
+        if (kafkaHealthy.get()) {
+            return true;
+        }
+        Instant openedAt = circuitOpenedAt.get();
+        if (openedAt != null && Duration.between(openedAt, Instant.now()).compareTo(CIRCUIT_OPEN_DURATION) >= 0) {
+            if (kafkaHealthy.compareAndSet(false, true)) {
+                consecutiveFailures.set(FAILURE_THRESHOLD - 1);
+                log.info("[InboundProducer] 🟡 Kafka Failover 서킷 Half-Open 전환 - 복구 프로브 연결 허용");
+            }
+            return true;
+        }
+        return false;
     }
 }

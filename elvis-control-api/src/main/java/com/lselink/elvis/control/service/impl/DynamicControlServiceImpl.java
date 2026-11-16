@@ -39,6 +39,9 @@ public class DynamicControlServiceImpl implements DynamicControlService {
 
     @Override
     public SandboxStatusDto setSandboxPolicy(SandboxPolicyRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Sandbox 정책 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
 
         boolean isEnabled = true;
@@ -163,6 +166,9 @@ public class DynamicControlServiceImpl implements DynamicControlService {
 
     @Override
     public WireTapStatusDto setWireTapPolicy(WireTapPolicyRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("WireTap 정책 요청이 비어 있습니다.");
+        }
         String chargeBoxId = sanitizeChargeBoxId(request.getChargeBoxId());
 
         boolean isEnabled = true;
@@ -187,16 +193,12 @@ public class DynamicControlServiceImpl implements DynamicControlService {
 
         long duration = 1800L; // 기본 30분
         Long reqDuration = request.getMaxDurationSeconds();
-        if (reqDuration != null && reqDuration > 0) {
-            if (reqDuration > 3600L) {
-                duration = 3600L; // 최대 1시간 상한
-            } else {
-                duration = reqDuration;
-            }
+        if (reqDuration != null && reqDuration >= 0) {
+            duration = Math.min(reqDuration, 3600L); // 0이면 무기한, 양수면 최대 1시간 상한
         }
 
         Instant now = Instant.now();
-        Instant expiresAt = now.plusSeconds(duration);
+        Instant expiresAt = (duration > 0) ? now.plusSeconds(duration) : null;
 
         WireTapStatusDto statusDto = new WireTapStatusDto(chargeBoxId, true, level, now, expiresAt);
         wireTapRegistry.put(chargeBoxId, statusDto);
@@ -279,12 +281,16 @@ public class DynamicControlServiceImpl implements DynamicControlService {
     }
 
     /**
-     * 거버넌스 10조 채번 표준에 따른 chargeBoxId 정규화
+     * 거버넌스 10조 채번 표준({ST_ID}{CP_ID} 8자리 숫자)에 따른 chargeBoxId 정규화 및 검증
      */
     private String sanitizeChargeBoxId(String chargeBoxId) {
         if (chargeBoxId == null || chargeBoxId.trim().isEmpty()) {
             return "00000001";
         }
-        return chargeBoxId.trim();
+        String trimmed = chargeBoxId.trim();
+        if (!trimmed.matches("^\\d{8}$")) {
+            throw new IllegalArgumentException("충전기 식별자(chargeBoxId)는 8자리 숫자({ST_ID}{CP_ID}) 형식이어야 합니다: " + trimmed);
+        }
+        return trimmed;
     }
 }

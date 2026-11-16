@@ -21,11 +21,11 @@
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- |
 | **메인** | **LS BLUE** | PANTONE 281C | C100 M80 Y25 K0 | R10 G30 B90 | `#0A1E5A` | 그룹 공통 메인 아이덴티티 |
 | **메인** | **LS RED** | PANTONE 199C | C5 M100 Y80 K0 | R250 G0 B45 | `#FA002D` | 시그니처 포인트, 긴급/장애 알람 |
-| **서브** | **GREEN** | PANTONE 312C | C100 M0 Y15 K0 | R0 G155 B180 | `#009B74` | 친환경/에너지, 충전 중 상태 |
+| **서브** | **GREEN** | PANTONE 312C | C100 M0 Y15 K0 | R0 G155 B116 | `#009B74` | 친환경/에너지, 충전 중 상태 |
 | **서브** | **BLUE** | PANTONE 3005C | C100 M30 Y0 K5 | R5 G105 B160 | `#0569A0` | 인터랙티브 액션, 사용 가능 상태 |
 | **서브** | **GRAY** | PANTONE 430C | C5 M0 Y0 K50 | R125 G130 B130 | `#7D8282` | 보조 텍스트, 비활성(Disabled) |
 | **서브** | **SILVER (메탈릭)** | PANTONE 877C | C40 M30 Y30 K13 | R135 G130 B125 | `#87827D` | 특수 인쇄, 메탈릭 질감 |
-| **서브** | **GOLD (메탈릭)** | PANTONE 872C | C30 M40 Y80 K18 | R125 G13 B13 | `#7D0D0D` | 프리미엄 엠블럼, 인증 마크 |
+| **서브** | **GOLD (메탈릭)** | PANTONE 872C | C30 M40 Y80 K18 | R140 G115 B75 | `#8C734B` | 프리미엄 엠블럼, 인증 마크 (메탈릭 골드 근사치) |
 
 ---
 
@@ -35,10 +35,10 @@
 * **`PANTONE 281C` (`#0A1E5A`)**: E-LINK Blue와 LS BLUE는 완전히 동일한 색상입니다.
 * 그룹 및 합작 브랜드의 결합 시 가장 신뢰감을 주는 시각적 연결 고리(Identity Anchor) 역할을 합니다.
 
-### 2) 관제 시스템(CSMS) "60-30-10" 컬러 위계 원칙
-화면이 지나치게 원색 위주로 어지러워지는 것을 방지하고 눈의 피로도를 최소화하기 위해 다음 배분 원칙을 적용합니다:
-* **Base (60%)**: 딥 다크 네이비 (`#0A0E1A`) / 다크 슬레이트 (`#1E293B`) / 클린 그레이 (`#F8FAFC`) 등 차분한 뉴트럴 톤으로 전체 화면 바탕 구성.
-* **Brand Identity (30%)**: 공통 메인 컬러인 **`#0A1E5A` (LS/E-LINK Blue)**를 헤더(GNB), 사이드바 기본 톤으로 사용하여 신뢰감 부여.
+### 2) 관제 시스템(CSMS) "60-30-10" 컬러 위계 원칙 (라이트 테마 기본)
+모든 UI 화면, 런처, 모니터링 대시보드의 **기본(Default) 테마는 라이트 테마(Light Theme)**이며, 눈의 피로도를 최소화하고 시인성을 확보하기 위해 다음 배분 원칙을 적용합니다:
+* **Base (60%)**: 클린 라이트 슬레이트 (`#F8FAFC` / `bg-slate-50`) 바탕과 화이트 (`#FFFFFF` / `bg-white`) 카드, 얇은 보더(`#E2E8F0` / `border-slate-200`) 중심의 밝은 뉴트럴 톤으로 전체 화면 바탕 구성.
+* **Brand Identity (30%)**: 공통 메인 컬러인 **`#0A1E5A` (LS/E-LINK Blue)**를 헤더(GNB), 사이드바 액센트 및 주요 네비게이션 포인트로 사용하여 신뢰감 부여.
 * **Accent & Status (10%)**: 유채색(Red, Orange, Yellow, Green)은 **상태 표현(Semantic Status)** 및 **로고 마이크로 포인트**로만 엄격히 제한.
 
 ---
@@ -84,7 +84,10 @@
   --brand-ls-sub-blue:  #0569A0;  /* PANTONE 3005C (LS 서브 블루) */
   --brand-ls-gray:      #7D8282;  /* PANTONE 430C (LS 서브 그레이) */
   --brand-ls-silver:    #87827D;  /* PANTONE 877C (메탈릭 실버) */
-  --brand-ls-gold:      #7D0D0D;  /* PANTONE 872C (메탈릭 골드) */
+  --brand-ls-gold:      #8C734B;  /* PANTONE 872C (메탈릭 골드 근사치) */
+  --surface-bg-light:   #F8FAFC;  /* 기본 라이트 테마 배경 (bg-slate-50) */
+  --surface-card-light: #FFFFFF;  /* 기본 라이트 테마 카드 (bg-white) */
+  --border-light:       #E2E8F0;  /* 기본 라이트 테마 보더 (border-slate-200) */
 
   /* [UI Soft Tint] 눈부심 방지 15% 반투명 뱃지 배경 */
   --tint-ls-blue:      rgba(10, 30, 90, 0.15);

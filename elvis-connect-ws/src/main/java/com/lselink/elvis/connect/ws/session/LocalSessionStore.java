@@ -2,6 +2,7 @@ package com.lselink.elvis.connect.ws.session;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * 인메모리 충전기 WebSocket 세션 스토리지 (Lock-free ConcurrentHashMap)
- * 세션 동시성 관리 및 60초 미수신 단말 소켓 자동 헬스체크 기능 제공 (REQ-008)
+ * 세션 동시성 관리 및 유휴 단말 소켓 자동 헬스체크 기능 제공 (REQ-008)
  */
 @Component
 public class LocalSessionStore {
@@ -34,7 +35,13 @@ public class LocalSessionStore {
      */
     private final ConcurrentMap<String, Instant> lastActivityMap = new ConcurrentHashMap<>();
 
-    private static final Duration SESSION_TIMEOUT = Duration.ofSeconds(60);
+    private final long idleTimeoutSeconds;
+    private final Duration sessionTimeout;
+
+    public LocalSessionStore(@Value("${elvis.gateway.websocket.idle-timeout-seconds:90}") long idleTimeoutSeconds) {
+        this.idleTimeoutSeconds = idleTimeoutSeconds > 0 ? idleTimeoutSeconds : 90L;
+        this.sessionTimeout = Duration.ofSeconds(this.idleTimeoutSeconds);
+    }
 
     /**
      * 세션 등록 및 중복 연결 축출 (Session Eviction)
@@ -60,7 +67,9 @@ public class LocalSessionStore {
      * 패킷/Heartbeat 수신 시 세션 활동 시각 갱신
      */
     public void touchSession(String chargeBoxId) {
-        lastActivityMap.put(chargeBoxId, Instant.now());
+        if (chargeBoxId != null && sessionMap.containsKey(chargeBoxId)) {
+            lastActivityMap.put(chargeBoxId, Instant.now());
+        }
     }
 
     /**
@@ -133,7 +142,7 @@ public class LocalSessionStore {
     public void monitorAndLogActiveSessions() {
         int evicted = cleanupIdleSessions();
         if (evicted > 0) {
-            log.warn("[SessionStore] 60초 무응답 타임아웃 세션 정리 완료: {}건 해제됨", evicted);
+            log.warn("[SessionStore] {}초 무응답/종료 세션 정리 완료: {}건 해제됨", idleTimeoutSeconds, evicted);
         }
 
         int activeCount = getActiveSessionCount();
@@ -143,27 +152,36 @@ public class LocalSessionStore {
     }
 
     /**
-     * 60초 이상 미수신(유휴) 단말 세션 자동 감지 및 강제 해제 (Heartbeat 헬스체크)
+     * 유휴 타임아웃 초과 및 이미 닫힌 단말 세션 자동 감지 및 정리 (Heartbeat 헬스체크)
      */
     public int cleanupIdleSessions() {
-        Instant threshold = Instant.now().minus(SESSION_TIMEOUT);
+        Instant now = Instant.now();
+        Instant threshold = now.minus(sessionTimeout);
         int evictedCount = 0;
 
-        for (var entry : lastActivityMap.entrySet()) {
+        for (var entry : sessionMap.entrySet()) {
             String chargeBoxId = entry.getKey();
-            Instant lastActive = entry.getValue();
+            WebSocketSession session = entry.getValue();
 
-            if (lastActive.isBefore(threshold)) {
-                WebSocketSession session = sessionMap.get(chargeBoxId);
-                if (session != null && session.isOpen()) {
-                    log.warn("[SessionStore] 60초 헬스체크 미응답 타임아웃 단말 소켓 강제 해제: chargeBoxId={}, idleDuration={}s",
-                            chargeBoxId, Duration.between(lastActive, Instant.now()).toSeconds());
-                    try {
-                        session.close(CloseStatus.SESSION_NOT_RELIABLE.withReason("Heartbeat timeout (60s)"));
-                    } catch (IOException e) {
-                        log.error("[SessionStore] 소켓 해제 실패: chargeBoxId={}", chargeBoxId, e);
-                    }
-                    sessionMap.remove(chargeBoxId, session);
+            if (!session.isOpen()) {
+                if (sessionMap.remove(chargeBoxId, session)) {
+                    lastActivityMap.remove(chargeBoxId);
+                    evictedCount++;
+                }
+                continue;
+            }
+
+            Instant lastActive = lastActivityMap.get(chargeBoxId);
+            if (lastActive != null && lastActive.isBefore(threshold)) {
+                log.warn("[SessionStore] {}초 헬스체크 미응답 타임아웃 단말 소켓 강제 해제: chargeBoxId={}, idleDuration={}s",
+                        idleTimeoutSeconds, chargeBoxId, Duration.between(lastActive, now).toSeconds());
+                try {
+                    session.close(CloseStatus.SESSION_NOT_RELIABLE.withReason(
+                            "Heartbeat timeout (" + idleTimeoutSeconds + "s)"));
+                } catch (IOException e) {
+                    log.error("[SessionStore] 소켓 해제 실패: chargeBoxId={}", chargeBoxId, e);
+                }
+                if (sessionMap.remove(chargeBoxId, session)) {
                     lastActivityMap.remove(chargeBoxId);
                     evictedCount++;
                 }

@@ -10,6 +10,11 @@ USE `elvis_lite`;
 -- 외래키 제약조건 잠시 해제 및 클린 초기화 (기존 데이터 전부 삭제)
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE transaction_cdr;
+TRUNCATE TABLE charge_detail_record;
+TRUNCATE TABLE transaction_session;
+TRUNCATE TABLE auth_hist;
+TRUNCATE TABLE fault_history;
+TRUNCATE TABLE dlt_history;
 TRUNCATE TABLE connector_status;
 TRUNCATE TABLE charger;
 TRUNCATE TABLE station;

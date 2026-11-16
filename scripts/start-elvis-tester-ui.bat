@@ -14,11 +14,11 @@ powershell -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction SilentlyC
 
 cd /d "%UI_ROOT%"
 if not exist "node_modules" (
-    echo [INFO] 의존성 패키지 설치 진행 중... (npm install)
-    call npm install
+    echo [INFO] 의존성 패키지 설치 진행 중... (pnpm install)
+    call pnpm install
 )
 
 echo [INFO] Vite 개발 서버 기동 및 브라우저 오픈...
-call npm run dev -- --open
+call pnpm dev --open
 
 pause

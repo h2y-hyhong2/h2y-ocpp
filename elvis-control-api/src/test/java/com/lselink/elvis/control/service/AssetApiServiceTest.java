@@ -19,16 +19,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,6 +86,8 @@ class AssetApiServiceTest {
         mockCharger.setSpec("급속 100kW (듀얼건)");
         mockCharger.setProtocol("ocpp1.6");
 
+        LocalDateTime heartbeatTime = LocalDateTime.of(2026, 11, 16, 10, 30, 0);
+
         mockConnector1 = new ConnectorStatusEntity();
         mockConnector1.setChargeBoxId("00000101");
         mockConnector1.setConnectorId(1);
@@ -94,22 +101,23 @@ class AssetApiServiceTest {
         mockConnector1.setUserTag("RFID_LS_999");
         mockConnector1.setAccumulatedKwh(new BigDecimal("32.50"));
         mockConnector1.setChargingMinutes(28);
-        mockConnector1.setLastHeartbeat(LocalDateTime.now());
+        mockConnector1.setLastHeartbeat(heartbeatTime);
 
         mockConnector2 = new ConnectorStatusEntity();
         mockConnector2.setChargeBoxId("00000101");
         mockConnector2.setConnectorId(2);
         mockConnector2.setStatus("충전대기");
-        mockConnector2.setPowerKw(BigDecimal.ZERO);
-        mockConnector2.setAccumulatedKwh(BigDecimal.ZERO);
-        mockConnector2.setLastHeartbeat(LocalDateTime.now());
+        mockConnector2.setPowerKw(new BigDecimal("10.00"));
+        mockConnector2.setAccumulatedKwh(new BigDecimal("5.00"));
+        mockConnector2.setLastHeartbeat(heartbeatTime);
     }
 
     @Test
-    @DisplayName("충전소 페이징 및 키워드 필터링 조회 검증")
+    @DisplayName("충전소 QueryDSL 페이징 및 키워드 필터링 조회 검증")
     void testStationPagedSearch() {
-        when(stationRepository.findAllByOrderByStIdAsc()).thenReturn(Collections.singletonList(mockStation));
-        when(corpRepository.findAll()).thenReturn(Collections.singletonList(mockCorp));
+        Page<StationEntity> page = new PageImpl<>(Collections.singletonList(mockStation), PageRequest.of(0, 10), 1L);
+        when(stationRepository.searchStations(eq("ALL"), eq("안양"), any(Pageable.class))).thenReturn(page);
+        when(corpRepository.findAllById(any())).thenReturn(Collections.singletonList(mockCorp));
 
         PageResponse<StationResponseDto> result = stationService.getPagedStations("ALL", "안양", 0, 10);
 
@@ -121,18 +129,46 @@ class AssetApiServiceTest {
     }
 
     @Test
-    @DisplayName("충전기 단건 상세 조회 및 듀얼 커넥터 목록 매핑 검증")
+    @DisplayName("충전기 QueryDSL 페이징 조회 및 빈 결과 totalPages=0 정합성 검증")
+    void testChargerPagedSearchAndEmptyPage() {
+        Page<ChargerEntity> page = new PageImpl<>(Collections.singletonList(mockCharger), PageRequest.of(0, 10), 1L);
+        when(chargerRepository.searchChargers(eq("ALL"), eq("ALL"), eq("00000101"), any(Pageable.class)))
+                .thenReturn(page);
+        when(stationRepository.findAllById(any())).thenReturn(Collections.singletonList(mockStation));
+        when(corpRepository.findAllById(any())).thenReturn(Collections.singletonList(mockCorp));
+        when(connectorStatusRepository.findByChargeBoxIdIn(any()))
+                .thenReturn(Arrays.asList(mockConnector2, mockConnector1));
+
+        PageResponse<ChargerResponseDto> result = chargerService.getPagedChargers("ALL", "ALL", "00000101", 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getConnectorId()).isEqualTo(1);
+        assertThat(result.getTotalPages()).isEqualTo(1);
+
+        when(chargerRepository.searchChargers(eq("ALL"), eq("ALL"), eq("NOT_FOUND"), any(Pageable.class)))
+                .thenReturn(Page.empty(PageRequest.of(0, 10)));
+        PageResponse<ChargerResponseDto> emptyResult = chargerService.getPagedChargers("ALL", "ALL", "NOT_FOUND", 0, 10);
+        assertThat(emptyResult.getContent()).isEmpty();
+        assertThat(emptyResult.getTotalPages()).isEqualTo(0);
+        assertThat(emptyResult.isLast()).isTrue();
+    }
+
+    @Test
+    @DisplayName("충전기 단건 상세 조회 시 커넥터 ID 오름차순 정렬 및 실제 하트비트 타임스탬프 매핑 검증")
     void testChargerDetailWithDualConnectors() {
         when(chargerRepository.findById("00000101")).thenReturn(Optional.of(mockCharger));
         when(stationRepository.findById("000001")).thenReturn(Optional.of(mockStation));
         when(corpRepository.findById("CORP01")).thenReturn(Optional.of(mockCorp));
+        // 의도적으로 역순 반환하여 정렬 검증
         when(connectorStatusRepository.findByChargeBoxId("00000101"))
-                .thenReturn(Arrays.asList(mockConnector1, mockConnector2));
+                .thenReturn(Arrays.asList(mockConnector2, mockConnector1));
 
         ChargerResponseDto result = chargerService.getChargerById("00000101");
 
         assertThat(result.getChargeBoxId()).isEqualTo("00000101");
+        assertThat(result.getConnectorId()).isEqualTo(1);
         assertThat(result.getStatus()).isEqualTo("충전중");
+        assertThat(result.getLastHeartbeat()).isEqualTo("2026-11-16 10:30:00");
         assertThat(result.getStationName()).isEqualTo("안양 R&D 충전소");
         assertThat(result.getConnectors()).hasSize(2);
         assertThat(result.getConnectors().get(0).getConnectorId()).isEqualTo(1);
@@ -142,7 +178,7 @@ class AssetApiServiceTest {
     }
 
     @Test
-    @DisplayName("충전기 실시간 운영 요약 통계 집계 검증")
+    @DisplayName("충전기 실시간 운영 요약 통계 집계 시 모든 커넥터 전력/충전량 합산 검증")
     void testChargerSummaryKpi() {
         when(chargerRepository.findAllByOrderByChargeBoxIdAsc()).thenReturn(Collections.singletonList(mockCharger));
         when(stationRepository.findAll()).thenReturn(Collections.singletonList(mockStation));
@@ -153,7 +189,25 @@ class AssetApiServiceTest {
 
         assertThat(summary.getTotalCount()).isEqualTo(1);
         assertThat(summary.getChargingCount()).isEqualTo(1);
-        assertThat(summary.getTotalPowerKw()).isEqualByComparingTo(new BigDecimal("48.50"));
-        assertThat(summary.getTotalAccumulatedKwh()).isEqualByComparingTo(new BigDecimal("32.50"));
+        assertThat(summary.getTotalPowerKw()).isEqualByComparingTo(new BigDecimal("58.50"));
+        assertThat(summary.getTotalAccumulatedKwh()).isEqualByComparingTo(new BigDecimal("37.50"));
+    }
+
+    @Test
+    @DisplayName("원격 제어 액션 실행 시 RemoteReset 지원 및 미존재 충전기 false 반환 검증")
+    void testExecuteRemoteAction() {
+        when(chargerRepository.existsById("00000101")).thenReturn(true);
+        when(chargerRepository.existsById("99999999")).thenReturn(false);
+        when(connectorStatusRepository.findByChargeBoxId("00000101"))
+                .thenReturn(Arrays.asList(mockConnector1, mockConnector2));
+
+        boolean resetResult = chargerService.executeRemoteAction("00000101", "RemoteReset");
+        boolean missingResult = chargerService.executeRemoteAction("99999999", "Reset");
+
+        assertThat(resetResult).isTrue();
+        assertThat(mockConnector1.getStatus()).isEqualTo("충전대기");
+        assertThat(mockConnector2.getStatus()).isEqualTo("충전대기");
+        assertThat(missingResult).isFalse();
+        verify(connectorStatusRepository, org.mockito.Mockito.times(2)).save(any(ConnectorStatusEntity.class));
     }
 }

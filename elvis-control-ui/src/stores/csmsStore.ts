@@ -1,22 +1,66 @@
 import { defineStore } from 'pinia'
 import { authFetch } from '@/utils/apiClient'
 
-// 1. 커넥터 상태 매핑 상수 (UI 색상 및 배지 스타일)
-export const STATUS_MAP = {
+export interface StatusMeta {
+  key: string
+  name: string
+  color: string
+  darkHex: string
+  cellClass: string
+  badgeClass: string
+  dotClass: string
+}
+
+// 커넥터 상태 매핑 상수 (한글 표준 상태 + OCPP 영문 상태 동시 지원)
+export const STATUS_MAP: Record<string, StatusMeta> = {
   '연결안됨':   { key: 'disconnected', name: '연결안됨',   color: '#64748b', darkHex: '#475569', cellClass: 'cell-disconnected', badgeClass: 'badge-disconnected', dotClass: 'bg-slate-400' },
   '충전대기':   { key: 'standby',      name: '충전대기',   color: '#d97706', darkHex: '#9a3412', cellClass: 'cell-standby',      badgeClass: 'badge-standby',      dotClass: 'bg-amber-500' },
   '충전준비중': { key: 'preparing',    name: '충전준비중', color: '#0d9488', darkHex: '#115e59', cellClass: 'cell-preparing',    badgeClass: 'badge-preparing',    dotClass: 'bg-teal-500' },
   '충전중':     { key: 'charging',     name: '충전중',     color: '#3b82f6', darkHex: '#1e40af', cellClass: 'cell-charging',     badgeClass: 'badge-charging',     dotClass: 'bg-blue-500' },
   '충전완료':   { key: 'finished',     name: '충전완료',   color: '#059669', darkHex: '#166534', cellClass: 'cell-finished',     badgeClass: 'badge-finished',     dotClass: 'bg-emerald-500' },
+  '고장':       { key: 'faulted',      name: '고장',       color: '#dc2626', darkHex: '#991b1b', cellClass: 'cell-commerr',      badgeClass: 'badge-faulted',      dotClass: 'bg-rose-500' },
   '통신이상':   { key: 'commerr',      name: '통신이상',   color: '#dc2626', darkHex: '#991b1b', cellClass: 'cell-commerr',      badgeClass: 'badge-commerr',      dotClass: 'bg-rose-500' },
   '점검중':     { key: 'inspecting',   name: '점검중',     color: '#b45309', darkHex: '#854d0e', cellClass: 'cell-inspecting',   badgeClass: 'badge-inspecting',   dotClass: 'bg-yellow-600' },
   '운영중지':   { key: 'suspended',    name: '운영중지',   color: '#7c3aed', darkHex: '#6b21a8', cellClass: 'cell-suspended',    badgeClass: 'badge-suspended',    dotClass: 'bg-purple-500' },
   '예약중':     { key: 'reserved',     name: '예약중',     color: '#4d7c0f', darkHex: '#3f6212', cellClass: 'cell-reserved',     badgeClass: 'badge-reserved',     dotClass: 'bg-lime-600' },
   '일시중지':   { key: 'paused',       name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',       badgeClass: 'badge-paused',       dotClass: 'bg-rose-600' },
-  '알수없음':   { key: 'unknown',      name: '알수없음',   color: '#64748b', darkHex: '#475569', cellClass: 'cell-unknown',      badgeClass: 'badge-unknown',      dotClass: 'bg-slate-400' }
+  '알수없음':   { key: 'unknown',      name: '알수없음',   color: '#64748b', darkHex: '#475569', cellClass: 'cell-unknown',      badgeClass: 'badge-unknown',      dotClass: 'bg-slate-400' },
+
+  // OCPP 표준 영문 상태 매핑
+  'Available':     { key: 'standby',    name: '충전대기',   color: '#d97706', darkHex: '#9a3412', cellClass: 'cell-standby',    badgeClass: 'badge-standby',    dotClass: 'bg-amber-500' },
+  'Preparing':     { key: 'preparing',  name: '충전준비중', color: '#0d9488', darkHex: '#115e59', cellClass: 'cell-preparing',  badgeClass: 'badge-preparing',  dotClass: 'bg-teal-500' },
+  'Charging':      { key: 'charging',   name: '충전중',     color: '#3b82f6', darkHex: '#1e40af', cellClass: 'cell-charging',   badgeClass: 'badge-charging',   dotClass: 'bg-blue-500' },
+  'Finishing':     { key: 'finished',   name: '충전완료',   color: '#059669', darkHex: '#166534', cellClass: 'cell-finished',   badgeClass: 'badge-finished',   dotClass: 'bg-emerald-500' },
+  'Faulted':       { key: 'faulted',    name: '고장',       color: '#dc2626', darkHex: '#991b1b', cellClass: 'cell-commerr',    badgeClass: 'badge-faulted',    dotClass: 'bg-rose-500' },
+  'Unavailable':   { key: 'inspecting', name: '점검중',     color: '#b45309', darkHex: '#854d0e', cellClass: 'cell-inspecting', badgeClass: 'badge-inspecting', dotClass: 'bg-yellow-600' },
+  'SuspendedEV':   { key: 'paused',     name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',     badgeClass: 'badge-paused',     dotClass: 'bg-rose-600' },
+  'SuspendedEVSE': { key: 'paused',     name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',     badgeClass: 'badge-paused',     dotClass: 'bg-rose-600' }
 }
 
+export const PRIMARY_STATUS_KEYS = [
+  '연결안됨',
+  '충전대기',
+  '충전준비중',
+  '충전중',
+  '충전완료',
+  '고장',
+  '통신이상',
+  '점검중',
+  '운영중지',
+  '예약중',
+  '일시중지',
+  '알수없음'
+] as const
+
 export type StatusKey = keyof typeof STATUS_MAP
+export type ThemeType = 'light' | 'cyber' | 'emerald' | 'purple' | 'amber'
+
+export function getStatusMeta(status?: string | null): StatusMeta {
+  if (status && STATUS_MAP[status]) {
+    return STATUS_MAP[status]
+  }
+  return STATUS_MAP['알수없음']
+}
 
 export interface CorpItem {
   id: string
@@ -25,6 +69,21 @@ export interface CorpItem {
   tag: string
   colorClass: string
   badge?: string
+}
+
+export interface ConnectorDetail {
+  connectorId: number
+  status: string
+  powerKw: number
+  voltageV: number
+  currentA: number
+  socPercent: number
+  batteryTempC: number
+  carModel?: string | null
+  userTag?: string | null
+  accumulatedKwh: number
+  chargingMinutes: number
+  lastHeartbeat: string
 }
 
 export interface ChargerItem {
@@ -52,6 +111,7 @@ export interface ChargerItem {
   lastHeartbeat: string
   accumulatedKwh: number
   chargingMinutes: number
+  connectors?: ConnectorDetail[]
 }
 
 export interface StationItem {
@@ -73,17 +133,14 @@ export interface ToastMessage {
 
 export const useCsmsStore = defineStore('csms', {
   state: () => ({
-    // 테마 설정
-    currentTheme: 'light' as 'light' | 'cyber',
+    // 테마 설정 (라이트 기본)
+    currentTheme: 'light' as ThemeType,
 
-    // 화면 디자인 컨셉 (3개 시안 스위처)
-    activeConcept: 'concept1' as 'concept1' | 'concept2' | 'concept3',
-
-    // 반응형 드로어 상태 (프로토타입 LAYOUT-OPTION-B 규격)
+    // 반응형 드로어 상태
     isSidebarOpen: false,
     isControlDrawerOpen: false,
 
-    // 법인 및 충전소 데이터 (순수 DB 동기화 대상, 더미 제거)
+    // 법인 및 충전소 데이터 (순수 DB 동기화 대상)
     corps: [] as CorpItem[],
     stations: [] as StationItem[],
     chargers: [] as ChargerItem[],
@@ -95,7 +152,7 @@ export const useCsmsStore = defineStore('csms', {
     searchQuery: '',
     selectedCharger: null as ChargerItem | null,
 
-    // 시스템 전체 요약 (대시보드 KPI - 순수 실데이터 연동)
+    // 시스템 전체 요약 (대시보드 KPI - 실데이터 연동)
     summary: {
       totalChargers: 0,
       chargingCount: 0,
@@ -108,7 +165,7 @@ export const useCsmsStore = defineStore('csms', {
       todayTotalKwh: 0
     },
 
-    // DB 연결 상태 (MySQL 연동 여부)
+    // DB 연결 상태
     isDbConnected: false,
 
     // 토스트 알림 목록
@@ -117,11 +174,7 @@ export const useCsmsStore = defineStore('csms', {
 
   actions: {
     setTheme(theme: string) {
-      this.currentTheme = theme as 'light' | 'cyber'
-    },
-
-    setConcept(concept: 'concept1' | 'concept2' | 'concept3') {
-      this.activeConcept = concept
+      this.currentTheme = theme as ThemeType
     },
 
     toggleSidebar(isOpen?: boolean) {
@@ -134,10 +187,12 @@ export const useCsmsStore = defineStore('csms', {
 
     setCorpFilter(corpId: string) {
       this.curCorpFilter = corpId
-      const stInCorp = this.stations.find(s => corpId === 'ALL' || s.corpId === corpId)
-      if (stInCorp) {
-        this.curStFilter = stInCorp.id
+      if (corpId === 'ALL') {
+        this.curStFilter = 'ALL'
+        return
       }
+      const stInCorp = this.stations.find(s => s.corpId === corpId)
+      this.curStFilter = stInCorp ? stInCorp.id : 'ALL'
     },
 
     setStationFilter(stId: string) {
@@ -156,22 +211,26 @@ export const useCsmsStore = defineStore('csms', {
       this.selectedCharger = charger
     },
 
-    // 📡 중앙 REST API (/api/v1) MySQL 9.71 실데이터 연동 액션
+    // 중앙 REST API (/api/v1) MySQL 실데이터 연동 액션
     async fetchInitialData(silent = false) {
       try {
-        console.log('%c[CSMS UI] 📡 REST API 데이터 조회 쿼리 실행: GET /api/v1/{corps, stations, chargers, cdr}', 'color: #3b82f6; font-weight: bold')
-        const [corpRes, stRes, chgRes, cdrRes] = await Promise.all([
+        if (!silent) {
+          console.log('[CSMS UI] REST API 데이터 조회 실행: GET /api/v1/{corps, stations, chargers, chargers/summary, cdr/summary}')
+        }
+
+        const [corpRes, stRes, chgRes, chgSummaryRes, cdrSummaryRes] = await Promise.all([
           authFetch('/api/v1/corps'),
           authFetch('/api/v1/stations'),
           authFetch('/api/v1/chargers'),
-          authFetch('/api/v1/cdr')
+          authFetch('/api/v1/chargers/summary'),
+          authFetch('/api/v1/cdr/summary')
         ])
 
         if (stRes.ok && chgRes.ok) {
           const stJson = await stRes.json()
           const chgJson = await chgRes.json()
 
-          const unwrap = (json: any) => {
+          const unwrapList = (json: any) => {
             if (!json) return []
             if (Array.isArray(json)) return json
             if (json.data && Array.isArray(json.data)) return json.data
@@ -180,65 +239,66 @@ export const useCsmsStore = defineStore('csms', {
 
           if (corpRes.ok) {
             const corpJson = await corpRes.json()
-            const corpList = unwrap(corpJson)
-            if (corpList.length > 0) {
-              this.corps = corpList
-            }
+            this.corps = unwrapList(corpJson)
           }
 
-          const stList = unwrap(stJson)
+          const stList = unwrapList(stJson)
           if (stList.length > 0) {
             this.stations = stList
             if (this.curStFilter !== 'ALL' && !this.stations.some(s => s.id === this.curStFilter)) {
-              this.curStFilter = this.stations[0].id
+              this.curStFilter = 'ALL'
             }
           } else {
             this.stations = []
             this.curStFilter = 'ALL'
           }
 
-          const chgList = unwrap(chgJson)
+          const chgList = unwrapList(chgJson)
           if (chgList.length > 0) {
             this.chargers = chgList
             if (!this.selectedCharger || !this.chargers.some(c => c.chargeBoxId === this.selectedCharger?.chargeBoxId)) {
               this.selectedCharger = this.chargers[0]
+            } else {
+              const updated = this.chargers.find(c => c.chargeBoxId === this.selectedCharger?.chargeBoxId)
+              if (updated) {
+                this.selectedCharger = updated
+              }
             }
           } else {
             this.chargers = []
             this.selectedCharger = null
           }
 
-          console.log(`%c[CSMS UI] 📥 실데이터 응답 수신: 법인 ${this.corps.length}건, 충전소 ${this.stations.length}건, 충전기 ${this.chargers.length}건`, 'color: #10b981; font-weight: bold', {
-            corps: this.corps,
-            stations: this.stations,
-            chargers: this.chargers
-          })
-
-          let cdrSummary = null
-          if (cdrRes.ok) {
-            const cdrJson = await cdrRes.json()
-            const cdrData = cdrJson.data || cdrJson
-            if (cdrData && cdrData.summary) {
-              cdrSummary = cdrData.summary
-            }
+          let chgSummary: any = null
+          if (chgSummaryRes.ok) {
+            const chgSummaryJson = await chgSummaryRes.json()
+            chgSummary = chgSummaryJson?.data || chgSummaryJson
           }
 
-          // 📊 DB 실데이터 기반 summary KPI 자동 계산
-          const totalChargers = this.chargers.length
-          const chargingCount = this.chargers.filter(c => c.status === '충전중').length
-          const availableCount = this.chargers.filter(c => c.status === '충전대기').length
-          const faultedCount = this.chargers.filter(c => c.status === '통신이상').length
-          const preparingCount = this.chargers.filter(c => c.status === '충전준비중').length
-          const totalPowerKw = this.chargers.reduce((acc, c) => acc + (Number(c.powerKw) || 0), 0)
+          let cdrSummary: any = null
+          if (cdrSummaryRes.ok) {
+            const cdrSummaryJson = await cdrSummaryRes.json()
+            cdrSummary = cdrSummaryJson?.data || cdrSummaryJson
+          }
+
+          const chargingCount = chgSummary?.chargingCount ?? this.chargers.filter(c => getStatusMeta(c.status).key === 'charging').length
+          const availableCount = chgSummary?.availableCount ?? this.chargers.filter(c => getStatusMeta(c.status).key === 'standby').length
+          const faultedCount = chgSummary?.faultedCount ?? this.chargers.filter(c => {
+            const k = getStatusMeta(c.status).key
+            return k === 'faulted' || k === 'commerr' || k === 'inspecting'
+          }).length
+          const preparingCount = this.chargers.filter(c => getStatusMeta(c.status).key === 'preparing').length
+          const fallbackPower = this.chargers.reduce((acc, c) => acc + (Number(c.powerKw) || 0), 0)
+          const totalPowerKw = chgSummary?.totalPowerKw != null ? Number(chgSummary.totalPowerKw) : fallbackPower
 
           this.summary = {
-            totalChargers,
+            totalChargers: chgSummary?.totalCount ?? this.chargers.length,
             chargingCount,
             availableCount,
             faultedCount,
             preparingCount,
             totalPowerKw: Math.round(totalPowerKw * 10) / 10,
-            liveTps: totalChargers > 0 ? 35 : 0,
+            liveTps: 0,
             activeSessions: chargingCount,
             todayTotalKwh: cdrSummary ? Number(cdrSummary.totalKwh) || 0 : 0
           }
@@ -257,12 +317,12 @@ export const useCsmsStore = defineStore('csms', {
         } else {
           this.isDbConnected = false
         }
-      } catch (err) {
+      } catch {
         this.isDbConnected = false
       }
     },
 
-    // 📡 원격 충전기 제어 명령 API 연동
+    // 원격 충전기 제어 명령 API 연동
     async sendRemoteAction(action: string) {
       if (!this.selectedCharger) return
 
@@ -273,19 +333,18 @@ export const useCsmsStore = defineStore('csms', {
           body: JSON.stringify({ action })
         })
 
-        if (res.ok) {
-          const result = await res.json()
-          this.addToast('success', `${action} 명령 완료`, result.message || '원격 제어 명령이 성공적으로 전송되었습니다.')
-          // 1초 후 충전기 목록 재조회
-          setTimeout(() => this.fetchInitialData(), 1000)
+        const result = await res.json().catch(() => null)
+        if (res.ok && result?.success !== false && result?.data?.success !== false) {
+          this.addToast('success', `${action} 명령 완료`, result?.message || '원격 제어 명령이 성공적으로 전송되었습니다.')
+          setTimeout(() => this.fetchInitialData(true), 1000)
           return
         }
-      } catch (err: any) {
-        this.addToast('error', `${action} 명령 실패`, err.message || '원격 제어 명령 전송 중 오류가 발생했습니다.')
-        return
-      }
 
-      this.addToast('error', `${action} 명령 실패`, `[${this.selectedCharger.chargeBoxId}] 단말에 명령을 전달하지 못했습니다.`)
+        const errMsg = result?.message || `[${this.selectedCharger.chargeBoxId}] 단말에 명령을 전달하지 못했습니다. (HTTP ${res.status})`
+        this.addToast('error', `${action} 명령 실패`, errMsg)
+      } catch (err: any) {
+        this.addToast('error', `${action} 명령 실패`, err?.message || '원격 제어 명령 전송 중 오류가 발생했습니다.')
+      }
     },
 
     addToast(typeOrObj: 'success' | 'info' | 'error' | { title: string; detail: string; type: 'success' | 'info' | 'error' }, title = '', detail = '') {

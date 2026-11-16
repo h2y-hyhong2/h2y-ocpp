@@ -20,65 +20,65 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(
-        name = "tb_pricing_tou_rule",
+        name = "pricing_tou_rule",
         indexes = {
-                @Index(name = "IX_TOU_RULE_LOOKUP", columnList = "POLICY_ID, SEASON_TYPE, DAY_TYPE, START_HOUR, END_HOUR")
+                @Index(name = "ix_tou_rule_lookup", columnList = "policy_id, season_type, day_type, start_hour, end_hour")
         }
 )
 public class PricingTouRule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
+    @Column(name = "id")
     private Long id;
 
     /**
      * 연관 요금 정책 식별자
      */
-    @Column(name = "POLICY_ID", length = 32, nullable = false)
+    @Column(name = "policy_id", length = 32, nullable = false)
     private String policyId;
 
     /**
      * 계절 구분 (SPRING_AUTUMN, SUMMER, WINTER)
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "SEASON_TYPE", length = 16, nullable = false)
+    @Column(name = "season_type", length = 16, nullable = false)
     private SeasonType seasonType;
 
     /**
      * 요일 구분 (WEEKDAY, SATURDAY, HOLIDAY)
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "DAY_TYPE", length = 16, nullable = false)
+    @Column(name = "day_type", length = 16, nullable = false)
     private DayType dayType;
 
     /**
      * 부하 구분 (OFF_PEAK, MID_PEAK, ON_PEAK)
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "LOAD_TYPE", length = 16, nullable = false)
+    @Column(name = "load_type", length = 16, nullable = false)
     private LoadType loadType;
 
     /**
      * 적용 시작 시각 (0~23)
      */
-    @Column(name = "START_HOUR", nullable = false)
+    @Column(name = "start_hour", nullable = false)
     private int startHour;
 
     /**
      * 적용 종료 시각 (1~24, 24는 익일 00시)
      */
-    @Column(name = "END_HOUR", nullable = false)
+    @Column(name = "end_hour", nullable = false)
     private int endHour;
 
     /**
      * 전력량 단가 (원/kWh)
      */
-    @Column(name = "UNIT_PRICE", precision = 12, scale = 2, nullable = false)
+    @Column(name = "unit_price", precision = 12, scale = 2, nullable = false)
     private BigDecimal unitPrice;
 
     @CreationTimestamp
-    @Column(name = "REG_DT", nullable = false, updatable = false)
+    @Column(name = "reg_dt", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
     protected PricingTouRule() {

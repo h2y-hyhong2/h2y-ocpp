@@ -1,6 +1,8 @@
 package com.lselink.elvis.connect.sync.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lselink.elvis.connect.sync.domain.FaultHistory;
 import com.lselink.elvis.connect.sync.domain.FaultSeverity;
 import com.lselink.elvis.connect.sync.dto.FaultNotificationEvent;
@@ -16,14 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 충전기 실시간 장애 감지 및 자동 복구 서비스 구현체 (Sprint 23: S23-SYNC-0060-CO)
  * <p>
- * 10ms 이하 인라인 장애 판정, Flapping 방어 L1 캐시, MySQL 원장 저장 및 Kafka UI 알림 발행 수행.
+ * 10ms 이하 인라인 장애 판정, Bounded Caffeine 기반 Flapping 방어 L1 캐시,
+ * MySQL 원장 저장(중복 미해결 이력 방지) 및 Kafka UI 알림 발행 수행.
  * </p>
  */
 @Service
@@ -31,16 +35,17 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
 
     private static final Logger log = LoggerFactory.getLogger(FaultDetectionServiceImpl.class);
     private static final DateTimeFormatter EVENT_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final long MAX_FAULT_CACHE_SIZE = 10_000L;
 
     private final FaultHistoryRepository faultHistoryRepository;
     private final NotificationProducer notificationProducer;
     private final long flappingWindowSeconds;
 
     /**
-     * 충전기 커넥터별 최신 장애 상태 캐시 (Flapping 억제용 L1 필터)
+     * 충전기 커넥터별 최신 장애 상태 Bounded L1 캐시 (Flapping 억제 및 메모리 누수 방지)
      * Key: {chargeBoxId}:{connectorId}
      */
-    private final Map<String, FaultCacheState> faultStateCache = new ConcurrentHashMap<>();
+    private final Cache<String, FaultCacheState> faultStateCache;
 
     public FaultDetectionServiceImpl(
             FaultHistoryRepository faultHistoryRepository,
@@ -49,7 +54,12 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
     ) {
         this.faultHistoryRepository = faultHistoryRepository;
         this.notificationProducer = notificationProducer;
-        this.flappingWindowSeconds = flappingWindowSeconds;
+        this.flappingWindowSeconds = flappingWindowSeconds > 0 ? flappingWindowSeconds : 60L;
+        long cacheTtlSeconds = Math.max(this.flappingWindowSeconds * 5, 600L);
+        this.faultStateCache = Caffeine.newBuilder()
+                .maximumSize(MAX_FAULT_CACHE_SIZE)
+                .expireAfterWrite(cacheTtlSeconds, TimeUnit.SECONDS)
+                .build();
     }
 
     @Override
@@ -58,36 +68,13 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
         String chargeBoxId = msg.getChargeBoxId();
         JsonNode payload = msg.getPayload();
 
-        int connectorId = 0;
-        if (payload.has("connectorId")) {
-            connectorId = payload.path("connectorId").asInt(0);
-        }
-
-        String status = "Unknown";
-        if (payload.has("status")) {
-            status = payload.path("status").asText("Unknown");
-        }
-
-        String errorCode = "NoError";
-        if (payload.has("errorCode")) {
-            errorCode = payload.path("errorCode").asText("NoError");
-        }
-
-        String vendorErrorCode = null;
-        if (payload.has("vendorErrorCode")) {
-            String rawVendorCode = payload.path("vendorErrorCode").asText(null);
-            if (rawVendorCode != null && !rawVendorCode.isBlank() && !rawVendorCode.equalsIgnoreCase("null")) {
-                vendorErrorCode = rawVendorCode;
-            }
-        }
-
-        String info = null;
-        if (payload.has("info")) {
-            String rawInfo = payload.path("info").asText(null);
-            if (rawInfo != null && !rawInfo.isBlank() && !rawInfo.equalsIgnoreCase("null")) {
-                info = rawInfo;
-            }
-        }
+        int connectorId = (payload != null && payload.hasNonNull("connectorId"))
+                ? payload.get("connectorId").asInt(0)
+                : 0;
+        String status = extractNonBlankText(payload, "status", "Unknown");
+        String errorCode = extractNonBlankText(payload, "errorCode", "NoError");
+        String vendorErrorCode = extractNonBlankText(payload, "vendorErrorCode", null);
+        String info = extractNonBlankText(payload, "info", null);
 
         LocalDateTime eventTime = LocalDateTime.now();
 
@@ -99,7 +86,7 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
             handleFaultDetected(chargeBoxId, connectorId, status, errorCode, vendorErrorCode, info, eventTime);
         } else {
             // [정상 복구 감지 케이스: status != 'Faulted' AND (errorCode == null or errorCode == 'NoError')]
-            handleFaultRecovery(chargeBoxId, connectorId, status, eventTime);
+            handleFaultRecovery(chargeBoxId, connectorId);
         }
     }
 
@@ -114,7 +101,7 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
             return true;
         }
 
-        if (errorCode != null && !errorCode.isBlank()) {
+        if (errorCode != null && !errorCode.isBlank() && !errorCode.equalsIgnoreCase("null")) {
             if (!"NoError".equalsIgnoreCase(errorCode)) {
                 return true;
             }
@@ -124,43 +111,46 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
     }
 
     /**
-     * 동일 에러 연속 인입(Flapping) 방어 판정
+     * 동일 에러 연속 인입(Flapping) 방어 판정 (원자적 compute 기반 레이스 컨디션 제거)
      */
     @Override
     public boolean shouldTriggerAlert(String chargeBoxId, int connectorId, String errorCode) {
         String cacheKey = chargeBoxId + ":" + connectorId;
-        FaultCacheState previousState = faultStateCache.get(cacheKey);
+        String safeErrorCode = (errorCode != null && !errorCode.isBlank()) ? errorCode : "OtherError";
         LocalDateTime now = LocalDateTime.now();
+        AtomicBoolean triggered = new AtomicBoolean(false);
 
-        if (previousState == null) {
-            // 첫 장애 유입 -> 알림 발행
-            faultStateCache.put(cacheKey, new FaultCacheState(errorCode, now));
-            return true;
-        }
+        faultStateCache.asMap().compute(cacheKey, (key, previousState) -> {
+            if (previousState == null) {
+                triggered.set(true);
+                return new FaultCacheState(safeErrorCode, now);
+            }
 
-        // 이전 에러코드와 동일한지 비교
-        boolean isSameError = previousState.errorCode().equalsIgnoreCase(errorCode);
-        LocalDateTime windowThreshold = previousState.lastReportedAt().plusSeconds(flappingWindowSeconds);
-        boolean isWithinWindow = now.isBefore(windowThreshold);
+            boolean isSameError = previousState.errorCode().equalsIgnoreCase(safeErrorCode);
+            LocalDateTime windowThreshold = previousState.lastReportedAt().plusSeconds(flappingWindowSeconds);
+            if (isSameError && now.isBefore(windowThreshold)) {
+                log.debug("[FaultFilter] Flapping 억제 적용: chargeBoxId={}, connectorId={}, errorCode={}",
+                        chargeBoxId, connectorId, safeErrorCode);
+                return previousState;
+            }
 
-        if (isSameError && isWithinWindow) {
-            // 윈도우 시간 내 동일 에러 지속 -> 중복 억제 (Flapping 방어)
-            log.debug("[FaultFilter] Flapping 억제 적용: chargeBoxId={}, connectorId={}, errorCode={}",
-                    chargeBoxId, connectorId, errorCode);
-            return false;
-        }
+            triggered.set(true);
+            return new FaultCacheState(safeErrorCode, now);
+        });
 
-        // 상태가 달라졌거나 윈도우 시간이 경과함 -> 상태 전이 및 캐시 갱신
-        faultStateCache.put(cacheKey, new FaultCacheState(errorCode, now));
-        return true;
+        return triggered.get();
     }
 
     /**
-     * 활성 장애 자동 복구 마감 처리
+     * 활성 장애 자동 복구 마감 처리 (미해결 장애가 존재할 때만 UPDATE 실행)
      */
     @Override
     @Transactional
     public void resolveActiveFault(String chargeBoxId, int connectorId) {
+        if (!faultHistoryRepository.existsActiveFault(chargeBoxId, connectorId)) {
+            return;
+        }
+
         LocalDateTime resolvedTime = LocalDateTime.now();
         int resolvedCount = faultHistoryRepository.resolveActiveFaults(chargeBoxId, connectorId, resolvedTime);
 
@@ -194,12 +184,12 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
      * 장애 감지 처리 서브루틴
      */
     private void handleFaultDetected(String chargeBoxId,
-                                    int connectorId,
-                                    String status,
-                                    String errorCode,
-                                    String vendorErrorCode,
-                                    String info,
-                                    LocalDateTime eventTime) {
+                                     int connectorId,
+                                     String status,
+                                     String errorCode,
+                                     String vendorErrorCode,
+                                     String info,
+                                     LocalDateTime eventTime) {
 
         // Flapping 방어 필터 검사
         boolean needAlert = shouldTriggerAlert(chargeBoxId, connectorId, errorCode);
@@ -207,12 +197,25 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
             return;
         }
 
+        // 지속 장애 재유입 시 동일 미해결 이력 중복 INSERT 방지
+        Optional<FaultHistory> existingActive = faultHistoryRepository.findLatestUnresolvedFault(chargeBoxId, connectorId);
+        if (existingActive.isPresent() && errorCode.equalsIgnoreCase(existingActive.get().getErrorCode())) {
+            log.debug("[FaultDetected] 기존 미해결 동일 장애 유지 중 (원장 중복 등록 생략): chargeBoxId={}, connectorId={}, errorCode={}",
+                    chargeBoxId, connectorId, errorCode);
+            return;
+        }
+
+        // 다른 에러코드로 전이된 경우 기존 미해결 장애 마감 후 신규 등록
+        if (existingActive.isPresent()) {
+            faultHistoryRepository.resolveActiveFaults(chargeBoxId, connectorId, eventTime);
+        }
+
         // 심각도 및 권장조치 도출
         FaultSeverity severity = FaultSeverity.fromErrorCode(errorCode);
         String actionRequired = determineActionRequired(severity);
         String faultMessage = buildFaultMessage(errorCode, vendorErrorCode, info);
 
-        // 1. MySQL tbl_fault_history 원장 INSERT
+        // 1. MySQL fault_history 원장 INSERT
         FaultHistory faultHistory = FaultHistory.builder()
                 .chargeBoxId(chargeBoxId)
                 .connectorId(connectorId)
@@ -252,17 +255,28 @@ public class FaultDetectionServiceImpl implements FaultDetectionService {
     /**
      * 장애 복구 처리 서브루틴
      */
-    private void handleFaultRecovery(String chargeBoxId, int connectorId, String status, LocalDateTime eventTime) {
+    private void handleFaultRecovery(String chargeBoxId, int connectorId) {
         String cacheKey = chargeBoxId + ":" + connectorId;
-        FaultCacheState previousState = faultStateCache.remove(cacheKey);
+        FaultCacheState previousState = faultStateCache.asMap().remove(cacheKey);
 
         if (previousState != null) {
             log.info("[FaultRecovery] 장애 상태 캐시 해제: chargeBoxId={}, connectorId={}, prevError={}",
                     chargeBoxId, connectorId, previousState.errorCode());
         }
 
-        // DB 활성 장애 자동 마감 및 복구 알림 발행
+        // DB 활성 장애 존재 시에만 자동 마감 및 복구 알림 발행
         resolveActiveFault(chargeBoxId, connectorId);
+    }
+
+    private String extractNonBlankText(JsonNode payload, String field, String defaultValue) {
+        if (payload == null || !payload.hasNonNull(field)) {
+            return defaultValue;
+        }
+        String text = payload.get(field).asText(null);
+        if (text == null || text.isBlank() || text.equalsIgnoreCase("null")) {
+            return defaultValue;
+        }
+        return text;
     }
 
     /**

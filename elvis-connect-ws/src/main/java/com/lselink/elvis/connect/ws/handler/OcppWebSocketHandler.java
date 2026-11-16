@@ -1,36 +1,51 @@
 package com.lselink.elvis.connect.ws.handler;
 
+import com.lselink.elvis.connect.ws.config.WebSocketProperties;
 import com.lselink.elvis.connect.ws.dto.OcppRawEventEnvelope;
 import com.lselink.elvis.connect.ws.kafka.InboundRawEventProducer;
+import com.lselink.elvis.connect.ws.metrics.GatewayMetrics;
 import com.lselink.elvis.connect.ws.session.LocalSessionStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.SubProtocolCapable;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * 충전기 WebSocket 통신을 처리하는 인그레스 핸들러
  */
 @Component
-public class OcppWebSocketHandler extends TextWebSocketHandler {
+public class OcppWebSocketHandler extends TextWebSocketHandler implements SubProtocolCapable {
 
     private static final Logger log = LoggerFactory.getLogger(OcppWebSocketHandler.class);
 
     private final LocalSessionStore sessionStore;
     private final InboundRawEventProducer inboundProducer;
-    private final com.lselink.elvis.connect.ws.metrics.GatewayMetrics gatewayMetrics;
+    private final GatewayMetrics gatewayMetrics;
+    private final WebSocketProperties webSocketProperties;
 
     public OcppWebSocketHandler(LocalSessionStore sessionStore,
-                               InboundRawEventProducer inboundProducer,
-                               com.lselink.elvis.connect.ws.metrics.GatewayMetrics gatewayMetrics) {
+                                InboundRawEventProducer inboundProducer,
+                                GatewayMetrics gatewayMetrics,
+                                WebSocketProperties webSocketProperties) {
         this.sessionStore = sessionStore;
         this.inboundProducer = inboundProducer;
         this.gatewayMetrics = gatewayMetrics;
+        this.webSocketProperties = webSocketProperties;
+    }
+
+    @Override
+    public List<String> getSubProtocols() {
+        List<String> configured = webSocketProperties.getSubprotocols();
+        return (configured != null && !configured.isEmpty())
+                ? List.copyOf(configured)
+                : List.of("ocpp1.6", "ocpp1.5");
     }
 
     @Override
@@ -52,10 +67,11 @@ public class OcppWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+        long startNanos = System.nanoTime();
         String chargeBoxId = getChargeBoxId(session);
         String payload = message.getPayload();
 
-        // 수신 패킷에 따른 세션 마지막 활동 시각 갱신 (60초 헬스체크 연동)
+        // 수신 패킷에 따른 세션 마지막 활동 시각 갱신
         sessionStore.touchSession(chargeBoxId);
 
         // 실시간 인바운드 TPS 모니터링 메트릭 카운팅 (REQ-004)
@@ -71,8 +87,10 @@ public class OcppWebSocketHandler extends TextWebSocketHandler {
                 .receivedAt(Instant.now())
                 .build();
 
-        // 비동기로 Kafka 토픽에 발행하여 I/O 루프 블로킹 방지
-        inboundProducer.sendRawEvent(envelope);
+        // 비동기로 Kafka 토픽에 발행하여 I/O 루프 블로킹 방지 및 레이턴시 기록
+        inboundProducer.sendRawEvent(envelope)
+                .whenComplete((result, ex) ->
+                        gatewayMetrics.recordPacketProcessingLatency(System.nanoTime() - startNanos));
     }
 
     @Override

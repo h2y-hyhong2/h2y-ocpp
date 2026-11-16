@@ -5,30 +5,32 @@ set SCRIPT_DIR=%~dp0
 
 set MYSQL_PORT=13306
 set KAFKA_PORT=19092
+set LOG_DIR=D:\elvis-lite\logs
 
 if exist "%SCRIPT_DIR%..\config\paths.env" (
     for /f "usebackq tokens=1,2 delims==" %%A in ("%SCRIPT_DIR%..\config\paths.env") do (
         if "%%A"=="ELVIS_MYSQL_PORT" set MYSQL_PORT=%%B
         if "%%A"=="ELVIS_KAFKA_PORT" set KAFKA_PORT=%%B
+        if "%%A"=="ELVIS_LOG_DIR" set LOG_DIR=%%B
     )
 )
 
-if not exist "D:\elvis-lite\logs" mkdir "D:\elvis-lite\logs"
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
 echo ========================================================
 echo  [ELVIS-CSMS] 인프라 미들웨어 2대 백그라운드 독립 기동
 echo  - Apache Kafka KRaft (Port: %KAFKA_PORT%)
 echo  - MySQL 9.71 Server  (Port: %MYSQL_PORT%)
-echo  - 로그 경로: D:\elvis-lite\logs\
+echo  - 로그 경로: %LOG_DIR%\
 echo ========================================================
 
 echo [1/2] Apache Kafka KRaft 백그라운드 기동 중...
-powershell -NoProfile -Command "Start-Process cmd.exe -ArgumentList '/c', 'call \"%SCRIPT_DIR%start-kafka-kraft.bat\" >> \"D:\elvis-lite\logs\kafka.log\" 2>&1' -WorkingDirectory '%SCRIPT_DIR%' -WindowStyle Hidden"
+powershell -NoProfile -Command "Start-Process cmd.exe -ArgumentList '/c', 'call \"%SCRIPT_DIR%start-kafka-kraft.bat\" >> \"%LOG_DIR%\kafka.log\" 2>&1' -WorkingDirectory '%SCRIPT_DIR%' -WindowStyle Hidden"
 
 ping 127.0.0.1 -n 3 > nul
 
 echo [2/2] MySQL 9.71 백그라운드 기동 중...
-powershell -NoProfile -Command "Start-Process cmd.exe -ArgumentList '/c', 'call \"%SCRIPT_DIR%start-mysql.bat\" >> \"D:\elvis-lite\logs\mysql.log\" 2>&1' -WorkingDirectory '%SCRIPT_DIR%' -WindowStyle Hidden"
+powershell -NoProfile -Command "Start-Process cmd.exe -ArgumentList '/c', 'call \"%SCRIPT_DIR%start-mysql.bat\" >> \"%LOG_DIR%\mysql.log\" 2>&1' -WorkingDirectory '%SCRIPT_DIR%' -WindowStyle Hidden"
 
 echo ========================================================
 echo  인프라 미들웨어 2종이 완전 독립 백그라운드 프로세스로 기동되었습니다.

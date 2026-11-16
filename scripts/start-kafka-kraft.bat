@@ -6,8 +6,17 @@ if "%NO_PAUSE%"=="" set NO_PAUSE=1
 set SCRIPT_DIR=%~dp0
 set KAFKA_HOME=%SCRIPT_DIR%..\binaries\kafka_2.13-4.3.1
 set KRAFT_CONFIG=%SCRIPT_DIR%..\config\kafka\server.properties
+set DATA_DIR=D:\elvis-lite\data
+set KAFKA_PORT=19092
 
-rem 1순위: JDK 21 LTS 우선 강제 지정
+if exist "%SCRIPT_DIR%..\config\paths.env" (
+    for /f "usebackq tokens=1,2 delims==" %%A in ("%SCRIPT_DIR%..\config\paths.env") do (
+        if "%%A"=="ELVIS_DATA_DIR" set DATA_DIR=%%B
+        if "%%A"=="ELVIS_KAFKA_PORT" set KAFKA_PORT=%%B
+    )
+)
+
+rem 1순위: JDK 25 LTS 우선 강제 지정
 if exist "D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1" (
     set "JAVA_HOME=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1"
     set "PATH=D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1\bin;%PATH%"
@@ -43,19 +52,19 @@ if not exist "%KAFKA_HOME%\bin\windows\kafka-server-start.bat" (
     exit /b 1
 )
 
-title ELVIS - Apache Kafka 4.3.1 KRaft (Port: 19092)
+title ELVIS - Apache Kafka 4.3.1 KRaft (Port: %KAFKA_PORT%)
 color 0E
 
 rem [KRaft Windows 방어] 파일 잠금 및 ReadOnly 속성 해제 (AccessDeniedException 방지)
-if exist "D:\elvis-lite\data\kafka" (
-    attrib -r "D:\elvis-lite\data\kafka\*" /s > nul 2>&1
-    powershell -NoProfile -Command "Get-ChildItem -Path 'D:\elvis-lite\data\kafka' -Filter '*.deleted*' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.IsReadOnly = $false; Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }" > nul 2>&1
+if exist "%DATA_DIR%\kafka" (
+    attrib -r "%DATA_DIR%\kafka\*" /s > nul 2>&1
+    powershell -NoProfile -Command "Get-ChildItem -Path '%DATA_DIR%\kafka' -Filter '*.deleted*' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.IsReadOnly = $false; Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }" > nul 2>&1
 )
 
 echo [1/2] Checking KRaft storage format...
 call "%KAFKA_HOME%\bin\windows\kafka-storage.bat" format -t %CLUSTER_ID% -c "%KRAFT_CONFIG%" --ignore-formatted
 
-echo [2/2] Starting Kafka Broker (Port: 19092)...
+echo [2/2] Starting Kafka Broker (Port: %KAFKA_PORT%)...
 call "%KAFKA_HOME%\bin\windows\kafka-server-start.bat" "%KRAFT_CONFIG%"
 
 if not "%NO_PAUSE%"=="1" pause

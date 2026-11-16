@@ -9,34 +9,34 @@ import java.time.LocalDateTime;
 public class StationEntity {
 
     @Id
-    @Column(name = "ST_ID", length = 20)
+    @Column(name = "st_id", length = 20)
     private String stId;
 
-    @Column(name = "NAME", nullable = false, length = 150)
+    @Column(name = "name", nullable = false, length = 150)
     private String name;
 
-    @Column(name = "CORP_ID", nullable = false, length = 20)
+    @Column(name = "corp_id", nullable = false, length = 20)
     private String corpId;
 
-    @Column(name = "CHARGER_COUNT", nullable = false)
+    @Column(name = "charger_count", nullable = false)
     private Integer chargerCount;
 
-    @Column(name = "ADDR", length = 250)
+    @Column(name = "addr", length = 250)
     private String addr;
 
-    @Column(name = "LAT", precision = 10, scale = 7)
+    @Column(name = "lat", precision = 10, scale = 7)
     private BigDecimal lat;
 
-    @Column(name = "LNG", precision = 10, scale = 7)
+    @Column(name = "lng", precision = 10, scale = 7)
     private BigDecimal lng;
 
-    @Column(name = "STATUS", length = 20)
+    @Column(name = "status", length = 20)
     private String status;
 
-    @Column(name = "REG_DT")
+    @Column(name = "reg_dt")
     private LocalDateTime regDt;
 
-    @Column(name = "UPDT_DT")
+    @Column(name = "updt_dt")
     private LocalDateTime updtDt;
 
     public StationEntity() {

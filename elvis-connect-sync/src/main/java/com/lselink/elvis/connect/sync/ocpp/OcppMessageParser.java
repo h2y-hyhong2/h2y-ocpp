@@ -27,6 +27,8 @@ public class OcppMessageParser {
 
     private static final Logger log = LoggerFactory.getLogger(OcppMessageParser.class);
     private static final int MSG_TYPE_CALL = 2;
+    private static final int MSG_TYPE_CALLRESULT = 3;
+    private static final int MSG_TYPE_CALLERROR = 4;
 
     private final ObjectMapper objectMapper;
 
@@ -36,10 +38,12 @@ public class OcppMessageParser {
 
     /**
      * rawPayload를 파싱하여 OcppParsedMessage를 반환한다.
+     * CALL(2), CALLRESULT(3), CALLERROR(4) 모두 유효한 OCPP 프레임으로 파싱하여
+     * CALLRESULT/CALLERROR가 파싱 실패(DLT)로 오인되지 않도록 한다.
      *
      * @param chargeBoxId 충전기 식별자
      * @param rawPayload  OCPP JSON 배열 원문
-     * @return 파싱 성공 시 Optional(OcppParsedMessage), 실패/무관 시 Optional.empty()
+     * @return 파싱 성공 시 Optional(OcppParsedMessage), 파싱 실패 시 Optional.empty()
      */
     public Optional<OcppParsedMessage> parse(String chargeBoxId, String rawPayload) {
         if (rawPayload == null || rawPayload.isBlank()) {
@@ -53,22 +57,59 @@ public class OcppMessageParser {
             }
 
             int messageType = root.get(0).asInt(-1);
-            if (messageType != MSG_TYPE_CALL) {
-                // CALLRESULT / CALLERROR 는 이번 Sprint 범위 제외
+            String uniqueId = root.get(1).asText(null);
+            if (uniqueId == null || uniqueId.isBlank()) {
                 return Optional.empty();
             }
 
-            String uniqueId = root.get(1).asText();
-            String action   = root.get(2).asText();
-            JsonNode payload = root.size() > 3 ? root.get(3) : objectMapper.createObjectNode();
+            if (messageType == MSG_TYPE_CALL) {
+                String action = root.get(2).asText(null);
+                if (action == null || action.isBlank()) {
+                    return Optional.empty();
+                }
+                JsonNode payload = root.size() > 3 && root.get(3) != null && !root.get(3).isNull()
+                        ? root.get(3)
+                        : objectMapper.createObjectNode();
 
-            return Optional.of(OcppParsedMessage.builder()
-                    .chargeBoxId(chargeBoxId)
-                    .uniqueId(uniqueId)
-                    .action(action)
-                    .payload(payload)
-                    .raw(rawPayload)
-                    .build());
+                return Optional.of(OcppParsedMessage.builder()
+                        .messageType(MSG_TYPE_CALL)
+                        .chargeBoxId(chargeBoxId)
+                        .uniqueId(uniqueId)
+                        .action(action)
+                        .payload(payload)
+                        .raw(rawPayload)
+                        .build());
+            }
+
+            if (messageType == MSG_TYPE_CALLRESULT) {
+                JsonNode payload = root.get(2) != null && !root.get(2).isNull()
+                        ? root.get(2)
+                        : objectMapper.createObjectNode();
+                return Optional.of(OcppParsedMessage.builder()
+                        .messageType(MSG_TYPE_CALLRESULT)
+                        .chargeBoxId(chargeBoxId)
+                        .uniqueId(uniqueId)
+                        .action("CALLRESULT")
+                        .payload(payload)
+                        .raw(rawPayload)
+                        .build());
+            }
+
+            if (messageType == MSG_TYPE_CALLERROR) {
+                JsonNode details = root.size() > 4 && root.get(4) != null && !root.get(4).isNull()
+                        ? root.get(4)
+                        : objectMapper.createObjectNode();
+                return Optional.of(OcppParsedMessage.builder()
+                        .messageType(MSG_TYPE_CALLERROR)
+                        .chargeBoxId(chargeBoxId)
+                        .uniqueId(uniqueId)
+                        .action("CALLERROR")
+                        .payload(details)
+                        .raw(rawPayload)
+                        .build());
+            }
+
+            return Optional.empty();
 
         } catch (Exception e) {
             log.warn("[OcppParser] rawPayload 파싱 실패: chargeBoxId={}, error={}", chargeBoxId, e.getMessage());

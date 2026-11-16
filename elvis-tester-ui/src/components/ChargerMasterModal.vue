@@ -167,6 +167,21 @@ function handleResetDefaults() {
 function handleSave() {
   if (!props.charger) return
 
+  const rawSt = stationId.value.trim()
+  const rawCp = chargerId.value.trim()
+  if (!/^\d{1,6}$/.test(rawSt)) {
+    alert('충전소 ID는 000000~999999 범위의 6자리 이하 숫자여야 합니다.')
+    return
+  }
+  if (!/^\d{1,2}$/.test(rawCp) || Number(rawCp) < 1 || Number(rawCp) > 99) {
+    alert('충전기 ID는 01~99 범위의 숫자여야 합니다.')
+    return
+  }
+
+  const paddedSt = rawSt.padStart(6, '0')
+  const paddedCp = rawCp.padStart(2, '0')
+  const nextId = `${paddedSt}${paddedCp}`
+
   const updatedConnectors: ConnectorState[] = [
     {
       connectorId: 1,
@@ -195,9 +210,10 @@ function handleSave() {
   ]
 
   const updates: Partial<ChargerInstance> = {
-    name: name.value.trim() || `충전기 ${computedChargeBoxId.value}`,
-    stationId: stationId.value.trim(),
-    chargerId: chargerId.value.trim(),
+    id: nextId,
+    name: name.value.trim() || `충전기 ${nextId}`,
+    stationId: paddedSt,
+    chargerId: paddedCp,
     stationName: stationName.value.trim(),
     corpName: corpName.value.trim(),
     addr: addr.value.trim(),
@@ -217,7 +233,8 @@ function handleSave() {
     connectors: updatedConnectors
   }
 
-  store.updateCharger(props.charger.id, updates)
+  const saved = store.updateCharger(props.charger.id, updates)
+  if (!saved) return
 
   emit('saved', {
     ...props.charger,
@@ -465,7 +482,12 @@ function handleSave() {
           </div>
 
           <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-600 text-[11px] space-y-1">
-            <span class="font-bold text-slate-800">💡 펌웨어 및 사양 연동 안내:</span>
+            <span class="font-bold text-slate-800 inline-flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              펌웨어 및 사양 연동 안내:
+            </span>
             <p>설정된 펌웨어 버전과 모델명은 가상 충전기 기동(`BootNotification`) 전문 발송 시 CSMS로 자동 전송됩니다.</p>
           </div>
         </div>

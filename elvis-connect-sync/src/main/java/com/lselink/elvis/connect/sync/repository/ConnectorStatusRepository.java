@@ -22,18 +22,19 @@ public interface ConnectorStatusRepository extends JpaRepository<ConnectorStatus
      */
     @Modifying
     @Query(value = """
-            INSERT INTO tb_connector_status
-                (charge_box_id, connector_id, status, error_code, vendor_id, info, status_at, reg_dt, updt_dt)
+            INSERT INTO connector_status
+                (charge_box_id, connector_id, status, error_code, vendor_id, info, status_at, last_heartbeat, reg_dt, updt_dt)
             VALUES
-                (:chargeBoxId, :connectorId, :status, :errorCode, :vendorId, :info, :statusAt, NOW(3), NOW(3))
+                (:chargeBoxId, :connectorId, :status, :errorCode, :vendorId, :info, :statusAt, NOW(3), NOW(3), NOW(3))
             ON DUPLICATE KEY UPDATE
-                status     = VALUES(status),
-                error_code = VALUES(error_code),
-                vendor_id  = VALUES(vendor_id),
-                info       = VALUES(info),
-                status_at  = VALUES(status_at),
-                version    = version + 1,
-                updt_dt    = NOW(3)
+                status         = VALUES(status),
+                error_code     = VALUES(error_code),
+                vendor_id      = VALUES(vendor_id),
+                info           = VALUES(info),
+                status_at      = VALUES(status_at),
+                last_heartbeat = NOW(3),
+                version        = version + 1,
+                updt_dt        = NOW(3)
             """, nativeQuery = true)
     void upsertStatus(
             @Param("chargeBoxId") String chargeBoxId,
@@ -46,18 +47,19 @@ public interface ConnectorStatusRepository extends JpaRepository<ConnectorStatus
     );
 
     /**
-     * Heartbeat 수신 시 heartbeat_at 갱신
+     * Heartbeat 수신 시 heartbeat_at 및 last_heartbeat 갱신
      */
     @Modifying
     @Query(value = """
-            INSERT INTO tb_connector_status
-                (charge_box_id, connector_id, status, heartbeat_at, reg_dt, updt_dt)
+            INSERT INTO connector_status
+                (charge_box_id, connector_id, status, heartbeat_at, last_heartbeat, reg_dt, updt_dt)
             VALUES
-                (:chargeBoxId, 0, 'Available', :heartbeatAt, NOW(3), NOW(3))
+                (:chargeBoxId, 0, 'Available', :heartbeatAt, :heartbeatAt, NOW(3), NOW(3))
             ON DUPLICATE KEY UPDATE
-                heartbeat_at = VALUES(heartbeat_at),
-                version      = version + 1,
-                updt_dt      = NOW(3)
+                heartbeat_at   = VALUES(heartbeat_at),
+                last_heartbeat = VALUES(last_heartbeat),
+                version        = version + 1,
+                updt_dt        = NOW(3)
             """, nativeQuery = true)
     void upsertHeartbeat(
             @Param("chargeBoxId") String chargeBoxId,

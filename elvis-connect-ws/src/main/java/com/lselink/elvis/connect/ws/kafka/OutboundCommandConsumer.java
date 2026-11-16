@@ -34,24 +34,32 @@ public class OutboundCommandConsumer {
             containerFactory = "outboundKafkaListenerContainerFactory"
     )
     public void consumeOutboundCommand(OcppOutboundCommand command) {
+        if (command == null || command.getPayload() == null || command.getChargeBoxId() == null) {
+            log.warn("[OutboundConsumer] 유효하지 않은 하향 명령 무시 (null command 또는 payload): {}", command);
+            return;
+        }
+
         String chargeBoxId = command.getChargeBoxId();
+        String payload = command.getPayload();
         log.info("[OutboundConsumer] 하향 명령 수신: chargeBoxId={}, action={}, messageId={}",
                 chargeBoxId, command.getAction(), command.getMessageId());
 
         Optional<WebSocketSession> sessionOpt = sessionStore.getSession(chargeBoxId);
         if (sessionOpt.isPresent()) {
             WebSocketSession session = sessionOpt.get();
-            if (session.isOpen()) {
-                try {
-                    session.sendMessage(new TextMessage(command.getPayload()));
-                    gatewayMetrics.recordOutboundCommand();
-                    log.info("[WS-SEND] [{}] 하향 전문 전송: {}", chargeBoxId, command.getPayload());
-                } catch (IOException e) {
-                    log.error("[OutboundConsumer] 하향 명령 소켓 전송 실패: chargeBoxId={}, error={}",
-                            chargeBoxId, e.getMessage(), e);
+            synchronized (session) {
+                if (session.isOpen()) {
+                    try {
+                        session.sendMessage(new TextMessage(payload));
+                        gatewayMetrics.recordOutboundCommand();
+                        log.info("[WS-SEND] [{}] 하향 전문 전송: {}", chargeBoxId, payload);
+                    } catch (IOException e) {
+                        log.error("[OutboundConsumer] 하향 명령 소켓 전송 실패: chargeBoxId={}, error={}",
+                                chargeBoxId, e.getMessage(), e);
+                    }
+                } else {
+                    log.warn("[OutboundConsumer] 충전기 소켓 닫힘 상태: chargeBoxId={}", chargeBoxId);
                 }
-            } else {
-                log.warn("[OutboundConsumer] 충전기 소켓 닫힘 상태: chargeBoxId={}", chargeBoxId);
             }
         } else {
             log.warn("[OutboundConsumer] 활성 세션 미존재 (오프라인): chargeBoxId={}", chargeBoxId);

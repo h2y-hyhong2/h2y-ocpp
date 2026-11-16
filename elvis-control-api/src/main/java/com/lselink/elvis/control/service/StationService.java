@@ -7,12 +7,13 @@ import com.lselink.elvis.control.entity.CorpEntity;
 import com.lselink.elvis.control.entity.StationEntity;
 import com.lselink.elvis.control.repository.CorpRepository;
 import com.lselink.elvis.control.repository.StationRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,25 +60,7 @@ public class StationService {
         List<StationResponseDto> dtoList = new ArrayList<>();
         for (int i = 0; i < stations.size(); i++) {
             StationEntity st = stations.get(i);
-            CorpEntity corp = corpMap.get(st.getCorpId());
-
-            String corpName = "";
-            String corpShortName = "";
-            if (corp != null) {
-                corpName = corp.getCorpName();
-                corpShortName = corp.getShortName();
-            }
-
-            StationResponseDto dto = StationResponseDto.builder()
-                    .id(st.getStId())
-                    .name(st.getName())
-                    .corpId(st.getCorpId())
-                    .corpName(corpName)
-                    .corpShortName(corpShortName)
-                    .chargerCount(st.getChargerCount())
-                    .startIdx(i)
-                    .build();
-            dtoList.add(dto);
+            dtoList.add(toStationResponseDto(st, corpMap.get(st.getCorpId()), i));
         }
         return dtoList;
     }
@@ -87,12 +70,43 @@ public class StationService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 충전소입니다: " + stId));
 
         CorpEntity corp = corpRepository.findById(st.getCorpId()).orElse(null);
-        String corpName = "";
-        String corpShortName = "";
-        if (corp != null) {
-            corpName = corp.getCorpName();
-            corpShortName = corp.getShortName();
+        return toStationResponseDto(st, corp, 0);
+    }
+
+    public PageResponse<StationResponseDto> getPagedStations(String corpId, String keyword, int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = (size <= 0) ? 10 : Math.min(size, 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        Page<StationEntity> stationPage = stationRepository.searchStations(corpId, keyword, pageable);
+        List<StationEntity> content = stationPage.getContent();
+
+        if (content.isEmpty()) {
+            return PageResponse.of(Collections.emptyList(), safePage, safeSize,
+                    stationPage.getTotalElements(), stationPage.getTotalPages(), stationPage.isLast());
         }
+
+        Set<String> corpIds = content.stream()
+                .map(StationEntity::getCorpId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, CorpEntity> corpMap = corpRepository.findAllById(corpIds).stream()
+                .collect(Collectors.toMap(CorpEntity::getCorpId, c -> c, (c1, c2) -> c1));
+
+        int baseIndex = (int) pageable.getOffset();
+        List<StationResponseDto> dtos = new ArrayList<>(content.size());
+        for (int i = 0; i < content.size(); i++) {
+            StationEntity st = content.get(i);
+            dtos.add(toStationResponseDto(st, corpMap.get(st.getCorpId()), baseIndex + i));
+        }
+
+        return PageResponse.of(dtos, safePage, safeSize,
+                stationPage.getTotalElements(), stationPage.getTotalPages(), stationPage.isLast());
+    }
+
+    private StationResponseDto toStationResponseDto(StationEntity st, CorpEntity corp, int startIdx) {
+        String corpName = (corp != null && corp.getCorpName() != null) ? corp.getCorpName() : "";
+        String corpShortName = (corp != null && corp.getShortName() != null) ? corp.getShortName() : "";
 
         return StationResponseDto.builder()
                 .id(st.getStId())
@@ -101,48 +115,7 @@ public class StationService {
                 .corpName(corpName)
                 .corpShortName(corpShortName)
                 .chargerCount(st.getChargerCount())
-                .startIdx(0)
+                .startIdx(startIdx)
                 .build();
-    }
-
-    public PageResponse<StationResponseDto> getPagedStations(String corpId, String keyword, int page, int size) {
-        int safePage = Math.max(0, page);
-        int safeSize = (size <= 0) ? 10 : size;
-
-        List<StationResponseDto> all = getAllStations(corpId);
-
-        List<StationResponseDto> filtered = new ArrayList<>();
-        String trimmedKeyword = (keyword != null) ? keyword.trim().toLowerCase() : "";
-
-        for (StationResponseDto st : all) {
-            if (trimmedKeyword.isEmpty()) {
-                filtered.add(st);
-            } else {
-                boolean matchName = st.getName() != null && st.getName().toLowerCase().contains(trimmedKeyword);
-                boolean matchId = st.getId() != null && st.getId().toLowerCase().contains(trimmedKeyword);
-                boolean matchCorp = st.getCorpName() != null && st.getCorpName().toLowerCase().contains(trimmedKeyword);
-                if (matchName || matchId || matchCorp) {
-                    filtered.add(st);
-                }
-            }
-        }
-
-        long totalElements = filtered.size();
-        int totalPages = (int) Math.ceil((double) totalElements / safeSize);
-        if (totalPages == 0) {
-            totalPages = 1;
-        }
-
-        int fromIndex = safePage * safeSize;
-        List<StationResponseDto> pageContent;
-        if (fromIndex >= totalElements) {
-            pageContent = new ArrayList<>();
-        } else {
-            int toIndex = Math.min(fromIndex + safeSize, (int) totalElements);
-            pageContent = new ArrayList<>(filtered.subList(fromIndex, toIndex));
-        }
-
-        boolean isLast = (safePage >= totalPages - 1);
-        return PageResponse.of(pageContent, safePage, safeSize, totalElements, totalPages, isLast);
     }
 }

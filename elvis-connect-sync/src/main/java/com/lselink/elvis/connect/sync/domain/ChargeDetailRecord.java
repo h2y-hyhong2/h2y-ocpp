@@ -25,157 +25,157 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(
-        name = "tb_charge_detail_record",
+        name = "charge_detail_record",
         uniqueConstraints = {
-                @UniqueConstraint(name = "UK_CDR_NO", columnNames = {"CDR_NO"}),
-                @UniqueConstraint(name = "UK_CDR_CHARGE_BOX_TRN", columnNames = {"CHARGE_BOX_ID", "TRANSACTION_ID"})
+                @UniqueConstraint(name = "uk_cdr_no", columnNames = {"cdr_no"}),
+                @UniqueConstraint(name = "uk_cdr_charge_box_trn", columnNames = {"charge_box_id", "transaction_id"})
         },
         indexes = {
-                @Index(name = "IX_CDR_STOP_TIME", columnList = "STOP_TIME"),
-                @Index(name = "IX_CDR_ID_TAG", columnList = "ID_TAG"),
-                @Index(name = "IX_CDR_SESSION_ID", columnList = "SESSION_ID")
+                @Index(name = "ix_cdr_stop_time", columnList = "stop_time"),
+                @Index(name = "ix_cdr_id_tag", columnList = "id_tag"),
+                @Index(name = "ix_cdr_session_id", columnList = "session_id")
         }
 )
 public class ChargeDetailRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
+    @Column(name = "id")
     private Long id;
 
     /**
      * 과금 영수증 번호 (고유키: CDR-YYYYMMDD-CBID-TRNID)
      */
-    @Column(name = "CDR_NO", length = 48, nullable = false)
+    @Column(name = "cdr_no", length = 64, nullable = false)
     private String cdrNo;
 
     /**
      * 충전기 식별자 (8자리 정규화)
      */
-    @Column(name = "CHARGE_BOX_ID", length = 64, nullable = false)
+    @Column(name = "charge_box_id", length = 50, nullable = false)
     private String chargeBoxId;
 
     /**
      * 충전 커넥터 번호 (1: C1, 2: C2)
      */
-    @Column(name = "CONNECTOR_ID", nullable = false)
+    @Column(name = "connector_id", nullable = false)
     private int connectorId = 1;
 
     /**
      * OCPP 거래 번호 (전역 단일 시퀀스)
      */
-    @Column(name = "TRANSACTION_ID", nullable = false)
+    @Column(name = "transaction_id", nullable = false)
     private Long transactionId;
 
     /**
-     * 연관 세션 일련번호 (tb_transaction_session.ID)
+     * 연관 세션 일련번호 (transaction_session.id)
      */
-    @Column(name = "SESSION_ID")
+    @Column(name = "session_id")
     private Long sessionId;
 
     /**
      * 인증/결제 회원 태그 식별자
      */
-    @Column(name = "ID_TAG", length = 64, nullable = false)
+    @Column(name = "id_tag", length = 64, nullable = false)
     private String idTag;
 
     /**
      * 법인/그룹 상위 대표 태그 식별자
      */
-    @Column(name = "PARENT_ID_TAG", length = 64)
+    @Column(name = "parent_id_tag", length = 64)
     private String parentIdTag;
 
     /**
      * 충전 개시 일시
      */
-    @Column(name = "START_TIME", nullable = false)
+    @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
     /**
      * 충전 종료 일시
      */
-    @Column(name = "STOP_TIME", nullable = false)
+    @Column(name = "stop_time", nullable = false)
     private LocalDateTime stopTime;
 
     /**
      * 총 충전 소요 초 (Seconds)
      */
-    @Column(name = "CHARGING_SECONDS", nullable = false)
+    @Column(name = "charging_seconds", nullable = false)
     private long chargingSeconds = 0L;
 
     /**
      * 충전 시작 미터값 (Wh)
      */
-    @Column(name = "START_METER_WH", nullable = false)
+    @Column(name = "start_meter_wh", nullable = false)
     private long startMeterWh = 0L;
 
     /**
      * 충전 종료 미터값 (Wh)
      */
-    @Column(name = "STOP_METER_WH", nullable = false)
+    @Column(name = "stop_meter_wh", nullable = false)
     private long stopMeterWh = 0L;
 
     /**
      * 총 충전 전력량 (kWh, 소수점 3자리)
      */
-    @Column(name = "TOTAL_ENERGY_KWH", precision = 10, scale = 3, nullable = false)
+    @Column(name = "total_energy_kwh", precision = 10, scale = 3, nullable = false)
     private BigDecimal totalEnergyKwh = BigDecimal.ZERO.setScale(3);
 
     /**
      * 적용된 요금 정책 식별자
      */
-    @Column(name = "POLICY_ID", length = 32, nullable = false)
+    @Column(name = "policy_id", length = 32, nullable = false)
     private String policyId = "DEFAULT_TOU";
 
     /**
      * 전력량 요금 합계 (세전, 원)
      */
-    @Column(name = "ENERGY_FEE", precision = 12, scale = 2, nullable = false)
+    @Column(name = "energy_fee", precision = 12, scale = 2, nullable = false)
     private BigDecimal energyFee = BigDecimal.ZERO.setScale(2);
 
     /**
      * 기본 요금 및 점유 페널티 (원)
      */
-    @Column(name = "BASIC_FEE", precision = 12, scale = 2, nullable = false)
+    @Column(name = "basic_fee", precision = 12, scale = 2, nullable = false)
     private BigDecimal basicFee = BigDecimal.ZERO.setScale(2);
 
     /**
      * 회원/제휴 할인 금액 (원)
      */
-    @Column(name = "DISCOUNT_FEE", precision = 12, scale = 2, nullable = false)
+    @Column(name = "discount_fee", precision = 12, scale = 2, nullable = false)
     private BigDecimal discountFee = BigDecimal.ZERO.setScale(2);
 
     /**
      * 부가가치세 (10%, 원단위 사사오입)
      */
-    @Column(name = "VAT", precision = 12, scale = 2, nullable = false)
+    @Column(name = "vat", precision = 12, scale = 2, nullable = false)
     private BigDecimal vat = BigDecimal.ZERO.setScale(2);
 
     /**
      * 최종 결제 청구 금액 (ENERGY + BASIC - DISCOUNT + VAT, 원)
      */
-    @Column(name = "TOTAL_AMOUNT", precision = 12, scale = 2, nullable = false)
+    @Column(name = "total_amount", precision = 12, scale = 2, nullable = false)
     private BigDecimal totalAmount = BigDecimal.ZERO.setScale(2);
 
     /**
      * 결제 상태 (PENDING, PAID, FAILED, CANCELLED)
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "PAYMENT_STATUS", length = 32, nullable = false)
+    @Column(name = "payment_status", length = 32, nullable = false)
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
     /**
      * 시간대별(경/중/최대부하) 사용량 및 단가 분할 JSON 문자열
      */
-    @Column(name = "BREAKDOWN_JSON", columnDefinition = "json")
+    @Column(name = "breakdown_json", columnDefinition = "json")
     private String breakdownJson;
 
     @CreationTimestamp
-    @Column(name = "REG_DT", nullable = false, updatable = false)
+    @Column(name = "reg_dt", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
     @UpdateTimestamp
-    @Column(name = "UPDT_DT", nullable = false)
+    @Column(name = "updt_dt", nullable = false)
     private LocalDateTime updtDt;
 
     protected ChargeDetailRecord() {

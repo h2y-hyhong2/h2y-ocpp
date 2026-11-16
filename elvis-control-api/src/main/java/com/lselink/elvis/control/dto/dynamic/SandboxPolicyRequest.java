@@ -1,11 +1,14 @@
 package com.lselink.elvis.control.dto.dynamic;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * 트래픽 격리 정책 요청 DTO (Traffic Sandbox)
  */
 public class SandboxPolicyRequest {
 
     /** 대상 충전기 식별자 (예: "00000001") */
+    @NotBlank(message = "chargeBoxId는 필수입니다.")
     private String chargeBoxId;
 
     /** 격리 활성화 여부 (true / false) */

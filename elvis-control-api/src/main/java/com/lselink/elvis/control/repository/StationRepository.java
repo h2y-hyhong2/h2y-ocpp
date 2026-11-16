@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface StationRepository extends JpaRepository<StationEntity, String> {
+public interface StationRepository extends JpaRepository<StationEntity, String>, StationRepositoryCustom {
     List<StationEntity> findByCorpIdOrderByStIdAsc(String corpId);
     List<StationEntity> findAllByOrderByStIdAsc();
 }
