@@ -10,14 +10,17 @@
 
 ## 변경 이력
 
-### [2026-11-17] 로컬 Gradle 9.9.1(`D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1`) 연동 및 Wrapper 폴백 보완
+### [2026-11-17] 로컬 Gradle 9.9.1(`D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1`) 및 `GRADLE_USER_HOME` 연동
+- **과제/커밋**: `[3368]WBS-COMMON-OP-003` (`74be7da` 후속 정비)
 - **변경 내용**:
+  - `start-elvis-connect-ws.bat`, `start-elvis-connect-sync.bat`, `start-elvis-control-api.bat`, `gradlew.bat`에 `GRADLE_USER_HOME=D:\project\lselink\ocpp-lite\gradle\.gradle` 자동 지정 추가
   - `start-elvis-connect-ws.bat`, `start-elvis-connect-sync.bat`, `start-elvis-control-api.bat`가 `D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1`을 1순위로 실행하도록 보완
   - 루트 `gradlew.bat`에서 `gradle-wrapper.jar` 부재 시 `D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1\bin\gradle.bat`(및 `binaries\gradle-*`)로 자동 폴백되도록 수정
   - `gradle/wrapper/gradle-wrapper.properties`의 `distributionUrl`을 실제 존재하지 않던 로컬 경로(`gradle-9.8.2-all.zip`)에서 `gradle-9.9.1-bin.zip` 공식 URL로 정비
-- **영향 범위**: 백엔드 3대 서비스(`ws`, `sync`, `api`) 기동 및 Gradle 실행 전반
+- **영향 범위**: 백엔드 3대 서비스(`ws`, `sync`, `api`) 기동 및 Gradle 실행/캐시 경로 전반
 
-### [2026-11-17] MySQL 최초 초기화 안정화 및 Kafka 클래스패스 길이 초과 방어
+### [2026-11-17] MySQL 최초 초기화 안정화 및 Kafka 클래스패스 길이 초과 방어 (`74be7da`)
+- **과제/커밋**: `[3368]WBS-COMMON-OP-002` (`74be7da`)
 - **변경 내용**:
   - `init-mysql.bat`: `DATA_DIR` 상위 디렉토리(`D:\elvis-lite\data\`) 자동 생성, `%DATA_DIR%\mysql` 기준 초기화 판별, `NO_PAUSE=1` 준수, 실패 시 불완전 디렉토리 정리 및 `exit /b 1` 반환 추가
   - `start-mysql.bat`: `ELVIS_LOG_DIR` 자동 생성, `init-mysql.bat` 실패 시 즉시 중단, `my.ini` 사용 시에도 `paths.env`의 `--datadir`/`--port` 우선 적용, 최초 초기화 직후 `load-mysql-schema.bat` 자동 적재 추가

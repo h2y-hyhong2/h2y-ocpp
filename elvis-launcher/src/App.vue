@@ -1,10 +1,10 @@
 <template>
   <!-- 메인 런처 제어판 -->
-  <!-- 2. 메인 런처 창 모드 (초슬림 & 제로 스크롤 리모컨)                  -->
+  <!-- 2. 메인 런처 창 모드 (컴팩트 5대 서비스 리모컨)                   -->
   <!-- ================================================================= -->
-  <div class="h-screen overflow-hidden flex flex-col bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/20 selection:text-sky-900">
+  <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/20 selection:text-sky-900">
     <!-- 초슬림 GNB 헤더 -->
-    <header class="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/90 sticky top-0 z-50 px-3.5 py-1.5 flex items-center justify-between shadow-sm">
+    <header class="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/90 sticky top-0 z-50 px-3 py-1.5 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-2.5">
         <!-- 모던 미니멀 로고마크 -->
         <div class="w-6 h-6 rounded-md bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
@@ -43,13 +43,13 @@
       </div>
     </header>
 
-    <!-- 메인 컨텐츠 영역 (창 세로 꽉 채움 레이아웃) -->
-    <main class="flex-1 min-h-0 max-w-2xl w-full mx-auto p-2 flex flex-col gap-1.5 overflow-hidden">
+    <!-- 메인 컨텐츠 영역 (컴팩트 카드 레이아웃) -->
+    <main class="w-full max-w-[640px] mx-auto p-2 flex flex-col">
       <!-- 서비스 통합 리스트 카드 (5개 서비스) -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
         
         <!-- A. 인프라 미들웨어 그룹 -->
-        <div class="flex-shrink-0 px-3.5 py-1 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
+        <div class="flex-shrink-0 px-3 py-1.5 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
             <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-700">인프라 미들웨어</span>
@@ -101,9 +101,9 @@
           </div>
         </div>
 
-        <div class="flex-[2] min-h-0 flex flex-col divide-y divide-slate-100">
+        <div class="flex flex-col divide-y divide-slate-100">
           <!-- 1) MySQL -->
-          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -179,7 +179,7 @@
           </div>
 
           <!-- 2) Kafka -->
-          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -256,7 +256,7 @@
         </div>
 
         <!-- B. 코어 백엔드 서비스 그룹 -->
-        <div class="flex-shrink-0 px-3.5 py-1 bg-slate-50/70 border-t border-b border-slate-200/80 flex items-center justify-between">
+        <div class="flex-shrink-0 px-3 py-1.5 bg-slate-50/70 border-t border-b border-slate-200/80 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-700">코어 백엔드 엔진</span>
@@ -308,9 +308,9 @@
           </div>
         </div>
 
-        <div class="flex-[3] min-h-0 flex flex-col divide-y divide-slate-100">
+        <div class="flex flex-col divide-y divide-slate-100">
           <!-- 3) elvis-connect-ws -->
-          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -386,7 +386,7 @@
           </div>
 
           <!-- 4) elvis-connect-sync -->
-          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
@@ -462,7 +462,7 @@
           </div>
 
           <!-- 5) elvis-control-api -->
-          <div class="flex-1 min-h-0 px-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+          <div class="px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"

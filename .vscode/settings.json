@@ -6,5 +6,7 @@
     },
 
     "markdown.preview.fontSize": 13,
-    "markdown.preview.fontFamily": "Inconsolata"
+    "markdown.preview.fontFamily": "Inconsolata",
+    "java.import.gradle.home": "D:\\project\\lselink\\ocpp-lite\\gradle\\gradle-9.9.1",
+    "java.import.gradle.user.home": "D:\\project\\lselink\\ocpp-lite\\gradle\\.gradle"
 }

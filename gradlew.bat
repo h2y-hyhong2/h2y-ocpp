@@ -68,6 +68,10 @@ goto fail
 :execute
 @rem Setup the command line
 
+if not defined GRADLE_USER_HOME if exist "D:\project\lselink\ocpp-lite\gradle" (
+    set "GRADLE_USER_HOME=D:\project\lselink\ocpp-lite\gradle\.gradle"
+)
+
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 if not exist "%CLASSPATH%" (

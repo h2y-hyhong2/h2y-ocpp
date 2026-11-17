@@ -11,6 +11,12 @@
 
 ## 변경 이력
 
+### [2026-11-17] Tauri 권한 스키마(`capabilities.json`) 동기화
+- **과제/커밋**: `[3368]WBS-COMMON-OP-003`
+- **변경 내용**:
+  - `src-tauri/capabilities/default.json`에 대응하는 `src-tauri/gen/schemas/capabilities.json` 생성 스키마(`default` 권한 및 윈도우 제어 권한) 최신화
+- **영향 범위**: Tauri 2.0 데스크톱 빌드/실행 시 권한 스키마 정합성
+
 ### [2026-11-16] 정산/충전기 뷰 및 API 클라이언트 연동 정비 (`098f3e9`)
 - **과제/커밋**: `[3368]WBS-COMMON-OP-001` (`098f3e9`)
 - **변경 내용**:

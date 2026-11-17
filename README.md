@@ -65,6 +65,57 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 
 ---
 
+## ⚙️ 개발 환경 설정 (Development Environment Setup)
+
+### 1. 필수 런타임 및 경로 설정
+- **JDK 25**: `D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1` (`gradle.properties` 및 기동 스크립트 참조)
+- **Gradle 9.9.1**: `D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1` ([gradlew.bat](gradlew.bat) 및 백엔드 기동 스크립트 1순위 사용)
+- **Gradle 캐시 홈 (`GRADLE_USER_HOME`)**: `D:\project\lselink\ocpp-lite\gradle\.gradle` (기동 스크립트 및 [.vscode/settings.json](.vscode/settings.json) 연동)
+- **Frontend / Desktop**: Node.js `v24.x` (`fnm`), `pnpm`, Rust (`cargo`) — UI 최초 기동 전 각 UI 폴더(`elvis-launcher`, `elvis-control-ui`, `elvis-tester-ui`)에서 `pnpm install` 필요
+
+### 2. 로컬 스토리지 · 포트 · MySQL 접속 정보
+- **경로/포트 설정**: [config/paths.env](config/paths.env) (`ELVIS_DATA_DIR=D:\elvis-lite\data`, `ELVIS_LOG_DIR=D:\elvis-lite\logs`)
+- **MySQL 9.71 (`127.0.0.1:13306`, DB: `elvis_lite`)**:
+  - `root`: 비밀번호 없음 (`--initialize-insecure` 초기화)
+  - `elvis` / `elvis1234!`: 애플리케이션 전용 계정 (`elvis_lite.*` 전체 권한)
+
+### 3. 최초 세팅 및 기동 순서 (클린 환경 권장)
+1. [scripts/start-elvis-launcher.bat](scripts/start-elvis-launcher.bat)로 ELVIS 런처를 실행합니다.
+2. **인프라(`MySQL`, `Kafka`)를 먼저 기동**합니다.
+   - MySQL 최초 기동 시 `init-mysql.bat` → 서버 기동 → `load-mysql-schema.bat`(`01_schema.sql`, `02_seed_data.sql`)이 자동 실행됩니다.
+   - Kafka 최초 기동 시 KRaft 스토리지 포맷 후 브로커가 기동됩니다.
+3. 두 인프라가 `ONLINE`이 된 뒤 **코어 백엔드(`ws`, `sync`, `api`)**를 기동하고, 필요 시 [scripts/create-kafka-topics.bat](scripts/create-kafka-topics.bat)로 4대 토픽을 생성합니다.
+
+### 4. Antigravity MySQL MCP 연동 (선택)
+AI 에이전트에서 로컬 `elvis_lite` DB를 직접 조회(기본 `READ-ONLY`)하려면 전역 MCP 설정(`~/.gemini/config/mcp_config.json`)에 아래와 같이 등록합니다.
+
+```bash
+# Node 24 환경에 MCP 서버 전역 설치 (fnm 사용 시 절대경로 실행 권장)
+npm install -g @benborla29/mcp-server-mysql
+```
+
+```json
+{
+  "mcpServers": {
+    "mysql-elvis-lite": {
+      "command": "C:\\Users\\<USER>\\AppData\\Roaming\\fnm\\node-versions\\v24.22.2\\installation\\node.exe",
+      "args": [
+        "C:\\Users\\<USER>\\AppData\\Roaming\\fnm\\node-versions\\v24.22.2\\installation\\node_modules\\@benborla29\\mcp-server-mysql\\dist\\index.js"
+      ],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "13306",
+        "MYSQL_USER": "elvis",
+        "MYSQL_PASS": "elvis1234!",
+        "MYSQL_DB": "elvis_lite"
+      }
+    }
+  }
+}
+```
+
+---
+
 ## 🔐 관제 센터 기본 관리자 계정 (Initial Seed Accounts)
 
 관제 센터(`elvis-control-ui`) 로그인 및 API 호출 시 백엔드(`elvis-control-api`)에 사전 탑재된 아래 기본 시드 계정을 사용합니다.

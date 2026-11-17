@@ -6,6 +6,9 @@ set SCRIPT_DIR=%~dp0
 for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_ROOT=%%~fI"
 
 rem 1순위: 워크스페이스 전용 Gradle 9.9.1 및 JDK 25 우선 지정 (Spring Boot 4.1.2)
+if not defined GRADLE_USER_HOME if exist "D:\project\lselink\ocpp-lite\gradle" (
+    set "GRADLE_USER_HOME=D:\project\lselink\ocpp-lite\gradle\.gradle"
+)
 set "GRADLE_CMD="
 if exist "D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1\bin\gradle.bat" (
     set "GRADLE_HOME=D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1"
