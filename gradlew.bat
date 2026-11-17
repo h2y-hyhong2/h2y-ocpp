@@ -70,6 +70,22 @@ goto fail
 
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
+if not exist "%CLASSPATH%" (
+    if exist "D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1\bin\gradle.bat" (
+        call "D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1\bin\gradle.bat" %*
+        goto end
+    )
+    for /d %%D in ("%APP_HOME%\binaries\gradle-*") do (
+        if exist "%%~fD\bin\gradle.bat" (
+            call "%%~fD\bin\gradle.bat" %*
+            goto end
+        )
+    )
+    echo.
+    echo ERROR: gradle-wrapper.jar and local Gradle 9.9.1 were not found.
+    goto fail
+)
+
 
 @rem Execute Gradle
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*

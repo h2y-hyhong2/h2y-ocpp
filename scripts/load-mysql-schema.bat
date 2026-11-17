@@ -24,7 +24,7 @@ if not exist "%MYSQL_BIN%" (
 )
 
 echo [1/2] DDL 스키마 적재 (config/mysql/01_schema.sql)...
-"%MYSQL_BIN%" -h 127.0.0.1 -P %MYSQL_PORT% -u root < "%SCRIPT_DIR%..\config\mysql\01_schema.sql"
+"%MYSQL_BIN%" -h 127.0.0.1 -P %MYSQL_PORT% -u root --default-character-set=utf8mb4 < "%SCRIPT_DIR%..\config\mysql\01_schema.sql"
 
 if %ERRORLEVEL% equ 0 (
     echo [OK] 01_schema.sql 적용 완료!
@@ -35,7 +35,7 @@ if %ERRORLEVEL% equ 0 (
 )
 
 echo [2/2] 초기 시드 데이터 적재 (config/mysql/02_seed_data.sql)...
-"%MYSQL_BIN%" -h 127.0.0.1 -P %MYSQL_PORT% -u root < "%SCRIPT_DIR%..\config\mysql\02_seed_data.sql"
+"%MYSQL_BIN%" -h 127.0.0.1 -P %MYSQL_PORT% -u root --default-character-set=utf8mb4 < "%SCRIPT_DIR%..\config\mysql\02_seed_data.sql"
 
 if %ERRORLEVEL% equ 0 (
     echo [OK] 02_seed_data.sql 적용 완료!

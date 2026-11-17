@@ -55,6 +55,16 @@ if not exist "%KAFKA_HOME%\bin\windows\kafka-server-start.bat" (
 title ELVIS - Apache Kafka 4.3.1 KRaft (Port: %KAFKA_PORT%)
 color 0E
 
+rem [Windows 명령줄 길이 제한 방어] libs\* 108개 JAR 개별 나열 시 8191자 초과로 실패하므로 와일드카드 클래스패스로 보정
+set "RUN_CLASS_BAT=%KAFKA_HOME%\bin\windows\kafka-run-class.bat"
+if exist "%RUN_CLASS_BAT%" (
+    find "for " "%RUN_CLASS_BAT%" | find "libs\*" > nul 2>&1
+    if not errorlevel 1 (
+        echo [INFO] kafka-run-class.bat 와일드카드 클래스패스 패치를 적용합니다...
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$p = '%RUN_CLASS_BAT%'; $c = Get-Content -LiteralPath $p -Raw; $pct = [char]37; $b = $pct + 'BASE_DIR' + $pct; $ii = $pct + $pct + 'i'; $cr = [char]13; $lf = [char]10; $tab = [char]9; $q = [char]34; $old = 'for ' + $ii + ' in (' + $q + $b + '\libs\*' + $q + ') do (' + $cr + $lf + $tab + 'call :concat ' + $q + $ii + $q + $cr + $lf + ')'; $oldLf = 'for ' + $ii + ' in (' + $q + $b + '\libs\*' + $q + ') do (' + $lf + $tab + 'call :concat ' + $q + $ii + $q + $lf + ')'; $new = 'if exist ' + $q + $b + '\libs\*' + $q + ' (' + $cr + $lf + $tab + 'call :concat ' + $q + $b + '\libs\*' + $q + $cr + $lf + ')'; if ($c.Contains($old)) { Set-Content -LiteralPath $p -Value $c.Replace($old, $new) -NoNewline -Encoding Ascii } elseif ($c.Contains($oldLf)) { Set-Content -LiteralPath $p -Value $c.Replace($oldLf, $new) -NoNewline -Encoding Ascii }" > nul 2>&1
+    )
+)
+
 rem [KRaft Windows 방어] 파일 잠금 및 ReadOnly 속성 해제 (AccessDeniedException 방지)
 if exist "%DATA_DIR%\kafka" (
     attrib -r "%DATA_DIR%\kafka\*" /s > nul 2>&1
@@ -63,6 +73,11 @@ if exist "%DATA_DIR%\kafka" (
 
 echo [1/2] Checking KRaft storage format...
 call "%KAFKA_HOME%\bin\windows\kafka-storage.bat" format -t %CLUSTER_ID% -c "%KRAFT_CONFIG%" --ignore-formatted
+if errorlevel 1 (
+    echo [ERROR] Kafka KRaft 스토리지 포맷 확인 중 오류가 발생했습니다.
+    if not "%NO_PAUSE%"=="1" pause
+    exit /b 1
+)
 
 echo [2/2] Starting Kafka Broker (Port: %KAFKA_PORT%)...
 call "%KAFKA_HOME%\bin\windows\kafka-server-start.bat" "%KRAFT_CONFIG%"

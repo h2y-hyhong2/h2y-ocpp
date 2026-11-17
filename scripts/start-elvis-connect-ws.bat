@@ -5,11 +5,23 @@ chcp 65001 > nul
 set SCRIPT_DIR=%~dp0
 for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_ROOT=%%~fI"
 
-rem 1순위: 워크스페이스 전용 JDK 25 우선 지정 (Spring Boot 4.1.2 및 Gradle 9.8.2)
-rem Gradle 9.8.2 로컬 설치 경로 우선 지정
-if exist "D:\project\lselink\ocpp-lite\gradle\gradle-9.8.2" (
-    set "GRADLE_HOME=D:\project\lselink\ocpp-lite\gradle\gradle-9.8.2"
-    set "PATH=D:\project\lselink\ocpp-lite\gradle\gradle-9.8.2\bin;%PATH%"
+rem 1순위: 워크스페이스 전용 Gradle 9.9.1 및 JDK 25 우선 지정 (Spring Boot 4.1.2)
+set "GRADLE_CMD="
+if exist "D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1\bin\gradle.bat" (
+    set "GRADLE_HOME=D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1"
+    set "PATH=D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1\bin;%PATH%"
+    set "GRADLE_CMD=D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1\bin\gradle.bat"
+) else (
+    for /d %%D in ("%PROJECT_ROOT%\binaries\gradle-*") do (
+        if exist "%%~fD\bin\gradle.bat" (
+            set "GRADLE_HOME=%%~fD"
+            set "PATH=%%~fD\bin;%PATH%"
+            set "GRADLE_CMD=%%~fD\bin\gradle.bat"
+        )
+    )
+)
+if not defined GRADLE_CMD (
+    set "GRADLE_CMD=%PROJECT_ROOT%\gradlew.bat"
 )
 
 if exist "D:\project\lselink\ocpp-lite\jdk\jdk-25.0.4.1+1" (
@@ -45,6 +57,6 @@ title ELVIS - Connect WS Gateway (Port: %WS_PORT%)
 color 0A
 
 cd /d "%PROJECT_ROOT%"
-call "%PROJECT_ROOT%\gradlew.bat" :elvis-connect-ws:bootRun --args="--server.port=%WS_PORT%"
+call "%GRADLE_CMD%" :elvis-connect-ws:bootRun --args="--server.port=%WS_PORT%"
 
 if not "%NO_PAUSE%"=="1" pause

@@ -21,7 +21,7 @@
 
 ## 🛠️ 핵심 기술 스택 (Core Tech Stack)
 
-- **Backend Core:** Java 25 (Temurin OpenJDK, Virtual Threads, No-Lombok), Spring Boot 4.1.2, Gradle 9.8.2
+- **Backend Core:** Java 25 (Temurin OpenJDK, Virtual Threads, No-Lombok), Spring Boot 4.1.2, Gradle 9.9.1
 - **Enterprise Integration:** Spring-Kafka (제 2안 채택 적용 기준)
 - **Message Broker:** Apache Kafka (KRaft Mode)
 - **Databases:** MySQL 9.71 (OLTP[^OLTP], 정산/자산 마스터)
@@ -38,6 +38,7 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 | :--------------- | :-------------------------- | :---------------------- | :-------------------------- | :------------------------------------------------------------------------ |
 | **Apache Kafka** | `2.13-4.3.1` (KRaft)        | Windows / JVM           | `19092`                     | `binaries/kafka_2.13-4.3.1/`                                              |
 | **MySQL**        | `9.7.1-winx64`              | Windows x64             | `13306`                     | `binaries/mysql-9.7.1-winx64/`                                            |
+| **Gradle**       | `9.9.1`                     | Windows / JVM           | -                           | `D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1/`                       |
 
 ### 주요 마이크로서비스 및 UI 모듈
 
@@ -47,6 +48,20 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 - **`elvis-launcher`**: 로컬 미들웨어 및 코어 서비스 통합 런처 데스크톱 앱 (Tauri 2.0 / Vue 3, `:1420`)
 - **`elvis-control-ui`**: ELVIS-CSMS 관제 데스크톱 센터 (Tauri 2.0 / Vue 3, `:1421`)
 - **`elvis-tester-ui`**: 가상 충전기(EVSE) 에뮬레이터 및 WireTap 패킷 시뮬레이터 UI (Tauri 2.0 / Vue 3, `:1422`)
+
+### 모듈별 변경 로그 · 오류 해결 이력
+
+모듈별 담당자 분리 운영을 위해 각 모듈 루트에서 `CHANGELOG.md`(변경 이력)와 `TROUBLESHOOTING.md`(오류 해결 이력)를 독립 관리합니다.
+
+| 모듈 / 영역 | 변경 로그 이력 | 오류 해결 이력 |
+| :--- | :--- | :--- |
+| **`elvis-connect-ws`** | [elvis-connect-ws/CHANGELOG.md](elvis-connect-ws/CHANGELOG.md) | [elvis-connect-ws/TROUBLESHOOTING.md](elvis-connect-ws/TROUBLESHOOTING.md) |
+| **`elvis-connect-sync`** | [elvis-connect-sync/CHANGELOG.md](elvis-connect-sync/CHANGELOG.md) | [elvis-connect-sync/TROUBLESHOOTING.md](elvis-connect-sync/TROUBLESHOOTING.md) |
+| **`elvis-control-api`** | [elvis-control-api/CHANGELOG.md](elvis-control-api/CHANGELOG.md) | [elvis-control-api/TROUBLESHOOTING.md](elvis-control-api/TROUBLESHOOTING.md) |
+| **`elvis-control-ui`** | [elvis-control-ui/CHANGELOG.md](elvis-control-ui/CHANGELOG.md) | [elvis-control-ui/TROUBLESHOOTING.md](elvis-control-ui/TROUBLESHOOTING.md) |
+| **`elvis-launcher`** | [elvis-launcher/CHANGELOG.md](elvis-launcher/CHANGELOG.md) | [elvis-launcher/TROUBLESHOOTING.md](elvis-launcher/TROUBLESHOOTING.md) |
+| **`elvis-tester-ui`** | [elvis-tester-ui/CHANGELOG.md](elvis-tester-ui/CHANGELOG.md) | [elvis-tester-ui/TROUBLESHOOTING.md](elvis-tester-ui/TROUBLESHOOTING.md) |
+| **`scripts` (인프라·기동)** | [scripts/CHANGELOG.md](scripts/CHANGELOG.md) | [scripts/TROUBLESHOOTING.md](scripts/TROUBLESHOOTING.md) |
 
 ---
 
