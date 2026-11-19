@@ -17,7 +17,8 @@
   - `csmsStore.ts`: `ChargerItem.connected` 필드 및 `isChargerConnected` 헬퍼 추가, `connected === false`인 충전기의 커넥터·대표 상태를 `'연결안됨'`으로 보정
   - `ChargersView.vue`: 충전기 ID 좌측에 WebSocket 연결 상태 도트 표시, 우측 제어반 계측치 헤더(`실시간`/`미연결`) 및 커넥터 채널 카드(`미연결`) 문구를 실제 연결 상태에 맞게 개선
   - `csmsStore.ts`: `STATUS_MAP`에 LS 확장 영문 상태 `'Pause'`(`일시중지`), `'Maintenance'`(`점검중`) 및 `'Reserved'`(`예약중`) 매핑 추가
-- **영향 범위**: 충전기 관제 화면(`ChargersView.vue`) 및 Pinia 스토어(`csmsStore.ts`)
+  - `SimpleDashboardView.vue` / `router/index.ts` / `App.vue`: Google Stitch `ELVIS-LITE` 프로젝트의 **초간편 쉬운 전기차 충전 관제 대시보드** 디자인을 `/simple`(`간편 관제`) 신규 탭으로 적용 (5열 반응형 상태별 카드 그리드, 충전소 전환 드롭다운, 수동 새로고침 버튼, 슬라이드 상세·원격제어 드로어, MySQL 실데이터 ↔ 10기 디자인 샘플 미리보기 토글)
+- **영향 범위**: 충전기 관제 화면(`ChargersView.vue`), 간편 관제 화면(`SimpleDashboardView.vue`), 라우터/GNB 및 Pinia 스토어(`csmsStore.ts`)
 
 ### [2026-11-18] 충전기·커넥터 기준 실시간 상태 표시, 필터링 및 커넥터별 원격제어 반영
 - **과제/커밋**: `[3368]` (커넥터 기준 관제 UI 개선)

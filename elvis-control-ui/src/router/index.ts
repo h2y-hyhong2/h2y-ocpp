@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ChargersView from '@/views/ChargersView.vue'
+import SimpleDashboardView from '@/views/SimpleDashboardView.vue'
 import BillingCdrView from '@/views/BillingCdrView.vue'
 import LoginView from '@/views/LoginView.vue'
 import { useAuthStore, isJwtExpired } from '@/stores/authStore'
@@ -19,6 +20,12 @@ const routes = [
     name: 'Chargers',
     component: ChargersView,
     meta: { title: '실시간 충전기 통합 관제', requiresAuth: true }
+  },
+  {
+    path: '/simple',
+    name: 'SimpleDashboard',
+    component: SimpleDashboardView,
+    meta: { title: '초간편 쉬운 전기차 충전 관제 대시보드', requiresAuth: true }
   },
   {
     path: '/billing',
