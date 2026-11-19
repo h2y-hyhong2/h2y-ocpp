@@ -33,8 +33,13 @@ export const STATUS_MAP: Record<string, StatusMeta> = {
   'Finishing':     { key: 'finished',   name: '충전완료',   color: '#059669', darkHex: '#166534', cellClass: 'cell-finished',   badgeClass: 'badge-finished',   dotClass: 'bg-emerald-500' },
   'Faulted':       { key: 'faulted',    name: '고장',       color: '#dc2626', darkHex: '#991b1b', cellClass: 'cell-commerr',    badgeClass: 'badge-faulted',    dotClass: 'bg-rose-500' },
   'Unavailable':   { key: 'inspecting', name: '점검중',     color: '#b45309', darkHex: '#854d0e', cellClass: 'cell-inspecting', badgeClass: 'badge-inspecting', dotClass: 'bg-yellow-600' },
+  'Reserved':      { key: 'reserved',   name: '예약중',     color: '#4d7c0f', darkHex: '#3f6212', cellClass: 'cell-reserved',   badgeClass: 'badge-reserved',   dotClass: 'bg-lime-600' },
   'SuspendedEV':   { key: 'paused',     name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',     badgeClass: 'badge-paused',     dotClass: 'bg-rose-600' },
-  'SuspendedEVSE': { key: 'paused',     name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',     badgeClass: 'badge-paused',     dotClass: 'bg-rose-600' }
+  'SuspendedEVSE': { key: 'paused',     name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',     badgeClass: 'badge-paused',     dotClass: 'bg-rose-600' },
+
+  // LS E-Link 확장 영문 상태 매핑
+  'Pause':         { key: 'paused',     name: '일시중지',   color: '#be123c', darkHex: '#9f1239', cellClass: 'cell-paused',     badgeClass: 'badge-paused',     dotClass: 'bg-rose-600' },
+  'Maintenance':   { key: 'inspecting', name: '점검중',     color: '#b45309', darkHex: '#854d0e', cellClass: 'cell-inspecting', badgeClass: 'badge-inspecting', dotClass: 'bg-yellow-600' }
 }
 
 export const PRIMARY_STATUS_KEYS = [
@@ -60,6 +65,100 @@ export function getStatusMeta(status?: string | null): StatusMeta {
     return STATUS_MAP[status]
   }
   return STATUS_MAP['알수없음']
+}
+
+const STATUS_KEY_PRIORITY: Record<string, number> = {
+  faulted: 1,
+  commerr: 1,
+  charging: 2,
+  preparing: 3,
+  paused: 3,
+  finished: 4,
+  reserved: 4,
+  inspecting: 5,
+  suspended: 5,
+  standby: 6,
+  disconnected: 7,
+  unknown: 7
+}
+
+export function getStatusPriority(status?: string | null): number {
+  const key = getStatusMeta(status).key
+  return STATUS_KEY_PRIORITY[key] ?? 99
+}
+
+export function isChargerConnected(charger?: ChargerItem | null): boolean {
+  if (!charger) return false
+  if (typeof charger.connected === 'boolean') {
+    return charger.connected
+  }
+  const raw = charger.connectors
+  if (raw && raw.length > 0) {
+    const channelConns = raw.filter(c => (c.connectorId ?? 0) > 0)
+    const list = channelConns.length > 0 ? channelConns : raw
+    return list.some(c => getStatusMeta(c.status).key !== 'disconnected')
+  }
+  return getStatusMeta(charger.status).key !== 'disconnected'
+}
+
+export function getChargerConnectors(charger?: ChargerItem | null): ConnectorDetail[] {
+  if (!charger) return []
+  const isOffline = charger.connected === false
+  const raw = charger.connectors
+  if (raw && raw.length > 0) {
+    const channelConns = raw.filter(c => (c.connectorId ?? 0) > 0)
+    const list = channelConns.length > 0 ? channelConns : raw
+    return [...list]
+      .sort((a, b) => (a.connectorId ?? 0) - (b.connectorId ?? 0))
+      .map(c =>
+        isOffline
+          ? {
+              ...c,
+              status: '연결안됨',
+              powerKw: 0,
+              voltageV: 0,
+              currentA: 0,
+              socPercent: 0,
+              chargingMinutes: 0
+            }
+          : c
+      )
+  }
+  return [
+    {
+      connectorId: charger.connectorId || 1,
+      status: isOffline ? '연결안됨' : (charger.status || '알수없음'),
+      powerKw: isOffline ? 0 : (charger.powerKw ?? 0),
+      voltageV: isOffline ? 0 : (charger.voltageV ?? 0),
+      currentA: isOffline ? 0 : (charger.currentA ?? 0),
+      socPercent: isOffline ? 0 : (charger.socPercent ?? 0),
+      batteryTempC: charger.batteryTempC ?? 25,
+      carModel: charger.carModel,
+      userTag: charger.userTag,
+      accumulatedKwh: charger.accumulatedKwh ?? 0,
+      chargingMinutes: isOffline ? 0 : (charger.chargingMinutes ?? 0),
+      lastHeartbeat: charger.lastHeartbeat || '-'
+    }
+  ]
+}
+
+export function getPrimaryConnector(charger?: ChargerItem | null): ConnectorDetail | null {
+  const conns = getChargerConnectors(charger)
+  if (conns.length === 0) return null
+  return [...conns].sort((a, b) => {
+    const diff = getStatusPriority(a.status) - getStatusPriority(b.status)
+    return diff !== 0 ? diff : (a.connectorId ?? 0) - (b.connectorId ?? 0)
+  })[0]
+}
+
+export function getChargerEffectiveStatus(charger?: ChargerItem | null): string {
+  if (charger?.connected === false) return '연결안됨'
+  const primary = getPrimaryConnector(charger)
+  return primary?.status ?? charger?.status ?? '알수없음'
+}
+
+export function getChargerTotalPowerKw(charger?: ChargerItem | null): number {
+  return getChargerConnectors(charger).reduce((acc, c) => acc + (Number(c.powerKw) || 0), 0)
 }
 
 export interface CorpItem {
@@ -97,6 +196,7 @@ export interface ChargerItem {
   cpId: string
   connectorId: number
   status: StatusKey
+  connected?: boolean
   spec: string
   powerKw: number
   voltageV: number
@@ -151,6 +251,7 @@ export const useCsmsStore = defineStore('csms', {
     curStatusFilter: 'ALL',
     searchQuery: '',
     selectedCharger: null as ChargerItem | null,
+    selectedConnectorId: null as number | null,
 
     // 시스템 전체 요약 (대시보드 KPI - 실데이터 연동)
     summary: {
@@ -199,7 +300,7 @@ export const useCsmsStore = defineStore('csms', {
       this.curStFilter = stId
       const targetCharger = this.chargers.find(c => stId === 'ALL' || c.stId === stId)
       if (targetCharger) {
-        this.selectedCharger = targetCharger
+        this.setSelectedCharger(targetCharger)
       }
     },
 
@@ -207,8 +308,19 @@ export const useCsmsStore = defineStore('csms', {
       this.curStatusFilter = status
     },
 
-    setSelectedCharger(charger: ChargerItem) {
+    setSelectedCharger(charger: ChargerItem, connectorId?: number) {
       this.selectedCharger = charger
+      const conns = getChargerConnectors(charger)
+      if (connectorId !== undefined && conns.some(c => c.connectorId === connectorId)) {
+        this.selectedConnectorId = connectorId
+        return
+      }
+      const primary = getPrimaryConnector(charger)
+      this.selectedConnectorId = primary?.connectorId ?? conns[0]?.connectorId ?? 1
+    },
+
+    setSelectedConnectorId(connectorId: number) {
+      this.selectedConnectorId = connectorId
     },
 
     // 중앙 REST API (/api/v1) MySQL 실데이터 연동 액션
@@ -257,16 +369,21 @@ export const useCsmsStore = defineStore('csms', {
           if (chgList.length > 0) {
             this.chargers = chgList
             if (!this.selectedCharger || !this.chargers.some(c => c.chargeBoxId === this.selectedCharger?.chargeBoxId)) {
-              this.selectedCharger = this.chargers[0]
+              this.setSelectedCharger(this.chargers[0])
             } else {
               const updated = this.chargers.find(c => c.chargeBoxId === this.selectedCharger?.chargeBoxId)
               if (updated) {
-                this.selectedCharger = updated
+                const conns = getChargerConnectors(updated)
+                const keepConnId = this.selectedConnectorId !== null && conns.some(c => c.connectorId === this.selectedConnectorId)
+                  ? this.selectedConnectorId
+                  : undefined
+                this.setSelectedCharger(updated, keepConnId)
               }
             }
           } else {
             this.chargers = []
             this.selectedCharger = null
+            this.selectedConnectorId = null
           }
 
           let chgSummary: any = null
@@ -281,14 +398,14 @@ export const useCsmsStore = defineStore('csms', {
             cdrSummary = cdrSummaryJson?.data || cdrSummaryJson
           }
 
-          const chargingCount = chgSummary?.chargingCount ?? this.chargers.filter(c => getStatusMeta(c.status).key === 'charging').length
-          const availableCount = chgSummary?.availableCount ?? this.chargers.filter(c => getStatusMeta(c.status).key === 'standby').length
+          const chargingCount = chgSummary?.chargingCount ?? this.chargers.filter(c => getStatusMeta(getChargerEffectiveStatus(c)).key === 'charging').length
+          const availableCount = chgSummary?.availableCount ?? this.chargers.filter(c => getStatusMeta(getChargerEffectiveStatus(c)).key === 'standby').length
           const faultedCount = chgSummary?.faultedCount ?? this.chargers.filter(c => {
-            const k = getStatusMeta(c.status).key
+            const k = getStatusMeta(getChargerEffectiveStatus(c)).key
             return k === 'faulted' || k === 'commerr' || k === 'inspecting'
           }).length
-          const preparingCount = this.chargers.filter(c => getStatusMeta(c.status).key === 'preparing').length
-          const fallbackPower = this.chargers.reduce((acc, c) => acc + (Number(c.powerKw) || 0), 0)
+          const preparingCount = this.chargers.filter(c => getStatusMeta(getChargerEffectiveStatus(c)).key === 'preparing').length
+          const fallbackPower = this.chargers.reduce((acc, c) => acc + getChargerTotalPowerKw(c), 0)
           const totalPowerKw = chgSummary?.totalPowerKw != null ? Number(chgSummary.totalPowerKw) : fallbackPower
 
           this.summary = {
@@ -322,25 +439,34 @@ export const useCsmsStore = defineStore('csms', {
       }
     },
 
-    // 원격 충전기 제어 명령 API 연동
-    async sendRemoteAction(action: string) {
+    // 원격 충전기/커넥터 제어 명령 API 연동
+    async sendRemoteAction(action: string, connectorId?: number) {
       if (!this.selectedCharger) return
 
+      const isReset = action.toLowerCase() === 'reset' || action.toLowerCase() === 'remotereset'
+      const targetConnectorId = isReset
+        ? undefined
+        : (connectorId ?? this.selectedConnectorId ?? getPrimaryConnector(this.selectedCharger)?.connectorId ?? this.selectedCharger.connectorId ?? 1)
+      const targetLabel = targetConnectorId
+        ? `${this.selectedCharger.chargeBoxId} #${targetConnectorId}`
+        : this.selectedCharger.chargeBoxId
+
       try {
+        const payload = targetConnectorId ? { action, connectorId: targetConnectorId } : { action }
         const res = await authFetch(`/api/v1/chargers/${this.selectedCharger.chargeBoxId}/remote-command`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action })
+          body: JSON.stringify(payload)
         })
 
         const result = await res.json().catch(() => null)
         if (res.ok && result?.success !== false && result?.data?.success !== false) {
-          this.addToast('success', `${action} 명령 완료`, result?.message || '원격 제어 명령이 성공적으로 전송되었습니다.')
+          this.addToast('success', `${action} 명령 완료`, result?.message || `[${targetLabel}] 원격 제어 명령이 성공적으로 전송되었습니다.`)
           setTimeout(() => this.fetchInitialData(true), 1000)
           return
         }
 
-        const errMsg = result?.message || `[${this.selectedCharger.chargeBoxId}] 단말에 명령을 전달하지 못했습니다. (HTTP ${res.status})`
+        const errMsg = result?.message || `[${targetLabel}] 단말에 명령을 전달하지 못했습니다. (HTTP ${res.status})`
         this.addToast('error', `${action} 명령 실패`, errMsg)
       } catch (err: any) {
         this.addToast('error', `${action} 명령 실패`, err?.message || '원격 제어 명령 전송 중 오류가 발생했습니다.')

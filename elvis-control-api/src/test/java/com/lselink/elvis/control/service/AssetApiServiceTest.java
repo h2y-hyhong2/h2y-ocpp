@@ -210,4 +210,77 @@ class AssetApiServiceTest {
         assertThat(missingResult).isFalse();
         verify(connectorStatusRepository, org.mockito.Mockito.times(2)).save(any(ConnectorStatusEntity.class));
     }
+
+    @Test
+    @DisplayName("0번 본체 레코드 분리 및 2번 커넥터 충전중 우선순위 대표 상태 반영 검증")
+    void testConnectorPriorityAndBodySeparation() {
+        ConnectorStatusEntity bodyConn = new ConnectorStatusEntity();
+        bodyConn.setChargeBoxId("00000101");
+        bodyConn.setConnectorId(0);
+        bodyConn.setStatus("Available");
+
+        mockConnector1.setStatus("Available");
+        mockConnector2.setStatus("Charging");
+
+        when(chargerRepository.findById("00000101")).thenReturn(Optional.of(mockCharger));
+        when(stationRepository.findById("000001")).thenReturn(Optional.of(mockStation));
+        when(corpRepository.findById("CORP01")).thenReturn(Optional.of(mockCorp));
+        when(connectorStatusRepository.findByChargeBoxId("00000101"))
+                .thenReturn(Arrays.asList(bodyConn, mockConnector1, mockConnector2));
+
+        ChargerResponseDto result = chargerService.getChargerById("00000101");
+
+        assertThat(result.getConnectors()).hasSize(2);
+        assertThat(result.getConnectors()).extracting("connectorId").containsExactly(1, 2);
+        assertThat(result.getConnectorId()).isEqualTo(2);
+        assertThat(result.getStatus()).isEqualTo("Charging");
+    }
+
+    @Test
+    @DisplayName("특정 커넥터 ID 지정 원격 제어 시 해당 커넥터 상태만 변경 검증")
+    void testExecuteRemoteActionForSpecificConnector() {
+        mockConnector1.setStatus("충전대기");
+        mockConnector2.setStatus("충전대기");
+
+        when(chargerRepository.existsById("00000101")).thenReturn(true);
+        when(connectorStatusRepository.findByChargeBoxId("00000101"))
+                .thenReturn(Arrays.asList(mockConnector1, mockConnector2));
+
+        boolean result = chargerService.executeRemoteAction("00000101", "RemoteStartTransaction", 2);
+
+        assertThat(result).isTrue();
+        assertThat(mockConnector1.getStatus()).isEqualTo("충전대기");
+        assertThat(mockConnector2.getStatus()).isEqualTo("충전중");
+        verify(connectorStatusRepository, org.mockito.Mockito.times(1)).save(mockConnector2);
+    }
+
+    @Test
+    @DisplayName("WS 활성 세션이 없는 충전기는 DB 상태가 Available이어도 연결안됨 및 출력 0으로 반환 검증")
+    void testOfflineChargerMarkedDisconnectedWhenNoActiveWsSession() {
+        WsSessionClient mockWsSessionClient = org.mockito.Mockito.mock(WsSessionClient.class);
+        when(mockWsSessionClient.getActiveChargeBoxIds()).thenReturn(Collections.emptySet());
+
+        ChargerService wsAwareService = new ChargerService(
+                chargerRepository, connectorStatusRepository, stationRepository, corpRepository, mockWsSessionClient);
+
+        mockConnector1.setStatus("Available");
+        mockConnector2.setStatus("Available");
+
+        when(chargerRepository.findById("00000101")).thenReturn(Optional.of(mockCharger));
+        when(stationRepository.findById("000001")).thenReturn(Optional.of(mockStation));
+        when(corpRepository.findById("CORP01")).thenReturn(Optional.of(mockCorp));
+        when(connectorStatusRepository.findByChargeBoxId("00000101"))
+                .thenReturn(Arrays.asList(mockConnector1, mockConnector2));
+
+        ChargerResponseDto result = wsAwareService.getChargerById("00000101");
+
+        assertThat(result.getConnected()).isFalse();
+        assertThat(result.getStatus()).isEqualTo("연결안됨");
+        assertThat(result.getPowerKw()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.getConnectors()).hasSize(2);
+        assertThat(result.getConnectors()).allSatisfy(conn -> {
+            assertThat(conn.getStatus()).isEqualTo("연결안됨");
+            assertThat(conn.getPowerKw()).isEqualByComparingTo(BigDecimal.ZERO);
+        });
+    }
 }

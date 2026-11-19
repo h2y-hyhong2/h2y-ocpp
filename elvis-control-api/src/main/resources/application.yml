@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: elvis-control-api
+  devtools:
+    restart:
+      enabled: ${ELVIS_DEVTOOLS_RESTART_ENABLED:true}
+      poll-interval: 1s
+      quiet-period: 400ms
+    livereload:
+      enabled: false
 
   # RDBMS (MySQL 9.71) 접속 설정
   datasource:
@@ -46,6 +53,12 @@ elvis:
       outbound-topic: ${KAFKA_OUTBOUND_TOPIC:ocpp-outbound-commands}
     notification:
       buffer-size: ${NOTIFICATION_BUFFER_SIZE:50}
+    ws-gateway:
+      enabled: ${ELVIS_WS_SESSION_CHECK_ENABLED:true}
+      base-url: ${ELVIS_WS_BASE_URL:http://localhost:${ELVIS_WS_PORT:9080}}
+      connect-timeout-ms: ${ELVIS_WS_CONNECT_TIMEOUT_MS:500}
+      read-timeout-ms: ${ELVIS_WS_READ_TIMEOUT_MS:800}
+      cache-ttl-ms: ${ELVIS_WS_CACHE_TTL_MS:1000}
     jwt:
       secret: ${JWT_SECRET:c2VjdXJlLWVsdmlzLWNzbXMtbGl0ZS1qd3Qta2V5LTIwMjYtMjU2Yml0LXNlY3JldA==}
       access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY:3600}

@@ -10,6 +10,12 @@
 
 ## 변경 이력
 
+### [2026-11-19] 백엔드 DevTools 자동 반영용 Gradle 연속 컴파일 워처 스크립트 추가
+- **과제/커밋**: `[3368]` (개발 환경 DevTools 핫 리로드 지원)
+- **변경 내용**:
+  - `watch-backend-classes.bat`: `elvis-connect-ws`, `elvis-connect-sync`, `elvis-control-api` 3개 모듈의 `classes --continuous` 증분 컴파일 워처 스크립트 추가
+- **영향 범위**: VS Code 개발 환경에서 Java/YAML 저장 시 Spring Boot DevTools 자동 재시작 트리거
+
 ### [2026-11-17] 로컬 Gradle 9.9.1(`D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1`) 및 `GRADLE_USER_HOME` 연동
 - **과제/커밋**: `[3368]WBS-COMMON-OP-003` (`74be7da` 후속 정비)
 - **변경 내용**:

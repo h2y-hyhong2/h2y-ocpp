@@ -4,6 +4,8 @@ import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
 import com.lselink.elvis.connect.sync.repository.ConnectorStatusRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,9 @@ public class ConnectorStatusService {
     private final ConnectorStatusRepository repository;
     private final FaultDetectionService faultDetectionService;
     private final OcppResponseSender ocppResponseSender;
+
+    @Value("${elvis.sync.connection.heartbeat-timeout-seconds:3900}")
+    private long heartbeatTimeoutSeconds = 3900L;
 
     public ConnectorStatusService(ConnectorStatusRepository repository,
                                   FaultDetectionService faultDetectionService,
@@ -146,6 +151,37 @@ public class ConnectorStatusService {
             log.error("[StatusSvc] BootNotification 처리 실패: chargeBoxId={}, error={}", chargeBoxId, e.getMessage(), e);
             throw e;
         }
+    }
+
+    /**
+     * WebSocket 연결 종료/유휴 타임아웃 시 해당 충전기의 모든 커넥터를 '연결안됨' 상태로 전환
+     */
+    @Transactional
+    public void handleDisconnected(String chargeBoxId) {
+        if (chargeBoxId == null || chargeBoxId.isBlank()) {
+            return;
+        }
+        int updated = repository.markDisconnectedByChargeBoxId(chargeBoxId);
+        log.info("[StatusSvc] 단말 연결 종료 반영 완료: chargeBoxId={}, updatedConnectors={}", chargeBoxId, updated);
+    }
+
+    /**
+     * 비정상 종료/재기동 등으로 Disconnect 이벤트를 받지 못한 만료 충전기 자동 오프라인 전환 스케줄러
+     */
+    @Transactional
+    @Scheduled(fixedDelayString = "${elvis.sync.connection.cleanup-interval-ms:30000}", initialDelay = 10000)
+    public void cleanupStaleDisconnectedChargers() {
+        long timeoutSec = heartbeatTimeoutSeconds > 0 ? heartbeatTimeoutSeconds : 3900L;
+        LocalDateTime threshold = LocalDateTime.now().minusSeconds(timeoutSec);
+
+        List<String> staleBoxIds = repository.findStaleOnlineChargeBoxIds(threshold);
+        if (staleBoxIds.isEmpty()) {
+            return;
+        }
+
+        int updatedRows = repository.markDisconnectedByChargeBoxIds(staleBoxIds);
+        log.warn("[StatusSvc] Heartbeat {}초 초과 만료 단말 '연결안됨' 자동 전환: chargers={}, updatedRows={}",
+                timeoutSec, staleBoxIds, updatedRows);
     }
 
     private String nullIfEmpty(String value) {

@@ -14,6 +14,8 @@
 | **04. 소프트웨어 아키텍처 정의서**     | EIP[^EIP] 패턴 설계, 가상 스레드 분배, 분산 세션 관리, CQRS[^CQRS] 데이터 구조 설계 및 EAI[^EAI] 통합 아키텍처 매핑 | `doc/01.standard_solution/04.software_architecture.md`        |
 | **05. Phase 1 기술 검증 정의서 (POC)** | Phase 1 기준 인프라 구성, EIP 구성 코드, 벌크 저장 설정 및 시뮬레이터 검증 시나리오 정의                            | `doc/01.standard_solution/05.poc.md`                          |
 | **CI/BI 마스터 컬러 가이드**           | E-LINK / LS 브랜드 컬러 시스템, 라이트 테마 기준 60-30-10 컬러 위계 및 상태 색상 토큰                               | [docs/CI_COLOR_GUIDE.md](docs/CI_COLOR_GUIDE.md)              |
+| **OCPP 1.6J 프로토콜 규약서**          | LSELINK 표준 OCPP 1.6J 전문 규격(Core, 확장 `DataTransfer`, 결제, 원격제어, Security) 및 CSMS Lite 매핑             | [docs/OCPP_1.6J_PROTOCOL_SPEC.md](docs/OCPP_1.6J_PROTOCOL_SPEC.md) |
+| **OCPP 1.6J 엔진 점검 체크리스트**     | 보안 제외 전 전문 대상 엔진 구현 현황 점검 결과 및 Phase 1~3 보완 작업 체크리스트                                   | [docs/OCPP_1.6J_ENGINE_CHECKLIST.md](docs/OCPP_1.6J_ENGINE_CHECKLIST.md) |
 | **외부 설정 및 인스톨러 가이드**       | `config/` 외부 설정 오버라이드 및 미들웨어 실행 가이드                                                              | [config/README.md](config/README.md)                          |
 | **로컬 기동 스크립트 가이드**          | Windows Native(Zero-Docker) 미들웨어/서비스/테스터 기동 스크립트 안내                                               | [scripts/README.md](scripts/README.md)                        |
 

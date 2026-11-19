@@ -17,4 +17,7 @@ dependencies {
     // Metrics (Micrometer)
     implementation 'io.micrometer:micrometer-core'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // 개발 환경 자동 재시작 (bootJar 패키징 시 자동 제외)
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }

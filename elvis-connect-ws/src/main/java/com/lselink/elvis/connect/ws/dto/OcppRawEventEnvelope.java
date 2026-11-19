@@ -9,6 +9,12 @@ import java.time.Instant;
  */
 public class OcppRawEventEnvelope implements Serializable {
 
+    public static final String EVENT_TYPE_OCPP_MESSAGE = "OCPP_MESSAGE";
+    public static final String EVENT_TYPE_DISCONNECTED = "DISCONNECTED";
+
+    /** 이벤트 유형 (OCPP_MESSAGE / DISCONNECTED) */
+    private String eventType = EVENT_TYPE_OCPP_MESSAGE;
+
     /** 충전기 고유 식별자 */
     private String chargeBoxId;
 
@@ -28,11 +34,24 @@ public class OcppRawEventEnvelope implements Serializable {
     }
 
     public OcppRawEventEnvelope(String chargeBoxId, String rawPayload, Instant receivedAt, String sessionId, String remoteAddress) {
+        this(EVENT_TYPE_OCPP_MESSAGE, chargeBoxId, rawPayload, receivedAt, sessionId, remoteAddress);
+    }
+
+    public OcppRawEventEnvelope(String eventType, String chargeBoxId, String rawPayload, Instant receivedAt, String sessionId, String remoteAddress) {
+        this.eventType = (eventType != null && !eventType.isBlank()) ? eventType : EVENT_TYPE_OCPP_MESSAGE;
         this.chargeBoxId = chargeBoxId;
         this.rawPayload = rawPayload;
         this.receivedAt = receivedAt;
         this.sessionId = sessionId;
         this.remoteAddress = remoteAddress;
+    }
+
+    public String getEventType() {
+        return eventType;
+    }
+
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
     }
 
     public String getChargeBoxId() {
@@ -80,11 +99,17 @@ public class OcppRawEventEnvelope implements Serializable {
     }
 
     public static class Builder {
+        private String eventType = EVENT_TYPE_OCPP_MESSAGE;
         private String chargeBoxId;
         private String rawPayload;
         private Instant receivedAt;
         private String sessionId;
         private String remoteAddress;
+
+        public Builder eventType(String eventType) {
+            this.eventType = eventType;
+            return this;
+        }
 
         public Builder chargeBoxId(String chargeBoxId) {
             this.chargeBoxId = chargeBoxId;
@@ -112,7 +137,7 @@ public class OcppRawEventEnvelope implements Serializable {
         }
 
         public OcppRawEventEnvelope build() {
-            return new OcppRawEventEnvelope(chargeBoxId, rawPayload, receivedAt, sessionId, remoteAddress);
+            return new OcppRawEventEnvelope(eventType, chargeBoxId, rawPayload, receivedAt, sessionId, remoteAddress);
         }
     }
 }

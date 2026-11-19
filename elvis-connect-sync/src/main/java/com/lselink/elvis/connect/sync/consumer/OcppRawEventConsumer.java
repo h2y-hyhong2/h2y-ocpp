@@ -6,7 +6,9 @@ import com.lselink.elvis.connect.sync.ocpp.OcppMessageParser;
 import com.lselink.elvis.connect.sync.ocpp.OcppParsedMessage;
 import com.lselink.elvis.connect.sync.service.AuthorizeService;
 import com.lselink.elvis.connect.sync.service.ConnectorStatusService;
+import com.lselink.elvis.connect.sync.service.DataTransferService;
 import com.lselink.elvis.connect.sync.service.DltRecoveryService;
+import com.lselink.elvis.connect.sync.service.MeterValuesService;
 import com.lselink.elvis.connect.sync.service.OcppResponseSender;
 import com.lselink.elvis.connect.sync.service.TransactionSessionService;
 import org.slf4j.Logger;
@@ -37,6 +39,8 @@ public class OcppRawEventConsumer {
     private final ConnectorStatusService connectorStatusService;
     private final TransactionSessionService transactionSessionService;
     private final AuthorizeService authorizeService;
+    private final MeterValuesService meterValuesService;
+    private final DataTransferService dataTransferService;
     private final DltRecoveryService dltRecoveryService;
     private final OcppResponseSender ocppResponseSender;
 
@@ -44,12 +48,16 @@ public class OcppRawEventConsumer {
                                 ConnectorStatusService connectorStatusService,
                                 TransactionSessionService transactionSessionService,
                                 AuthorizeService authorizeService,
+                                MeterValuesService meterValuesService,
+                                DataTransferService dataTransferService,
                                 DltRecoveryService dltRecoveryService,
                                 OcppResponseSender ocppResponseSender) {
         this.ocppMessageParser = ocppMessageParser;
         this.connectorStatusService = connectorStatusService;
         this.transactionSessionService = transactionSessionService;
         this.authorizeService = authorizeService;
+        this.meterValuesService = meterValuesService;
+        this.dataTransferService = dataTransferService;
         this.dltRecoveryService = dltRecoveryService;
         this.ocppResponseSender = ocppResponseSender;
     }
@@ -76,6 +84,15 @@ public class OcppRawEventConsumer {
             return;
         }
         String chargeBoxId = envelope.getChargeBoxId();
+
+        // ─── 0단계: WebSocket 연결 종료/타임아웃 시스템 이벤트 처리 ───────────────────
+        if (envelope.isDisconnectedEvent()) {
+            log.info("[SyncConsumer] 단말 연결 종료(DISCONNECTED) 이벤트 수신: chargeBoxId={}, sessionId={}",
+                    chargeBoxId, envelope.getSessionId());
+            connectorStatusService.handleDisconnected(chargeBoxId);
+            return;
+        }
+
         String rawPayload = envelope.getRawPayload();
         int payloadLength = rawPayload != null ? rawPayload.length() : 0;
 
@@ -200,15 +217,17 @@ public class OcppRawEventConsumer {
             // ─── Sprint 20: Authorize 회원 인증 처리 (S20-SYNC-0070-CO) ───────────
             case "Authorize"          -> authorizeService.handleAuthorize(msg);
 
-            // ─── Sprint 21~22 미터값 수신 & CALLRESULT ({}) 하향 응답 ────────────
-            case "MeterValues" -> {
-                log.info("[SyncConsumer] MeterValues 수신 처리 및 하향 CALLRESULT 전송: chargeBoxId={}, uniqueId={}",
-                        msg.getChargeBoxId(), msg.getUniqueId());
-                ocppResponseSender.sendMeterValuesResponse(msg.getChargeBoxId(), msg.getUniqueId());
-            }
+            // ─── 실시간 계측치(MeterValues) DB 반영 및 CALLRESULT ({}) 하향 응답 ─────
+            case "MeterValues"        -> meterValuesService.handleStandardMeterValues(msg);
 
-            default ->
-                log.trace("[SyncConsumer] 무관 Action 무시: chargeBoxId={}, action={}", msg.getChargeBoxId(), action);
+            // ─── LS E-Link 확장 DataTransfer 라우터 ────────────────────────────────
+            case "DataTransfer"       -> dataTransferService.handleDataTransfer(msg);
+
+            default -> {
+                log.warn("[SyncConsumer] 미구현 OCPP Action 수신 → CALLERROR(NotImplemented) 회신: chargeBoxId={}, action={}, uniqueId={}",
+                        msg.getChargeBoxId(), action, msg.getUniqueId());
+                ocppResponseSender.sendNotImplementedError(msg.getChargeBoxId(), msg.getUniqueId(), action);
+            }
         }
     }
 }

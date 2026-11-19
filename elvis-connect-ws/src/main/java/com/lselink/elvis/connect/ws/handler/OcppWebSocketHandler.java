@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.PongMessage;
 import org.springframework.web.socket.SubProtocolCapable;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -94,6 +95,13 @@ public class OcppWebSocketHandler extends TextWebSocketHandler implements SubPro
     }
 
     @Override
+    protected void handlePongMessage(WebSocketSession session, PongMessage message) {
+        String chargeBoxId = getChargeBoxId(session);
+        sessionStore.touchSession(chargeBoxId);
+        log.debug("[WS-PONG] [{}] WebSocket Pong 수신 - 세션 활동 시각 갱신", chargeBoxId);
+    }
+
+    @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         String chargeBoxId = getChargeBoxId(session);
         log.error("[WS-Handler] 소켓 전송 에러 발생: chargeBoxId={}, sessionId={}, error={}",
@@ -106,7 +114,12 @@ public class OcppWebSocketHandler extends TextWebSocketHandler implements SubPro
         log.info("[WS-Handler] 소켓 연결 종료: chargeBoxId={}, sessionId={}, status={}",
                 chargeBoxId, session.getId(), status);
 
-        sessionStore.removeSession(chargeBoxId, session);
+        if (sessionStore.removeSession(chargeBoxId, session)) {
+            String remoteAddress = session.getRemoteAddress() != null
+                    ? session.getRemoteAddress().toString()
+                    : "unknown";
+            inboundProducer.sendDisconnectEvent(chargeBoxId, session.getId(), remoteAddress);
+        }
     }
 
     private String getChargeBoxId(WebSocketSession session) {

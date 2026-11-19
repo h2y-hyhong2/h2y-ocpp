@@ -77,6 +77,24 @@ public class InboundRawEventProducer {
     }
 
     /**
+     * 충전기 WebSocket 연결 종료/타임아웃 이벤트 발행 (동일 chargeBoxId 파티션 키로 순서 보장)
+     */
+    public CompletableFuture<SendResult<String, OcppRawEventEnvelope>> sendDisconnectEvent(
+            String chargeBoxId, String sessionId, String remoteAddress) {
+        OcppRawEventEnvelope envelope = OcppRawEventEnvelope.builder()
+                .eventType(OcppRawEventEnvelope.EVENT_TYPE_DISCONNECTED)
+                .chargeBoxId(chargeBoxId)
+                .sessionId(sessionId)
+                .remoteAddress(remoteAddress != null ? remoteAddress : "unknown")
+                .rawPayload(null)
+                .receivedAt(Instant.now())
+                .build();
+        log.info("[InboundProducer] 단말 연결 종료(DISCONNECTED) 이벤트 발행: chargeBoxId={}, sessionId={}",
+                chargeBoxId, sessionId);
+        return sendRawEvent(envelope);
+    }
+
+    /**
      * Kafka 브로커 헬스 상태 반환 (서킷 오픈 후 쿨다운 경과 시 Half-Open 프로브 허용으로 영구 잠금 방지)
      */
     public boolean isKafkaHealthy() {

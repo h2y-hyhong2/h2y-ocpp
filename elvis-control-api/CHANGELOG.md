@@ -10,6 +10,26 @@
 
 ## 변경 이력
 
+### [2026-11-19] WS 게이트웨이 활성 세션 교차 검증을 통한 미연결 충전기 상태 보정
+- **과제/커밋**: `[3368]` (미연결 충전기 상태 정합성 개선)
+- **변경 내용**:
+  - `WsSessionClient`: `elvis-connect-ws`의 `/internal/sessions`를 짧은 TTL 캐시(기본 1초)로 조회하여 실시간 활성 연결 충전기 목록 확인 (게이트웨이 미응답 시 0건 처리)
+  - `ChargerService` / `ChargerResponseDto`: `connected` 필드 추가 및 활성 WebSocket 세션이 없는 충전기는 DB 잔여 상태와 무관하게 대표/커넥터 상태를 `'연결안됨'`, 순시 출력/전압/전류를 `0`으로 반환하도록 보정
+  - `application.yml`: `elvis.control.ws-gateway` 연동 설정 추가
+  - `AssetApiServiceTest`: 미연결 충전기 `'연결안됨'` 보정 단위 테스트 추가
+  - `build.gradle` / `application.yml`: `spring-boot-devtools`(`developmentOnly`) 추가 및 `spring.devtools.restart` 활성화(`livereload.enabled: false`)
+  - `ChargerService`: LS 커스텀 영문 상태(`Pause`, `Maintenance`) 우선순위 및 요약 통계 매핑 추가
+- **영향 범위**: 충전기 목록/상세/페이징/요약 REST API (`/api/v1/chargers/**`), 로컬 개발 자동 재시작
+
+### [2026-11-18] 충전기·커넥터 기준 상태 산출 및 커넥터 단위 원격제어 지원
+- **과제/커밋**: `[3368]` (커넥터 기준 관제 정합성 개선)
+- **변경 내용**:
+  - `ChargerService`: `connectorId=0`(본체)과 실제 커넥터(`>=1`)를 분리하여 `connectors` 목록을 구성하고, 대표 상태를 우선순위(`고장 > 충전중 > 준비중/일시중지 > 충전완료/예약중 > 점검중 > 충전대기 > 연결안됨`) 기반으로 산출하며 최신 하트비트 반영
+  - `ChargerService` / `ChargerController`: `/api/v1/chargers/{chargeBoxId}/remote-command` 요청에서 선택적 `connectorId`를 지원하여 커넥터별 원격 제어(`RemoteStartTransaction`, `RemoteStopTransaction`, `UnlockConnector`) 가능하도록 개선 (`Reset`은 본체 전체 적용)
+  - `ChargerRepositoryImpl`: 상태 필터링(`eqStatus`) 시 실제 커넥터(`connectorId > 0`) 중 해당 상태를 가진 건이 하나라도 존재하면 매칭되도록 QueryDSL 조건 보완
+  - `AssetApiServiceTest`: 0번 본체 레코드 분리, 우선순위 대표 상태, 특정 커넥터 대상 원격제어 단위 테스트 추가
+- **영향 범위**: 충전기 목록/상세/요약 API 및 원격 제어 엔드포인트
+
 ### [2026-11-17] JWT 인증 필터 수정 (`0eb3c33`)
 - **과제/커밋**: `0eb3c33`
 - **변경 내용**:

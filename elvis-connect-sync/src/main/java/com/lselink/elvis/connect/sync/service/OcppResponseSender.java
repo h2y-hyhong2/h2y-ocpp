@@ -26,6 +26,7 @@ public class OcppResponseSender {
     private static final Logger log = LoggerFactory.getLogger(OcppResponseSender.class);
 
     private static final int MSG_TYPE_CALLRESULT = 3;
+    private static final int MSG_TYPE_CALLERROR = 4;
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
@@ -129,6 +130,81 @@ public class OcppResponseSender {
     public void sendMeterValuesResponse(String chargeBoxId, String uniqueId) {
         ObjectNode payload = objectMapper.createObjectNode();
         sendCallResult(chargeBoxId, uniqueId, "MeterValues", payload);
+    }
+
+    /**
+     * DataTransfer.conf 하향 응답 전송
+     * <pre>
+     * [3, uniqueId, { "status": "Accepted | Rejected | UnknownMessageId | UnknownVendorId", "data": "..." }]
+     * </pre>
+     */
+    public void sendDataTransferResponse(String chargeBoxId, String uniqueId, String status, String data) {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("status", (status != null && !status.isBlank()) ? status : "Accepted");
+        if (data != null) {
+            payload.put("data", data);
+        }
+        sendCallResult(chargeBoxId, uniqueId, "DataTransfer", payload);
+    }
+
+    /**
+     * 미구현 OCPP Action 수신 시 CALLERROR(NotImplemented) 회신 (단말 타임아웃 대기 방지)
+     */
+    public void sendNotImplementedError(String chargeBoxId, String uniqueId, String action) {
+        sendCallError(
+                chargeBoxId,
+                uniqueId,
+                action,
+                "NotImplemented",
+                "Action is not implemented by CSMS: " + (action != null ? action : "UNKNOWN")
+        );
+    }
+
+    /**
+     * OCPP 1.6-J CALLERROR [4, uniqueId, errorCode, errorDescription, {}] 공통 조립 및 Kafka 하향 발행
+     */
+    public void sendCallError(String chargeBoxId, String uniqueId, String action,
+                              String errorCode, String errorDescription) {
+        if (uniqueId == null || uniqueId.isBlank()) {
+            log.warn("[OcppSender] uniqueId 부재로 CALLERROR 발행 스킵: chargeBoxId={}, action={}", chargeBoxId, action);
+            return;
+        }
+
+        try {
+            ArrayNode root = objectMapper.createArrayNode();
+            root.add(MSG_TYPE_CALLERROR);
+            root.add(uniqueId);
+            root.add(errorCode != null && !errorCode.isBlank() ? errorCode : "GenericError");
+            root.add(errorDescription != null ? errorDescription : "");
+            root.add(objectMapper.createObjectNode());
+
+            String callErrorJson = objectMapper.writeValueAsString(root);
+
+            OcppOutboundCommand outboundCmd = OcppOutboundCommand.builder()
+                    .chargeBoxId(chargeBoxId)
+                    .action(action != null ? action : "UNKNOWN")
+                    .commandPayload(callErrorJson)
+                    .messageId(uniqueId)
+                    .build();
+
+            log.warn("[OcppSender] 하향 CALLERROR 발행: chargeBoxId={}, action={}, uniqueId={}, errorCode={}",
+                    chargeBoxId, action, uniqueId, errorCode);
+
+            kafkaTemplate.send(outboundTopic, chargeBoxId, outboundCmd)
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.error("[OcppSender] CALLERROR 하향 전송 실패: chargeBoxId={}, action={}, error={}",
+                                    chargeBoxId, action, ex.getMessage(), ex);
+                        } else {
+                            log.debug("[OcppSender] CALLERROR 하향 전송 완료: chargeBoxId={}, action={}, offset={}",
+                                    chargeBoxId, action, result.getRecordMetadata().offset());
+                        }
+                    });
+
+        } catch (Exception e) {
+            log.error("[OcppSender] CALLERROR 직렬화 실패: chargeBoxId={}, action={}, error={}",
+                    chargeBoxId, action, e.getMessage(), e);
+        }
     }
 
     /**

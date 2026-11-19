@@ -1532,14 +1532,18 @@ export function useVirtualCharger() {
     const c = chargers.find(item => item.id === cid)
     if (!c) return
 
+    const connectorIds = (c.connectors && c.connectors.length > 0)
+      ? c.connectors.map(g => g.connectorId)
+      : [1, 2]
+
     addLog({
       chargerId: cid,
       direction: 'SYS',
       messageType: 0,
       messageId: 'SYS-BOOT',
       action: 'BOOT_SEQUENCE_START',
-      payload: { stage: '4단계 기동 전문 순차 발송' },
-      raw: `[SYS] [${cid}] 기동 전문 4단계(Boot, Preparing, Available, Heartbeat) 순차 발송 개시`
+      payload: { stage: '4단계 기동 전문 순차 발송', connectors: connectorIds },
+      raw: `[SYS] [${cid}] 기동 전문 4단계(Boot, 커넥터 ${connectorIds.map(id => `#${id}`).join(', ')} Preparing/Available, Heartbeat) 순차 발송 개시`
     })
 
     if (!c.connected) {
@@ -1549,12 +1553,18 @@ export function useVirtualCharger() {
     if (!c.connected) return
     sendBootNotification(c.vendor, c.model, c.firmwareVer || '1.0.0-RELEASE', cid)
     await delay(1000)
-    if (!c.connected) return
-    sendStatusNotification('Preparing', 'NoError', cid)
-    await delay(800)
-    if (!c.connected) return
-    sendStatusNotification('Available', 'NoError', cid)
-    await delay(800)
+    for (const connId of connectorIds) {
+      if (!c.connected) return
+      sendStatusNotification('Preparing', 'NoError', cid, connId)
+      await delay(300)
+    }
+    await delay(500)
+    for (const connId of connectorIds) {
+      if (!c.connected) return
+      sendStatusNotification('Available', 'NoError', cid, connId)
+      await delay(300)
+    }
+    await delay(500)
     if (!c.connected) return
     sendHeartbeat(cid)
   }

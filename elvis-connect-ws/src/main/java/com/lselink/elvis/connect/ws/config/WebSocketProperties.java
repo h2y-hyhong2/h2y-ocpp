@@ -15,8 +15,9 @@ public class WebSocketProperties {
 
     private String path = "/ocpp/{chargeBoxId}";
     private List<String> subprotocols = new ArrayList<>(List.of("ocpp1.6", "ocpp1.5"));
-    private int bufferSizeBytes = 16384;
-    private long idleTimeoutSeconds = 90;
+    private int bufferSizeBytes = 65536;
+    private long idleTimeoutSeconds = 360;
+    private long pingIntervalSeconds = 30;
     private boolean requireAuth = false;
 
     public String getPath() {
@@ -51,6 +52,14 @@ public class WebSocketProperties {
 
     public void setIdleTimeoutSeconds(long idleTimeoutSeconds) {
         this.idleTimeoutSeconds = idleTimeoutSeconds;
+    }
+
+    public long getPingIntervalSeconds() {
+        return pingIntervalSeconds;
+    }
+
+    public void setPingIntervalSeconds(long pingIntervalSeconds) {
+        this.pingIntervalSeconds = pingIntervalSeconds;
     }
 
     public boolean isRequireAuth() {

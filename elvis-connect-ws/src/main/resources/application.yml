@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: elvis-connect-ws
+  devtools:
+    restart:
+      enabled: ${ELVIS_DEVTOOLS_RESTART_ENABLED:true}
+      poll-interval: 1s
+      quiet-period: 400ms
+    livereload:
+      enabled: false
   threads:
     virtual:
       enabled: true
@@ -35,8 +42,9 @@ elvis:
       subprotocols:
         - "ocpp1.6"
         - "ocpp1.5"
-      buffer-size-bytes: 16384
-      idle-timeout-seconds: 90
+      buffer-size-bytes: ${ELVIS_WS_BUFFER_SIZE_BYTES:65536}
+      idle-timeout-seconds: ${ELVIS_WS_IDLE_TIMEOUT_SECONDS:360}
+      ping-interval-seconds: ${ELVIS_WS_PING_INTERVAL_SECONDS:30}
       require-auth: false
     kafka:
       inbound-topic: "ocpp-raw-events"

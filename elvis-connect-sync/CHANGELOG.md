@@ -10,6 +10,16 @@
 
 ## 변경 이력
 
+### [2026-11-19] 단말 연결 종료 이벤트 반영 및 Heartbeat 만료 자동 오프라인 전환
+- **과제/커밋**: `[3368]` (미연결 충전기 상태 정합성 개선)
+- **변경 내용**:
+  - `OcppRawEventEnvelope` / `OcppRawEventConsumer`: `DISCONNECTED` 시스템 이벤트 분기 처리 추가
+  - `ConnectorStatusRepository` / `ConnectorStatusService`: 연결 종료 시 충전기 전체 커넥터를 `'연결안됨'` 상태로 전환 및 순시 계측치(`power_kw`, `voltage_v`, `current_a`, `soc_percent`, `charging_minutes`) 초기화, Heartbeat 타임아웃(기본 `120초`, `30초` 주기) 초과 만료 단말 자동 오프라인 전환 스케줄러 추가
+  - `ElvisConnectSyncApplication`: `@EnableScheduling` 활성화 및 `application.yml`에 `elvis.sync.connection` 설정 추가
+  - `build.gradle` / `application.yml`: `spring-boot-devtools`(`developmentOnly`) 추가 및 `spring.devtools.restart` 활성화(`livereload.enabled: false`)
+  - `OcppResponseSender` / `OcppRawEventConsumer` / `DataTransferService` / `MeterValuesService` / `ConnectorStatusRepository`: OCPP Phase 1 최적화 — 미구현 액션 `CALLERROR(NotImplemented)` 회신, `DataTransfer` 라우터(`UnknownMessageId` 기본 응답), 표준 `MeterValues` 및 LS `DataTransfer(MeterValues)` 실시간 계측치 단일 Upsert(`upsertTelemetry`) 반영, 대기/종료 상태 복귀 시 순시 출력·전압·전류 0 초기화, Heartbeat 만료 안전망 `3900초`(65분) 상향
+- **영향 범위**: `connector_status` 실시간 상태 동기화 파이프라인, OCPP RPC 응답 및 계측 처리, 로컬 개발 자동 재시작
+
 ### [2026-11-16] Spring Boot 4.1.2 업그레이드 및 QueryDSL·Flyway 정비 (`098f3e9`)
 - **과제/커밋**: `[3368]WBS-COMMON-OP-001` (`098f3e9`)
 - **변경 내용**:

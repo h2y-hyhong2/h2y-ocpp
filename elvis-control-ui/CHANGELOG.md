@@ -11,6 +11,21 @@
 
 ## 변경 이력
 
+### [2026-11-19] 미연결 충전기(`connected: false`) 상태·계측치 표시 정합성 개선
+- **과제/커밋**: `[3368]` (미연결 충전기 상태 정합성 개선)
+- **변경 내용**:
+  - `csmsStore.ts`: `ChargerItem.connected` 필드 및 `isChargerConnected` 헬퍼 추가, `connected === false`인 충전기의 커넥터·대표 상태를 `'연결안됨'`으로 보정
+  - `ChargersView.vue`: 충전기 ID 좌측에 WebSocket 연결 상태 도트 표시, 우측 제어반 계측치 헤더(`실시간`/`미연결`) 및 커넥터 채널 카드(`미연결`) 문구를 실제 연결 상태에 맞게 개선
+  - `csmsStore.ts`: `STATUS_MAP`에 LS 확장 영문 상태 `'Pause'`(`일시중지`), `'Maintenance'`(`점검중`) 및 `'Reserved'`(`예약중`) 매핑 추가
+- **영향 범위**: 충전기 관제 화면(`ChargersView.vue`) 및 Pinia 스토어(`csmsStore.ts`)
+
+### [2026-11-18] 충전기·커넥터 기준 실시간 상태 표시, 필터링 및 커넥터별 원격제어 반영
+- **과제/커밋**: `[3368]` (커넥터 기준 관제 UI 개선)
+- **변경 내용**:
+  - `csmsStore.ts`: `selectedConnectorId` 상태 및 `getChargerConnectors`, `getPrimaryConnector`, `getChargerEffectiveStatus`, `getChargerTotalPowerKw` 헬퍼 추가, `sendRemoteAction`에서 `Reset` 외 제어 명령 시 선택된 `connectorId` 전달
+  - `ChargersView.vue`: 테이블 행에 커넥터별 클릭 가능한 상태 배지(`#1`, `#2`...) 렌더링, 상태 필터 칩을 커넥터 건수 기준으로 집계·필터링, 우측 제어반에 커넥터 채널 선택 탭 및 선택 커넥터별 계측치·원격제어 대상 표시 추가
+- **영향 범위**: 충전기 관제 메인 화면(`ChargersView.vue`) 및 Pinia 스토어(`csmsStore.ts`)
+
 ### [2026-11-17] Tauri 권한 스키마(`capabilities.json`) 동기화
 - **과제/커밋**: `[3368]WBS-COMMON-OP-003`
 - **변경 내용**:

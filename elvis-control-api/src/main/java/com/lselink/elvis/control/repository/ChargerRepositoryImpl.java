@@ -78,31 +78,47 @@ public class ChargerRepositoryImpl implements ChargerRepositoryCustom {
         }
 
         String trimmedStatus = status.trim();
-        QConnectorStatusEntity repConn = new QConnectorStatusEntity("repConn");
-        QConnectorStatusEntity minConn = new QConnectorStatusEntity("minConn");
+        QConnectorStatusEntity channelConn = new QConnectorStatusEntity("channelConn");
+        QConnectorStatusEntity anyConn = new QConnectorStatusEntity("anyConn");
 
-        BooleanExpression matchesRepresentative = JPAExpressions.selectOne()
-                .from(repConn)
+        BooleanExpression hasChannelConn = JPAExpressions.selectOne()
+                .from(anyConn)
                 .where(
-                        repConn.chargeBoxId.eq(chargerEntity.chargeBoxId),
-                        repConn.connectorId.eq(
-                                JPAExpressions.select(minConn.connectorId.min())
-                                        .from(minConn)
-                                        .where(minConn.chargeBoxId.eq(chargerEntity.chargeBoxId))
-                        ),
-                        repConn.status.eq(trimmedStatus)
+                        anyConn.chargeBoxId.eq(chargerEntity.chargeBoxId),
+                        anyConn.connectorId.gt(0)
                 )
                 .exists();
 
+        BooleanExpression matchesChannel = JPAExpressions.selectOne()
+                .from(channelConn)
+                .where(
+                        channelConn.chargeBoxId.eq(chargerEntity.chargeBoxId),
+                        channelConn.connectorId.gt(0),
+                        channelConn.status.eq(trimmedStatus)
+                )
+                .exists();
+
+        BooleanExpression matchesFallbackBody = hasChannelConn.not().and(
+                JPAExpressions.selectOne()
+                        .from(channelConn)
+                        .where(
+                                channelConn.chargeBoxId.eq(chargerEntity.chargeBoxId),
+                                channelConn.status.eq(trimmedStatus)
+                        )
+                        .exists()
+        );
+
+        BooleanExpression matchesAny = matchesChannel.or(matchesFallbackBody);
+
         if ("연결안됨".equals(trimmedStatus)) {
             BooleanExpression noConnectors = JPAExpressions.selectOne()
-                    .from(minConn)
-                    .where(minConn.chargeBoxId.eq(chargerEntity.chargeBoxId))
+                    .from(anyConn)
+                    .where(anyConn.chargeBoxId.eq(chargerEntity.chargeBoxId))
                     .notExists();
-            return matchesRepresentative.or(noConnectors);
+            return matchesAny.or(noConnectors);
         }
 
-        return matchesRepresentative;
+        return matchesAny;
     }
 
     private BooleanExpression containsKeyword(String keyword) {

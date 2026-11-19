@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: elvis-connect-sync
+  devtools:
+    restart:
+      enabled: ${ELVIS_DEVTOOLS_RESTART_ENABLED:true}
+      poll-interval: 1s
+      quiet-period: 400ms
+    livereload:
+      enabled: false
   threads:
     virtual:
       enabled: true
@@ -69,6 +76,9 @@ elvis:
       dlt-topic: ${ELVIS_DLT_TOPIC:ocpp-dlt}
     fault:
       flapping-window-seconds: 60
+    connection:
+      heartbeat-timeout-seconds: ${ELVIS_HEARTBEAT_TIMEOUT_SECONDS:3900}
+      cleanup-interval-ms: ${ELVIS_HEARTBEAT_CLEANUP_INTERVAL_MS:30000}
 
 management:
   health:

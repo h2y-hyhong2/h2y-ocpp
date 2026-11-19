@@ -55,19 +55,39 @@ public class ChargerController {
     @PostMapping("/{chargeBoxId}/remote-command")
     public ApiResponse<Map<String, Object>> sendRemoteCommand(
             @PathVariable String chargeBoxId,
-            @RequestBody Map<String, String> body) {
+            @RequestBody(required = false) Map<String, Object> body) {
         String action = "Reset";
-        if (body != null && body.containsKey("action")) {
-            action = body.get("action");
+        Integer connectorId = null;
+        if (body != null) {
+            Object rawAction = body.get("action");
+            if (rawAction != null && !rawAction.toString().isBlank()) {
+                action = rawAction.toString().trim();
+            }
+            Object rawConnId = body.get("connectorId");
+            if (rawConnId instanceof Number num) {
+                connectorId = num.intValue();
+            } else if (rawConnId instanceof String str && !str.isBlank()) {
+                try {
+                    connectorId = Integer.parseInt(str.trim());
+                } catch (NumberFormatException ignored) {
+                }
+            }
         }
-        boolean success = chargerService.executeRemoteAction(chargeBoxId, action);
+
+        boolean success = chargerService.executeRemoteAction(chargeBoxId, action, connectorId);
 
         Map<String, Object> resultMap = new LinkedHashMap<>();
         resultMap.put("success", success);
         resultMap.put("chargeBoxId", chargeBoxId);
         resultMap.put("action", action);
+        if (connectorId != null) {
+            resultMap.put("connectorId", connectorId);
+        }
 
-        String message = "[" + chargeBoxId + "] 단말에 " + action + " 명령이 전달되었습니다.";
+        String targetLabel = (connectorId != null && connectorId > 0)
+                ? "[" + chargeBoxId + " #" + connectorId + "]"
+                : "[" + chargeBoxId + "]";
+        String message = targetLabel + " 단말에 " + action + " 명령이 전달되었습니다.";
         return ApiResponse.success(message, resultMap);
     }
 }

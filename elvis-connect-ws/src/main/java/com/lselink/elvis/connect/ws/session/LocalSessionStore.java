@@ -1,20 +1,29 @@
 package com.lselink.elvis.connect.ws.session;
 
+import com.lselink.elvis.connect.ws.kafka.InboundRawEventProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.PingMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 /**
  * 인메모리 충전기 WebSocket 세션 스토리지 (Lock-free ConcurrentHashMap)
@@ -37,10 +46,22 @@ public class LocalSessionStore {
 
     private final long idleTimeoutSeconds;
     private final Duration sessionTimeout;
+    private final Duration pingInterval;
+    private final InboundRawEventProducer inboundProducer;
 
-    public LocalSessionStore(@Value("${elvis.gateway.websocket.idle-timeout-seconds:90}") long idleTimeoutSeconds) {
-        this.idleTimeoutSeconds = idleTimeoutSeconds > 0 ? idleTimeoutSeconds : 90L;
+    public LocalSessionStore(long idleTimeoutSeconds) {
+        this(idleTimeoutSeconds, 30L, null);
+    }
+
+    @Autowired
+    public LocalSessionStore(@Value("${elvis.gateway.websocket.idle-timeout-seconds:360}") long idleTimeoutSeconds,
+                             @Value("${elvis.gateway.websocket.ping-interval-seconds:30}") long pingIntervalSeconds,
+                             InboundRawEventProducer inboundProducer) {
+        this.idleTimeoutSeconds = idleTimeoutSeconds > 0 ? idleTimeoutSeconds : 360L;
         this.sessionTimeout = Duration.ofSeconds(this.idleTimeoutSeconds);
+        long safePingSec = pingIntervalSeconds > 0 ? pingIntervalSeconds : 30L;
+        this.pingInterval = Duration.ofSeconds(safePingSec);
+        this.inboundProducer = inboundProducer;
     }
 
     /**
@@ -96,7 +117,17 @@ public class LocalSessionStore {
      * 현재 활성 세션 수 반환
      */
     public int getActiveSessionCount() {
-        return sessionMap.size();
+        return getActiveChargeBoxIds().size();
+    }
+
+    /**
+     * 현재 실제 연결(isOpen)되어 있는 충전기 chargeBoxId 목록 반환
+     */
+    public Set<String> getActiveChargeBoxIds() {
+        return sessionMap.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && entry.getValue().isOpen())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**
@@ -152,11 +183,16 @@ public class LocalSessionStore {
     }
 
     /**
-     * 유휴 타임아웃 초과 및 이미 닫힌 단말 세션 자동 감지 및 정리 (Heartbeat 헬스체크)
+     * 유휴 타임아웃 초과 및 이미 닫힌 단말 세션 자동 감지·정리 + WebSocket Ping 헬스체크
+     * <p>
+     * 60분 Heartbeat 주기를 사용하는 현장 단말도 RFC 6455 Ping/Pong으로 생존을 유지하되,
+     * 네트워크 단절로 Ping 전송 실패 또는 Pong/패킷 무응답이 지속되면 즉시 정리합니다.
+     * </p>
      */
     public int cleanupIdleSessions() {
         Instant now = Instant.now();
-        Instant threshold = now.minus(sessionTimeout);
+        Instant idleThreshold = now.minus(sessionTimeout);
+        Instant pingThreshold = now.minus(pingInterval);
         int evictedCount = 0;
 
         for (var entry : sessionMap.entrySet()) {
@@ -166,27 +202,78 @@ public class LocalSessionStore {
             if (!session.isOpen()) {
                 if (sessionMap.remove(chargeBoxId, session)) {
                     lastActivityMap.remove(chargeBoxId);
+                    publishDisconnect(chargeBoxId, session);
                     evictedCount++;
                 }
                 continue;
             }
 
             Instant lastActive = lastActivityMap.get(chargeBoxId);
-            if (lastActive != null && lastActive.isBefore(threshold)) {
-                log.warn("[SessionStore] {}초 헬스체크 미응답 타임아웃 단말 소켓 강제 해제: chargeBoxId={}, idleDuration={}s",
+            if (lastActive != null && lastActive.isBefore(idleThreshold)) {
+                log.warn("[SessionStore] {}초 무응답(패킷/Pong 미수신) 타임아웃 단말 소켓 강제 해제: chargeBoxId={}, idleDuration={}s",
                         idleTimeoutSeconds, chargeBoxId, Duration.between(lastActive, now).toSeconds());
+                boolean removed = sessionMap.remove(chargeBoxId, session);
+                if (removed) {
+                    lastActivityMap.remove(chargeBoxId);
+                    publishDisconnect(chargeBoxId, session);
+                    evictedCount++;
+                }
                 try {
                     session.close(CloseStatus.SESSION_NOT_RELIABLE.withReason(
-                            "Heartbeat timeout (" + idleTimeoutSeconds + "s)"));
+                            "Idle timeout (" + idleTimeoutSeconds + "s)"));
                 } catch (IOException e) {
                     log.error("[SessionStore] 소켓 해제 실패: chargeBoxId={}", chargeBoxId, e);
                 }
-                if (sessionMap.remove(chargeBoxId, session)) {
-                    lastActivityMap.remove(chargeBoxId);
-                    evictedCount++;
+                continue;
+            }
+
+            // 무통신이 pingInterval 이상 경과한 세션에 WebSocket 제어 프레임 Ping 전송
+            if (lastActive != null && lastActive.isBefore(pingThreshold)) {
+                if (!sendPingFrame(chargeBoxId, session)) {
+                    boolean removed = sessionMap.remove(chargeBoxId, session);
+                    if (removed) {
+                        lastActivityMap.remove(chargeBoxId);
+                        publishDisconnect(chargeBoxId, session);
+                        evictedCount++;
+                    }
+                    try {
+                        if (session.isOpen()) {
+                            session.close(CloseStatus.GOING_AWAY.withReason("WebSocket Ping failed"));
+                        }
+                    } catch (IOException ignored) {
+                    }
                 }
             }
         }
         return evictedCount;
+    }
+
+    private boolean sendPingFrame(String chargeBoxId, WebSocketSession session) {
+        synchronized (session) {
+            if (!session.isOpen()) {
+                return false;
+            }
+            try {
+                ByteBuffer payload = ByteBuffer.wrap("elvis-ping".getBytes(StandardCharsets.UTF_8));
+                session.sendMessage(new PingMessage(payload));
+                log.debug("[SessionStore] WebSocket Ping 전송: chargeBoxId={}", chargeBoxId);
+                return true;
+            } catch (IOException | IllegalStateException e) {
+                log.warn("[SessionStore] WebSocket Ping 전송 실패 → 연결 단절 판정: chargeBoxId={}, error={}",
+                        chargeBoxId, e.getMessage());
+                return false;
+            }
+        }
+    }
+
+    private void publishDisconnect(String chargeBoxId, WebSocketSession session) {
+        if (inboundProducer == null || chargeBoxId == null || chargeBoxId.isBlank()) {
+            return;
+        }
+        String sessionId = session != null ? session.getId() : null;
+        String remoteAddr = (session != null && session.getRemoteAddress() != null)
+                ? session.getRemoteAddress().toString()
+                : "unknown";
+        inboundProducer.sendDisconnectEvent(chargeBoxId, sessionId, remoteAddr);
     }
 }

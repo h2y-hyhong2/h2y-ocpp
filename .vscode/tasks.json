@@ -38,6 +38,16 @@
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "[Backend] 자동 컴파일 워처 (DevTools Hot Reload)",
+      "type": "shell",
+      "command": "cmd.exe /c scripts\\watch-backend-classes.bat",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "isBackground": true
     }
   ]
 }

@@ -28,10 +28,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Value("${elvis.gateway.websocket.path:/ocpp/{chargeBoxId}}")
     private String websocketPath;
 
-    @Value("${elvis.gateway.websocket.buffer-size-bytes:16384}")
+    @Value("${elvis.gateway.websocket.buffer-size-bytes:65536}")
     private int bufferSizeBytes;
 
-    @Value("${elvis.gateway.websocket.idle-timeout-seconds:90}")
+    @Value("${elvis.gateway.websocket.idle-timeout-seconds:360}")
     private long idleTimeoutSeconds;
 
     @Override

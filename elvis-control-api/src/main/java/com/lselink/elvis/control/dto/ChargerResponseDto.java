@@ -15,6 +15,7 @@ public class ChargerResponseDto {
     private String cpId;
     private Integer connectorId;
     private String status;
+    private Boolean connected;
     private String spec;
     private BigDecimal powerKw;
     private BigDecimal voltageV;
@@ -41,6 +42,18 @@ public class ChargerResponseDto {
                               String model, String carModel, String userTag, String protocol,
                               String lastHeartbeat, BigDecimal accumulatedKwh, Integer chargingMinutes,
                               List<ConnectorDetailDto> connectors) {
+        this(id, chargeBoxId, stId, stationName, corpId, corpName, corpShortName, cpId, connectorId, status, null,
+                spec, powerKw, voltageV, currentA, socPercent, batteryTempC, vendor, model, carModel, userTag,
+                protocol, lastHeartbeat, accumulatedKwh, chargingMinutes, connectors);
+    }
+
+    public ChargerResponseDto(String id, String chargeBoxId, String stId, String stationName, String corpId,
+                              String corpName, String corpShortName, String cpId, Integer connectorId,
+                              String status, Boolean connected, String spec, BigDecimal powerKw, BigDecimal voltageV,
+                              BigDecimal currentA, Integer socPercent, Integer batteryTempC, String vendor,
+                              String model, String carModel, String userTag, String protocol,
+                              String lastHeartbeat, BigDecimal accumulatedKwh, Integer chargingMinutes,
+                              List<ConnectorDetailDto> connectors) {
         this.id = id;
         this.chargeBoxId = chargeBoxId;
         this.stId = stId;
@@ -51,6 +64,7 @@ public class ChargerResponseDto {
         this.cpId = cpId;
         this.connectorId = connectorId;
         this.status = status;
+        this.connected = connected;
         this.spec = spec;
         this.powerKw = powerKw;
         this.voltageV = voltageV;
@@ -97,6 +111,9 @@ public class ChargerResponseDto {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Boolean getConnected() { return connected; }
+    public void setConnected(Boolean connected) { this.connected = connected; }
 
     public String getSpec() { return spec; }
     public void setSpec(String spec) { this.spec = spec; }
@@ -158,6 +175,7 @@ public class ChargerResponseDto {
         private String cpId;
         private Integer connectorId;
         private String status;
+        private Boolean connected;
         private String spec;
         private BigDecimal powerKw;
         private BigDecimal voltageV;
@@ -184,6 +202,7 @@ public class ChargerResponseDto {
         public Builder cpId(String cpId) { this.cpId = cpId; return this; }
         public Builder connectorId(Integer connectorId) { this.connectorId = connectorId; return this; }
         public Builder status(String status) { this.status = status; return this; }
+        public Builder connected(Boolean connected) { this.connected = connected; return this; }
         public Builder spec(String spec) { this.spec = spec; return this; }
         public Builder powerKw(BigDecimal powerKw) { this.powerKw = powerKw; return this; }
         public Builder voltageV(BigDecimal voltageV) { this.voltageV = voltageV; return this; }
@@ -202,8 +221,8 @@ public class ChargerResponseDto {
 
         public ChargerResponseDto build() {
             return new ChargerResponseDto(id, chargeBoxId, stId, stationName, corpId, corpName, corpShortName, cpId,
-                    connectorId, status, spec, powerKw, voltageV, currentA, socPercent, batteryTempC, vendor, model,
-                    carModel, userTag, protocol, lastHeartbeat, accumulatedKwh, chargingMinutes, connectors);
+                    connectorId, status, connected, spec, powerKw, voltageV, currentA, socPercent, batteryTempC, vendor,
+                    model, carModel, userTag, protocol, lastHeartbeat, accumulatedKwh, chargingMinutes, connectors);
         }
     }
 }

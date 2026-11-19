@@ -29,4 +29,7 @@ dependencies {
 
     // P6Spy SQL 파라미터 인라인 치환 및 쿼리 로깅
     implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.2'
+
+    // 개발 환경 자동 재시작 (bootJar 패키징 시 자동 제외)
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
