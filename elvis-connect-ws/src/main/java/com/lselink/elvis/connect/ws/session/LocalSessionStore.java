@@ -138,12 +138,12 @@ public class LocalSessionStore {
     public void logActiveSessions(String triggerReason) {
         int totalSessions = sessionMap.size();
         if (totalSessions == 0) {
-            log.info("[SessionStore] ℹ️ [{}] 현재 활성 연결 세션: 0건 (연결된 충전기 없음)", triggerReason);
+            log.info("[SessionStore] [{}] 현재 활성 연결 세션: 0건 (연결된 충전기 없음)", triggerReason);
             return;
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("[SessionStore] 🔌 [%s] 현재 활성 연결 세션 현황 (총 %d건):%n", triggerReason, totalSessions));
+        sb.append(String.format("[SessionStore] [%s] 현재 활성 연결 세션 현황 (총 %d건):%n", triggerReason, totalSessions));
 
         Instant now = Instant.now();
         for (var entry : sessionMap.entrySet()) {

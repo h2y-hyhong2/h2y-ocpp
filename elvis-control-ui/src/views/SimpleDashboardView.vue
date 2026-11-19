@@ -5,6 +5,7 @@ import {
   useCsmsStore,
   getStatusMeta,
   isChargerConnected,
+  getChargerConnectionMeta,
   getChargerConnectors,
   getPrimaryConnector,
   getChargerEffectiveStatus,
@@ -501,6 +502,47 @@ function getAvailableConnectorCount(chg: ChargerItem): number {
   return getChargerConnectors(chg).filter(c => getStatusMeta(c.status).key === 'standby').length
 }
 
+const totalConnectorCount = computed(() => {
+  return sourceChargers.value.reduce((acc, chg) => acc + getChargerConnectors(chg).length, 0)
+})
+
+const onlineChargerCount = computed(() => {
+  return sourceChargers.value.filter(chg => isChargerConnected(chg)).length
+})
+
+const offlineChargerCount = computed(() => {
+  return sourceChargers.value.length - onlineChargerCount.value
+})
+
+function getConnectorStatusTextClass(status?: string | null): string {
+  const key = getStatusMeta(status).key
+  if (key === 'charging') return 'text-blue-700'
+  if (key === 'standby') return 'text-emerald-700'
+  if (key === 'preparing') return 'text-teal-700'
+  if (key === 'finished') return 'text-violet-700'
+  if (key === 'faulted' || key === 'commerr') return 'text-rose-700'
+  if (key === 'inspecting' || key === 'paused') return 'text-amber-700'
+  if (key === 'suspended') return 'text-purple-700'
+  return 'text-slate-600'
+}
+
+function formatConnectorSubText(conn: ConnectorDetail): string {
+  const key = getStatusMeta(conn.status).key
+  if (key === 'charging') {
+    const kw = Number(conn.powerKw ?? 0)
+    const soc = conn.socPercent ?? 0
+    return kw > 0 ? `${soc}%·${kw.toFixed(0)}kW` : `${soc}%`
+  }
+  if (key === 'finished') {
+    const kwh = Number(conn.accumulatedKwh ?? 0)
+    return kwh > 0 ? `${kwh.toFixed(1)}kWh` : '완료'
+  }
+  if (key === 'disconnected') return '미연결'
+  if (key === 'faulted' || key === 'commerr') return '점검'
+  if (key === 'preparing') return '준비'
+  return ''
+}
+
 function handleOutsideClick(e: MouseEvent) {
   if (stationDropdownRef.value && !stationDropdownRef.value.contains(e.target as Node)) {
     isStationDropdownOpen.value = false
@@ -614,6 +656,21 @@ onUnmounted(() => {
           <span>충전소 ID {{ currentStationLabel.id }}</span>
         </button>
 
+        <!-- 충전기·커넥터 요약 배지 -->
+        <div class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-mono font-bold text-slate-600">
+          <span class="inline-flex items-center gap-1 text-emerald-700">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>온라인 {{ onlineChargerCount }}</span>
+          </span>
+          <span class="text-slate-300">|</span>
+          <span class="inline-flex items-center gap-1 text-slate-500">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span>오프라인 {{ offlineChargerCount }}</span>
+          </span>
+          <span class="text-slate-300">|</span>
+          <span class="text-sky-700">커넥터 {{ totalConnectorCount }}개</span>
+        </div>
+
         <!-- 데이터 소스 전환 (MySQL 실데이터 vs Stitch 10기 디자인 샘플) -->
         <button
           type="button"
@@ -660,6 +717,26 @@ onUnmounted(() => {
             <span class="w-2 h-2 rounded-full bg-blue-600"></span>
             <span>충전중</span>
             <span class="font-mono">{{ filterCounts.charging }}</span>
+          </button>
+          <button
+            type="button"
+            @click="activeFilter = 'preparing'"
+            class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            :class="activeFilter === 'preparing' ? 'bg-white text-orange-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+          >
+            <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+            <span>준비중</span>
+            <span class="font-mono">{{ filterCounts.preparing }}</span>
+          </button>
+          <button
+            type="button"
+            @click="activeFilter = 'finished'"
+            class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            :class="activeFilter === 'finished' ? 'bg-white text-violet-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+          >
+            <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+            <span>완료</span>
+            <span class="font-mono">{{ filterCounts.finished }}</span>
           </button>
           <button
             type="button"
@@ -787,133 +864,75 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- 상태 배지 -->
+            <!-- 충전기 상태 배지 (온라인 / 오프라인) -->
             <span
-              v-if="resolveCardBucket(chg) === 'standby'"
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 flex-shrink-0"
+              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border flex-shrink-0"
+              :class="getChargerConnectionMeta(chg).badgeClass"
+              :title="isChargerConnected(chg) ? '충전기 WebSocket 온라인' : '충전기 WebSocket 오프라인'"
             >
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{{ getChargerConnectors(chg).length >= 4 ? '전체 비어있음' : '즉시 충전 가능' }}</span>
-            </span>
-
-            <span
-              v-else-if="resolveCardBucket(chg) === 'charging'"
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border border-blue-200 bg-blue-50 text-blue-700 flex-shrink-0"
-            >
-              <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>충전 중</span>
-            </span>
-
-            <span
-              v-else-if="resolveCardBucket(chg) === 'preparing'"
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border border-orange-200 bg-orange-50 text-orange-700 flex-shrink-0"
-            >
-              <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping"></span>
-              <span>시작 대기</span>
-            </span>
-
-            <span
-              v-else-if="resolveCardBucket(chg) === 'finished'"
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border border-violet-200 bg-violet-50 text-violet-700 flex-shrink-0"
-            >
-              <svg class="w-3 h-3 text-violet-600" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <span>충전 완료</span>
-            </span>
-
-            <span
-              v-else-if="resolveCardBucket(chg) === 'faulted'"
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border border-rose-200 bg-rose-50 text-rose-700 flex-shrink-0"
-            >
-              <svg class="w-3 h-3 text-rose-600" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-              <span>점검 필요</span>
-            </span>
-
-            <span
-              v-else
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border border-slate-200 bg-slate-100 text-slate-600 flex-shrink-0"
-            >
-              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-              <span>연결안됨</span>
+              <span
+                class="w-1.5 h-1.5 rounded-full"
+                :class="[getChargerConnectionMeta(chg).dotClass, isChargerConnected(chg) ? 'animate-pulse' : '']"
+              ></span>
+              <span>{{ getChargerConnectionMeta(chg).label }}</span>
             </span>
           </div>
 
-          <!-- 카드 중앙 본문: 상태별 맞춤형 직관 레이아웃 -->
+          <!-- 카드 중앙 본문: 충전기 대표 상태별 직관 요약 -->
           <!-- A. 충전대기 (Standby) -->
           <div v-if="resolveCardBucket(chg) === 'standby'" class="my-auto flex flex-col items-center justify-center text-center py-2">
             <template v-if="getChargerConnectors(chg).length >= 4">
               <span class="font-extrabold text-2xl text-emerald-700 tracking-tight leading-none mb-1 font-mono">
                 {{ getAvailableConnectorCount(chg) }} / {{ getChargerConnectors(chg).length }} 대
               </span>
-              <p class="font-medium text-xs text-slate-500 mb-2">모든 케이블 사용 가능</p>
-              <div class="grid grid-cols-4 gap-1.5 w-full">
-                <div
-                  v-for="conn in getChargerConnectors(chg)"
-                  :key="conn.connectorId"
-                  class="flex flex-col items-center py-1.5 rounded-lg bg-slate-50 border border-slate-200"
-                >
-                  <span class="w-2.5 h-2.5 rounded-full mb-1" :class="getStatusMeta(conn.status).dotClass"></span>
-                  <span class="text-[11px] text-slate-700 font-bold">{{ conn.connectorId }}번</span>
-                </div>
-              </div>
+              <p class="font-medium text-xs text-slate-500">모든 커넥터 즉시 사용 가능</p>
             </template>
 
             <template v-else>
-              <div class="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-2 group-hover:scale-105 transition-transform">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <div class="w-11 h-11 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-1.5 group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <p class="font-bold text-base text-slate-900 tracking-tight">비어있음</p>
+              <p class="font-bold text-sm text-slate-900 tracking-tight">비어있음</p>
               <p class="font-medium text-[11px] text-slate-500 mt-0.5">케이블을 꽂으면 바로 충전 시작</p>
-              <div class="w-full mt-2.5 bg-slate-50 border border-slate-200 rounded-lg p-1.5 flex items-center justify-around divide-x divide-slate-200">
-                <div v-for="conn in getChargerConnectors(chg)" :key="conn.connectorId" class="flex-1 text-center px-1">
-                  <span class="text-[10px] text-slate-500 block font-medium">케이블 {{ conn.connectorId }}</span>
-                  <span class="text-[11px] font-bold inline-flex items-center justify-center gap-1 mt-0.5" :class="getStatusMeta(conn.status).key === 'standby' ? 'text-emerald-700' : 'text-slate-500'">
-                    <span class="w-1.5 h-1.5 rounded-full" :class="getStatusMeta(conn.status).dotClass"></span>
-                    <span>{{ getStatusMeta(conn.status).key === 'standby' ? '준비됨' : getStatusMeta(conn.status).name }}</span>
-                  </span>
-                </div>
-              </div>
             </template>
           </div>
 
           <!-- B. 충전중 (Charging) -->
           <div v-else-if="resolveCardBucket(chg) === 'charging'" class="my-auto flex flex-col items-center justify-center text-center py-1">
-            <div class="flex items-baseline gap-0.5 text-blue-700 font-bold leading-none mb-1.5 font-mono">
-              <span class="text-4xl font-black tracking-tight">{{ getPrimaryConnector(chg)?.socPercent ?? chg.socPercent ?? 0 }}</span>
-              <span class="text-base font-bold">%</span>
+            <div class="flex items-baseline gap-1 text-blue-700 font-bold leading-none mb-1 font-mono">
+              <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 self-center">#{{ getPrimaryConnector(chg)?.connectorId ?? 1 }}</span>
+              <span class="text-3xl font-black tracking-tight">{{ getPrimaryConnector(chg)?.socPercent ?? chg.socPercent ?? 0 }}</span>
+              <span class="text-sm font-bold">%</span>
             </div>
-            <div class="w-full bg-slate-200 rounded-full h-2.5 mb-2 overflow-hidden p-0.5">
+            <div class="w-full bg-slate-200 rounded-full h-2 mb-1.5 overflow-hidden p-0.5">
               <div
                 class="bg-blue-600 h-full rounded-full transition-all duration-500"
                 :style="{ width: `${Math.min(100, getPrimaryConnector(chg)?.socPercent ?? chg.socPercent ?? 0)}%` }"
               ></div>
             </div>
-            <div class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-full text-[11px] font-bold font-mono">
-              <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-full text-[10px] font-bold font-mono">
+              <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>약 {{ estimateRemainMinutes(getPrimaryConnector(chg)?.socPercent ?? chg.socPercent ?? 0) }}분 후 완료 · {{ getChargerTotalPowerKw(chg).toFixed(1) }} kW</span>
             </div>
-            <span class="text-[11px] text-slate-500 font-medium mt-1.5 truncate max-w-full">
+            <span class="text-[10px] text-slate-500 font-medium mt-1 truncate max-w-full">
               {{ getPrimaryConnector(chg)?.carModel || `현재 ${estimateCostWon(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toLocaleString()}원 충전 중` }}
             </span>
           </div>
 
           <!-- C. 충전준비중 (Preparing) -->
           <div v-else-if="resolveCardBucket(chg) === 'preparing'" class="my-auto flex flex-col items-center justify-center text-center py-1">
-            <div class="w-14 h-14 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-600 mb-2 group-hover:scale-105 transition-transform">
-              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <div class="w-11 h-11 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-600 mb-1.5 group-hover:scale-105 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
             </div>
-            <p class="font-bold text-base text-slate-900 tracking-tight">케이블 연결됨</p>
+            <p class="font-bold text-sm text-slate-900 tracking-tight">
+              #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 케이블 연결됨
+            </p>
             <p class="font-medium text-[11px] text-slate-500 mt-0.5 leading-snug px-1">
               운전자가 인증 및 충전 시작을 준비 중입니다
             </p>
@@ -921,32 +940,34 @@ onUnmounted(() => {
 
           <!-- D. 충전완료 (Finished) -->
           <div v-else-if="resolveCardBucket(chg) === 'finished'" class="my-auto flex flex-col items-center justify-center text-center py-1">
-            <div class="w-14 h-14 rounded-full bg-violet-100 border border-violet-300 flex items-center justify-center text-violet-600 mb-2 group-hover:scale-105 transition-transform">
-              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="w-11 h-11 rounded-full bg-violet-100 border border-violet-300 flex items-center justify-center text-violet-600 mb-1.5 group-hover:scale-105 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p class="font-bold text-base text-slate-900 tracking-tight">
-              충전 끝 ({{ getPrimaryConnector(chg)?.socPercent || 100 }}%)
+            <p class="font-bold text-sm text-slate-900 tracking-tight">
+              #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 충전 끝 ({{ getPrimaryConnector(chg)?.socPercent || 100 }}%)
             </p>
             <p class="font-medium text-[11px] text-slate-500 mt-0.5">
               누적 {{ Number(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toFixed(1) }} kWh · 예상 {{ estimateCostWon(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toLocaleString() }}원
             </p>
-            <span class="inline-block mt-1.5 px-2.5 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-[10px] text-violet-700 font-semibold">
+            <span class="inline-block mt-1 px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-[10px] text-violet-700 font-semibold">
               커넥터 분리 후 출차 대기
             </span>
           </div>
 
           <!-- E. 고장/점검 (Faulted) -->
           <div v-else-if="resolveCardBucket(chg) === 'faulted'" class="my-auto flex flex-col items-center justify-center text-center py-1">
-            <div class="w-14 h-14 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-600 mb-1.5 group-hover:scale-105 transition-transform">
-              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="w-11 h-11 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-600 mb-1 group-hover:scale-105 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p class="font-bold text-base text-rose-600 tracking-tight">{{ getStatusMeta(getChargerEffectiveStatus(chg)).name }}</p>
-            <div class="mt-1.5 p-2 bg-rose-50 border border-rose-200 rounded-lg text-left w-full">
-              <p class="text-[11px] text-rose-800 font-medium leading-snug">
+            <p class="font-bold text-sm text-rose-600 tracking-tight">
+              #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} {{ getStatusMeta(getChargerEffectiveStatus(chg)).name }}
+            </p>
+            <div class="mt-1 p-1.5 bg-rose-50 border border-rose-200 rounded-lg text-left w-full">
+              <p class="text-[10px] text-rose-800 font-medium leading-snug">
                 단말 오류 또는 점검 상태입니다. 원격 재부팅 후 상태를 확인해 주세요.
               </p>
             </div>
@@ -954,23 +975,51 @@ onUnmounted(() => {
 
           <!-- F. 연결안됨 (Disconnected) -->
           <div v-else class="my-auto flex flex-col items-center justify-center text-center py-2">
-            <div class="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-2">
-              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <div class="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-1.5">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728M5.636 5.636a9 9 0 000 12.728M15.536 8.464a5 5 0 010 7.072M8.464 8.464a5 5 0 000 7.072M3 3l18 18" />
               </svg>
             </div>
-            <p class="font-bold text-base text-slate-700 tracking-tight">연결안됨</p>
-            <p class="font-medium text-[11px] text-slate-400 mt-0.5 font-mono">
+            <p class="font-bold text-sm text-slate-700 tracking-tight">연결안됨</p>
+            <p class="font-medium text-[10px] text-slate-400 mt-0.5 font-mono">
               최종 수신: {{ chg.lastHeartbeat || '-' }}
             </p>
-            <div class="w-full mt-2.5 bg-slate-50 border border-slate-200 rounded-lg p-1.5 flex items-center justify-around divide-x divide-slate-200">
-              <div v-for="conn in getChargerConnectors(chg)" :key="conn.connectorId" class="flex-1 text-center px-1">
-                <span class="text-[10px] text-slate-400 block font-medium">케이블 {{ conn.connectorId }}</span>
-                <span class="text-[11px] text-slate-500 font-bold inline-flex items-center justify-center gap-1 mt-0.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                  <span>미연결</span>
+          </div>
+
+          <!-- 공통: 커넥터별 실시간 상태 (모든 충전기 카드에 항상 표시) -->
+          <div class="mt-2 pt-2 border-t border-slate-100 space-y-1">
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="font-bold text-slate-500">커넥터 상태</span>
+              <span class="font-mono text-slate-400">
+                {{ getChargerConnectors(chg).length }}채널<template v-if="isChargerConnected(chg)"> · 가용 {{ getAvailableConnectorCount(chg) }}</template>
+              </span>
+            </div>
+            <div
+              class="grid gap-1"
+              :class="getChargerConnectors(chg).length === 1 ? 'grid-cols-1' : 'grid-cols-2'"
+            >
+              <button
+                v-for="conn in getChargerConnectors(chg)"
+                :key="`${chg.chargeBoxId}-conn-${conn.connectorId}`"
+                type="button"
+                @click.stop="openChargerDetail(chg, conn.connectorId)"
+                class="px-1.5 py-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between gap-1 hover:border-sky-400"
+                :class="detailChargerId === chg.chargeBoxId && detailConnectorId === conn.connectorId
+                  ? 'border-sky-500 ring-1 ring-sky-400 bg-sky-50/70'
+                  : 'bg-slate-50/90 border-slate-200/90 hover:bg-sky-50/50'"
+                :title="`#${conn.connectorId} 커넥터 상세 보기 (${getStatusMeta(conn.status).name})`"
+              >
+                <div class="flex items-center gap-1 min-w-0">
+                  <span class="font-mono font-extrabold text-[10px] text-slate-600 flex-shrink-0">#{{ conn.connectorId }}</span>
+                  <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="getStatusMeta(conn.status).dotClass"></span>
+                  <span class="text-[10px] font-bold truncate" :class="getConnectorStatusTextClass(conn.status)">
+                    {{ getStatusMeta(conn.status).name }}
+                  </span>
+                </div>
+                <span v-if="formatConnectorSubText(conn)" class="text-[9px] font-mono text-slate-500 flex-shrink-0">
+                  {{ formatConnectorSubText(conn) }}
                 </span>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -1062,7 +1111,7 @@ onUnmounted(() => {
           <span class="w-1.5 h-1.5 rounded-full" :class="store.isDbConnected ? 'bg-emerald-500' : 'bg-slate-400'"></span>
           <span>{{ store.isDbConnected ? '관제 서버 온라인' : '서버 연결 대기' }}</span>
         </span>
-        <span>표시 {{ filteredChargers.length }} / 전체 {{ sourceChargers.length }}기</span>
+        <span>표시 {{ filteredChargers.length }} / 전체 {{ sourceChargers.length }}기 · 커넥터 {{ totalConnectorCount }}개</span>
       </div>
     </footer>
 
@@ -1104,9 +1153,24 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- 커넥터 채널 선택 -->
+        <!-- 충전기 상태 요약 (온라인 / 오프라인) -->
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+          <span class="text-[11px] font-bold text-slate-600">충전기 상태</span>
+          <span
+            class="px-2 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1"
+            :class="getChargerConnectionMeta(detailCharger).badgeClass"
+          >
+            <span class="w-1.5 h-1.5 rounded-full" :class="getChargerConnectionMeta(detailCharger).dotClass"></span>
+            <span>{{ getChargerConnectionMeta(detailCharger).label }}</span>
+          </span>
+        </div>
+
+        <!-- 커넥터별 상태 · 채널 선택 -->
         <div class="space-y-1.5">
-          <div class="text-[11px] font-bold text-slate-500">커넥터 채널 선택</div>
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
+            <span>커넥터별 상태 · 채널 선택</span>
+            <span class="font-mono text-sky-600">{{ detailConnectors.length }}채널</span>
+          </div>
           <div class="grid grid-cols-2 gap-1.5">
             <button
               v-for="conn in detailConnectors"

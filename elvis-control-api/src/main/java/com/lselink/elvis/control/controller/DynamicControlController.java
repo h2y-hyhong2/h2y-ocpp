@@ -41,7 +41,7 @@ public class DynamicControlController {
         if (request == null) {
             throw new IllegalArgumentException("Sandbox 정책 요청 본문은 필수입니다.");
         }
-        log.info("📡 [DynamicControl] Sandbox 격리 정책 요청: chargeBoxId={}, enabled={}, mode={}",
+        log.info("[DynamicControl] Sandbox 격리 정책 요청: chargeBoxId={}, enabled={}, mode={}",
                 request.getChargeBoxId(), request.getEnabled(), request.getPolicyMode());
 
         SandboxStatusDto result = dynamicControlService.setSandboxPolicy(request);
@@ -50,7 +50,7 @@ public class DynamicControlController {
 
     @GetMapping("/sandbox")
     public ApiResponse<List<SandboxStatusDto>> getActiveSandboxList() {
-        log.info("📡 [DynamicControl] 활성 Sandbox 목록 조회 요청");
+        log.info("[DynamicControl] 활성 Sandbox 목록 조회 요청");
 
         List<SandboxStatusDto> list = dynamicControlService.getActiveSandboxList();
         return ApiResponse.ok(list);
@@ -59,7 +59,7 @@ public class DynamicControlController {
     @GetMapping("/sandbox/{chargeBoxId}")
     public ApiResponse<SandboxStatusDto> getSandboxStatus(@PathVariable String chargeBoxId) {
         requireValidChargeBoxIdPath(chargeBoxId);
-        log.info("📡 [DynamicControl] 특정 기기 Sandbox 상태 조회: chargeBoxId={}", chargeBoxId);
+        log.info("[DynamicControl] 특정 기기 Sandbox 상태 조회: chargeBoxId={}", chargeBoxId);
 
         SandboxStatusDto status = dynamicControlService.getSandboxStatus(chargeBoxId);
         return ApiResponse.ok(status);
@@ -68,7 +68,7 @@ public class DynamicControlController {
     @DeleteMapping("/sandbox/{chargeBoxId}")
     public ApiResponse<Boolean> removeSandboxPolicy(@PathVariable String chargeBoxId) {
         requireValidChargeBoxIdPath(chargeBoxId);
-        log.info("📡 [DynamicControl] Sandbox 격리 해제 요청: chargeBoxId={}", chargeBoxId);
+        log.info("[DynamicControl] Sandbox 격리 해제 요청: chargeBoxId={}", chargeBoxId);
 
         boolean removed = dynamicControlService.removeSandboxPolicy(chargeBoxId);
         return ApiResponse.ok(removed);
@@ -79,7 +79,7 @@ public class DynamicControlController {
         if (request == null) {
             throw new IllegalArgumentException("WireTap 정책 요청 본문은 필수입니다.");
         }
-        log.info("📡 [DynamicControl] WireTap 감시 모드 설정 요청: chargeBoxId={}, enabled={}, level={}",
+        log.info("[DynamicControl] WireTap 감시 모드 설정 요청: chargeBoxId={}, enabled={}, level={}",
                 request.getChargeBoxId(), request.getEnabled(), request.getTapLevel());
 
         WireTapStatusDto result = dynamicControlService.setWireTapPolicy(request);
@@ -88,7 +88,7 @@ public class DynamicControlController {
 
     @GetMapping("/wiretap")
     public ApiResponse<List<WireTapStatusDto>> getActiveWireTapList() {
-        log.info("📡 [DynamicControl] 활성 WireTap 목록 조회 요청");
+        log.info("[DynamicControl] 활성 WireTap 목록 조회 요청");
 
         List<WireTapStatusDto> list = dynamicControlService.getActiveWireTapList();
         return ApiResponse.ok(list);
@@ -97,7 +97,7 @@ public class DynamicControlController {
     @GetMapping("/wiretap/{chargeBoxId}")
     public ApiResponse<WireTapStatusDto> getWireTapStatus(@PathVariable String chargeBoxId) {
         requireValidChargeBoxIdPath(chargeBoxId);
-        log.info("📡 [DynamicControl] 특정 기기 WireTap 상태 조회: chargeBoxId={}", chargeBoxId);
+        log.info("[DynamicControl] 특정 기기 WireTap 상태 조회: chargeBoxId={}", chargeBoxId);
 
         WireTapStatusDto status = dynamicControlService.getWireTapStatus(chargeBoxId);
         return ApiResponse.ok(status);
@@ -106,7 +106,7 @@ public class DynamicControlController {
     @DeleteMapping("/wiretap/{chargeBoxId}")
     public ApiResponse<Boolean> removeWireTapPolicy(@PathVariable String chargeBoxId) {
         requireValidChargeBoxIdPath(chargeBoxId);
-        log.info("📡 [DynamicControl] WireTap 감시 중단 요청: chargeBoxId={}", chargeBoxId);
+        log.info("[DynamicControl] WireTap 감시 중단 요청: chargeBoxId={}", chargeBoxId);
 
         boolean removed = dynamicControlService.removeWireTapPolicy(chargeBoxId);
         return ApiResponse.ok(removed);

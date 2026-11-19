@@ -58,7 +58,7 @@ public class InboundRawEventProducer {
                 if (failures >= FAILURE_THRESHOLD) {
                     circuitOpenedAt.set(Instant.now());
                     if (kafkaHealthy.compareAndSet(true, false)) {
-                        log.error("[InboundProducer] ⚠️ Kafka Broker 장애 감지! Failover 서킷 오픈 ({}초 후 Half-Open 재시도) - 단말 소켓 차단 및 로컬 버퍼링 유도",
+                        log.error("[InboundProducer] Kafka Broker 장애 감지! Failover 서킷 오픈 ({}초 후 Half-Open 재시도) - 단말 소켓 차단 및 로컬 버퍼링 유도",
                                 CIRCUIT_OPEN_DURATION.toSeconds());
                     }
                 }
@@ -66,7 +66,7 @@ public class InboundRawEventProducer {
                 consecutiveFailures.set(0);
                 circuitOpenedAt.set(null);
                 if (kafkaHealthy.compareAndSet(false, true)) {
-                    log.info("[InboundProducer] 🟢 Kafka Broker 정상 복구 감지 - 서비스 정상화");
+                    log.info("[InboundProducer] Kafka Broker 정상 복구 감지 - 서비스 정상화");
                 }
                 log.debug("[InboundProducer] Kafka 발행 성공: chargeBoxId={}, offset={}",
                         partitionKey, result.getRecordMetadata().offset());
@@ -105,7 +105,7 @@ public class InboundRawEventProducer {
         if (openedAt != null && Duration.between(openedAt, Instant.now()).compareTo(CIRCUIT_OPEN_DURATION) >= 0) {
             if (kafkaHealthy.compareAndSet(false, true)) {
                 consecutiveFailures.set(FAILURE_THRESHOLD - 1);
-                log.info("[InboundProducer] 🟡 Kafka Failover 서킷 Half-Open 전환 - 복구 프로브 연결 허용");
+                log.info("[InboundProducer] Kafka Failover 서킷 Half-Open 전환 - 복구 프로브 연결 허용");
             }
             return true;
         }

@@ -90,7 +90,7 @@ public class TransactionSequenceService {
             );
             if (nextId != null) {
                 if (nextId == 1L && fallbackSequence.get() >= MAX_TRANSACTION_ID) {
-                    log.warn("[TxSeqSvc] ⚠️ 트랜잭션 ID 최대치(21억) 도달로 원자적 롤오버(1) 처리");
+                    log.warn("[TxSeqSvc] 트랜잭션 ID 최대치(21억) 도달로 원자적 롤오버(1) 처리");
                     fallbackSequence.set(1L);
                 } else {
                     fallbackSequence.accumulateAndGet(nextId, Math::max);

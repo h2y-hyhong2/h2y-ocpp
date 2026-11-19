@@ -26,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    public static final String ATTR_AUTH_USERNAME = "elvis.auth.username";
 
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -57,6 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(username, null, authorities);
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                request.setAttribute(ATTR_AUTH_USERNAME, username);
                 log.trace("[JwtAuthenticationFilter] 인증 성공 - 사용자: {}, 권한: {}", username, role);
             }
         }

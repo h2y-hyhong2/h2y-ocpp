@@ -10,6 +10,15 @@
 
 ## 변경 이력
 
+### [2026-11-19] REST API 요청/응답 공통 로깅 필터(`RestApiLoggingFilter`) 추가 및 로그 텍스트 표준화
+- **과제/커밋**: `[3368]WBS-COMMON-OP-006` (관제 REST API 요청 로깅 정비 및 로그 이모지 제거)
+- **변경 내용**:
+  - `RestApiLoggingFilter`: `/api/**` 요청(CORS `OPTIONS` 제외)에 대해 HTTP 메서드, URI(민감 쿼리 파라미터 마스킹), 상태코드, 소요시간(ms), 인증 사용자명, 클라이언트 IP를 상태코드별 로그 레벨(2xx/3xx `INFO`, 4xx `WARN`, 5xx `ERROR`)로 출력
+  - `JwtAuthenticationFilter`: 서블릿 필터 최상단 로깅 시 인증 사용자명을 참조할 수 있도록 요청 속성(`elvis.auth.username`) 기록
+  - `application.yml`: `elvis.control.api-logging.enabled` 설정 추가 (기본 `true`)
+  - `CommandController` / `DynamicControlController`: 로그 출력 문구 내 이모지 제거 및 순수 텍스트 태그 형식으로 통일
+- **영향 범위**: 관제 REST API 전체 (`/api/**`) 및 컨트롤러 로그 출력
+
 ### [2026-11-19] WS 게이트웨이 활성 세션 교차 검증을 통한 미연결 충전기 상태 보정
 - **과제/커밋**: `[3368]` (미연결 충전기 상태 정합성 개선)
 - **변경 내용**:

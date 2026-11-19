@@ -59,6 +59,8 @@ elvis:
       connect-timeout-ms: ${ELVIS_WS_CONNECT_TIMEOUT_MS:500}
       read-timeout-ms: ${ELVIS_WS_READ_TIMEOUT_MS:800}
       cache-ttl-ms: ${ELVIS_WS_CACHE_TTL_MS:1000}
+    api-logging:
+      enabled: ${ELVIS_API_LOGGING_ENABLED:true}
     jwt:
       secret: ${JWT_SECRET:c2VjdXJlLWVsdmlzLWNzbXMtbGl0ZS1qd3Qta2V5LTIwMjYtMjU2Yml0LXNlY3JldA==}
       access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY:3600}

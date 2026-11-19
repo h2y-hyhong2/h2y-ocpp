@@ -101,6 +101,31 @@ export function isChargerConnected(charger?: ChargerItem | null): boolean {
   return getStatusMeta(charger.status).key !== 'disconnected'
 }
 
+export interface ChargerConnectionMeta {
+  connected: boolean
+  label: string
+  badgeClass: string
+  dotClass: string
+}
+
+export function getChargerConnectionMeta(charger?: ChargerItem | null): ChargerConnectionMeta {
+  const connected = isChargerConnected(charger)
+  if (connected) {
+    return {
+      connected: true,
+      label: '온라인',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      dotClass: 'bg-emerald-500'
+    }
+  }
+  return {
+    connected: false,
+    label: '오프라인',
+    badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+    dotClass: 'bg-slate-400'
+  }
+}
+
 export function getChargerConnectors(charger?: ChargerItem | null): ConnectorDetail[] {
   if (!charger) return []
   const isOffline = charger.connected === false

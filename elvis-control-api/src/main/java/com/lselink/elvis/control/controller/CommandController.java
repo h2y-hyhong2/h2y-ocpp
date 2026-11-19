@@ -35,7 +35,7 @@ public class CommandController {
     @PostMapping("/remote-start")
     public ApiResponse<CommandResultDto> remoteStart(@Valid @RequestBody RemoteStartCommandRequest request) {
         requireNonNullRequest(request);
-        log.info("📡 [CommandController] 원격 충전 시작 요청 - chargeBoxId={}, connectorId={}, idTag={}",
+        log.info("[CommandController] 원격 충전 시작 요청 - chargeBoxId={}, connectorId={}, idTag={}",
                 request.getChargeBoxId(), request.getConnectorId(), request.getIdTag());
 
         CommandResultDto result = outboundCommandService.remoteStart(request);
@@ -45,7 +45,7 @@ public class CommandController {
     @PostMapping("/remote-stop")
     public ApiResponse<CommandResultDto> remoteStop(@Valid @RequestBody RemoteStopCommandRequest request) {
         requireNonNullRequest(request);
-        log.info("📡 [CommandController] 원격 충전 종료 요청 - chargeBoxId={}, transactionId={}",
+        log.info("[CommandController] 원격 충전 종료 요청 - chargeBoxId={}, transactionId={}",
                 request.getChargeBoxId(), request.getTransactionId());
 
         CommandResultDto result = outboundCommandService.remoteStop(request);
@@ -55,7 +55,7 @@ public class CommandController {
     @PostMapping("/reset")
     public ApiResponse<CommandResultDto> reset(@Valid @RequestBody ResetCommandRequest request) {
         requireNonNullRequest(request);
-        log.info("📡 [CommandController] 충전기 원격 리셋 요청 - chargeBoxId={}, type={}",
+        log.info("[CommandController] 충전기 원격 리셋 요청 - chargeBoxId={}, type={}",
                 request.getChargeBoxId(), request.getType());
 
         CommandResultDto result = outboundCommandService.reset(request);
@@ -65,7 +65,7 @@ public class CommandController {
     @PostMapping("/unlock-connector")
     public ApiResponse<CommandResultDto> unlockConnector(@Valid @RequestBody UnlockConnectorCommandRequest request) {
         requireNonNullRequest(request);
-        log.info("📡 [CommandController] 커넥터 잠금 해제 요청 - chargeBoxId={}, connectorId={}",
+        log.info("[CommandController] 커넥터 잠금 해제 요청 - chargeBoxId={}, connectorId={}",
                 request.getChargeBoxId(), request.getConnectorId());
 
         CommandResultDto result = outboundCommandService.unlockConnector(request);
@@ -75,7 +75,7 @@ public class CommandController {
     @PostMapping("/change-config")
     public ApiResponse<CommandResultDto> changeConfiguration(@Valid @RequestBody ChangeConfigurationCommandRequest request) {
         requireNonNullRequest(request);
-        log.info("📡 [CommandController] 설정 변경 요청 - chargeBoxId={}, key={}, value={}",
+        log.info("[CommandController] 설정 변경 요청 - chargeBoxId={}, key={}, value={}",
                 request.getChargeBoxId(), request.getKey(), request.getValue());
 
         CommandResultDto result = outboundCommandService.changeConfiguration(request);
@@ -85,7 +85,7 @@ public class CommandController {
     @PostMapping("/trigger-message")
     public ApiResponse<CommandResultDto> triggerMessage(@Valid @RequestBody TriggerMessageCommandRequest request) {
         requireNonNullRequest(request);
-        log.info("📡 [CommandController] 전문 트리거 요청 - chargeBoxId={}, message={}, connectorId={}",
+        log.info("[CommandController] 전문 트리거 요청 - chargeBoxId={}, message={}, connectorId={}",
                 request.getChargeBoxId(), request.getRequestedMessage(), request.getConnectorId());
 
         CommandResultDto result = outboundCommandService.triggerMessage(request);
