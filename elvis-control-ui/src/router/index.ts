@@ -17,15 +17,19 @@ const routes = [
   },
   {
     path: '/',
+    name: 'SimpleDashboard',
+    component: SimpleDashboardView,
+    meta: { title: '충전기 목록', requiresAuth: true }
+  },
+  {
+    path: '/chargers',
     name: 'Chargers',
     component: ChargersView,
     meta: { title: '실시간 충전기 통합 관제', requiresAuth: true }
   },
   {
     path: '/simple',
-    name: 'SimpleDashboard',
-    component: SimpleDashboardView,
-    meta: { title: '초간편 쉬운 전기차 충전 관제 대시보드', requiresAuth: true }
+    redirect: '/'
   },
   {
     path: '/billing',

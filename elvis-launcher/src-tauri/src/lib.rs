@@ -708,8 +708,51 @@ fn stop_middleware_detached(service: String) -> Result<String, String> {
     stop_service_processes(&service)
 }
 
+#[cfg(target_os = "windows")]
+const PS_NOWRAP_INIT: &str = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
+chcp 65001 >$null; \
+function Out-NoWrap { \
+    process { \
+        $line = ([string]$_).Replace([string][char]9, '  ').Replace([string][char]13, ''); \
+        $line = [regex]::Replace($line, ([string][char]27) + '\\[[0-9;]*[A-Za-z]', ''); \
+        $max = 78; \
+        try { \
+            $w1 = [Console]::WindowWidth; \
+            $w2 = $Host.UI.RawUI.WindowSize.Width; \
+            $winW = if ($w1 -gt 5 -and $w2 -gt 5) { [Math]::Min($w1, $w2) } elseif ($w1 -gt 5) { $w1 } elseif ($w2 -gt 5) { $w2 } else { 80 }; \
+            $max = [Math]::Max(8, $winW - 2) \
+        } catch {}; \
+        $w = 0; $sb = [System.Text.StringBuilder]::new(); \
+        foreach ($ch in $line.ToCharArray()) { \
+            $cw = if ([int]$ch -gt 127) { 2 } else { 1 }; \
+            if ($w + $cw -gt $max) { break }; \
+            [void]$sb.Append($ch); $w += $cw \
+        }; \
+        Write-Host $sb.ToString() \
+    } \
+};";
+
+#[cfg(target_os = "windows")]
+const PS_WAIT_WIDTH_STABLE: &str = "$prevW = -1; $stable = 0; \
+for ($i = 0; $i -lt 8; $i++) { \
+    Start-Sleep -Milliseconds 150; \
+    $curW = 0; \
+    try { $curW = [Console]::WindowWidth } catch {}; \
+    if ($curW -gt 5 -and $curW -eq $prevW) { \
+        $stable++; \
+        if ($stable -ge 3) { break } \
+    } else { \
+        $stable = 0; $prevW = $curW \
+    } \
+}; \
+Clear-Host;";
+
 #[tauri::command]
-fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<String, String> {
+fn open_log_window(
+    service: Option<String>,
+    log_type: Option<String>,
+    word_wrap: Option<bool>,
+) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         let svc = service.unwrap_or_else(|| "mysql".to_string());
@@ -719,6 +762,8 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
 
         let env = load_env_config();
         let is_error_mode = log_type.as_deref() == Some("error");
+        let is_word_wrap = word_wrap.unwrap_or(false);
+        let wrap_label = if is_word_wrap { "줄바꿈 ON" } else { "줄바꿈 OFF" };
 
         let (log_file_name, display_name) = match svc.as_str() {
             "mysql" => ("mysql.log", format!("MySQL 9.71 (:{})", env.mysql_port)),
@@ -730,14 +775,56 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
             _ => unreachable!(),
         };
 
+        // 0) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 우선 실행 (5대 서비스 단일 프로세스 모드)
+        if matches!(svc.as_str(), "mysql" | "kafka" | "ws" | "sync" | "api") {
+            if let Some(viewer_exe) = find_log_viewer_binary() {
+                let ports_arg = format!(
+                    "{},{},{},{},{}",
+                    env.mysql_port, env.kafka_port, env.ws_port, env.sync_port, env.api_port
+                );
+                let type_arg = if is_error_mode { "error" } else { "all" };
+                let wrap_arg = if is_word_wrap { "1" } else { "0" };
+
+                Command::new(&viewer_exe)
+                    .args([
+                        "--log-dir",
+                        &env.log_dir,
+                        "--service",
+                        &svc,
+                        "--type",
+                        type_arg,
+                        "--wrap",
+                        wrap_arg,
+                        "--ports",
+                        &ports_arg,
+                    ])
+                    .spawn()
+                    .map_err(|e| format!("elvis-log-viewer 기동 실패: {}", e))?;
+
+                return Ok(format!(
+                    "{} {} 뷰어를 열었습니다. ({})",
+                    display_name,
+                    if is_error_mode { "에러 로그" } else { "실시간 로그" },
+                    wrap_label
+                ));
+            }
+        }
+
+        let init_script = if is_word_wrap {
+            "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null;"
+        } else {
+            PS_NOWRAP_INIT
+        };
+        let pipe_suffix = if is_word_wrap { "" } else { " | Out-NoWrap" };
+
         let full_log_path = PathBuf::from(&env.log_dir)
             .join(log_file_name)
             .to_string_lossy()
             .to_string();
         let win_title = if is_error_mode {
-            format!("ELVIS - {} 실시간 [에러] 콘솔 로그", display_name)
+            format!("ELVIS - {} 실시간 [에러] 콘솔 로그 [{}]", display_name, wrap_label)
         } else {
-            format!("ELVIS - {} 실시간 콘솔 로그", display_name)
+            format!("ELVIS - {} 실시간 콘솔 로그 [{}]", display_name, wrap_label)
         };
 
         let safe_title_cmd = sanitize_cmd_title(&win_title);
@@ -774,48 +861,49 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
             }
         }
 
-        // 2) 열려 있지 않은 경우 신규 창 기동 (에러 모드 vs 일반 모드 분기)
+        // 2) 열려 있지 않은 경우 신규 창 기동 (에러 모드 vs 일반 모드 + 줄바꿈 옵션 분기)
         let ps_cmd = if is_error_mode {
             format!(
-                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
-                 chcp 65001 >$null; \
+                "{init} \
                  $host.UI.RawUI.WindowTitle = '{title}'; \
                  Clear-Host; \
                  Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
-                 Write-Host '  ELVIS CSMS Lite - {display_name} 실시간 [에러/예외] 필터 스트림' -ForegroundColor Red; \
+                 Write-Host '  ELVIS CSMS Lite - {display_name} 실시간 [에러/예외] 필터 스트림 [{wrap_label}]' -ForegroundColor Red; \
                  Write-Host '  감시 대상: {path} (ERROR | Exception | FATAL | 실패 필터링)' -ForegroundColor DarkGray; \
                  Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; \
                  Write-Host '========================================================================================================' -ForegroundColor DarkRed; \
                  Write-Host ''; \
                  if (Test-Path '{path}') {{ \
                      Write-Host '[실시간 필터] ERROR/Exception 발생 이벤트를 대기 및 모니터링합니다...' -ForegroundColor DarkYellow; \
-                     Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }} \
+                     Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }}{pipe} \
                  }} else {{ \
                      Write-Host '[안내] 원본 로그 파일({log_file_name}) 대기 중...' -ForegroundColor Yellow; \
                      while (-not (Test-Path '{path}')) {{ Start-Sleep -Seconds 2 }}; \
                      Clear-Host; \
                      Write-Host '[연결됨] 에러 필터 감시를 시작합니다.' -ForegroundColor Red; \
-                     Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }} \
+                     Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }}{pipe} \
                  }}",
+                init = init_script,
                 title = ps_title,
                 display_name = ps_display,
+                wrap_label = wrap_label,
                 path = ps_path,
-                log_file_name = ps_file_name
+                log_file_name = ps_file_name,
+                pipe = pipe_suffix
             )
         } else {
             format!(
-                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
-                 chcp 65001 >$null; \
+                "{init} \
                  $host.UI.RawUI.WindowTitle = '{title}'; \
                  Clear-Host; \
                  Write-Host '========================================================================================================' -ForegroundColor DarkCyan; \
-                 Write-Host '  ELVIS CSMS Lite - {display_name} 실시간 콘솔 로그' -ForegroundColor Cyan; \
+                 Write-Host '  ELVIS CSMS Lite - {display_name} 실시간 콘솔 로그 [{wrap_label}]' -ForegroundColor Cyan; \
                  Write-Host '  로그 경로: {path}' -ForegroundColor DarkGray; \
                  Write-Host '  (종료: 창 닫기 또는 Ctrl+C)' -ForegroundColor DarkGray; \
                  Write-Host '========================================================================================================' -ForegroundColor DarkCyan; \
                  Write-Host ''; \
                  if (Test-Path '{path}') {{ \
-                     Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8 \
+                     Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8{pipe} \
                  }} else {{ \
                      Write-Host '[안내] 아직 {log_file_name} 파일이 생성되지 않았습니다.' -ForegroundColor Yellow; \
                      Write-Host '서비스를 기동하면 실시간 로그가 자동으로 기록됩니다.' -ForegroundColor Gray; \
@@ -823,12 +911,15 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
                      while (-not (Test-Path '{path}')) {{ Start-Sleep -Seconds 2 }}; \
                      Clear-Host; \
                      Write-Host '[연결됨] {log_file_name} 로그 감시를 시작합니다.' -ForegroundColor Green; \
-                     Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8 \
+                     Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8{pipe} \
                  }}",
+                init = init_script,
                 title = ps_title,
                 display_name = ps_display,
+                wrap_label = wrap_label,
                 path = ps_path,
-                log_file_name = ps_file_name
+                log_file_name = ps_file_name,
+                pipe = pipe_suffix
             )
         };
 
@@ -857,6 +948,261 @@ fn open_log_window(service: Option<String>, log_type: Option<String>) -> Result<
     }
 }
 
+#[cfg(target_os = "windows")]
+fn build_pane_log_ps_encoded(
+    env: &EnvConfig,
+    svc: &str,
+    is_error_mode: bool,
+    is_word_wrap: bool,
+) -> Result<String, String> {
+    let (log_file_name, display_name) = match svc {
+        "mysql" => ("mysql.log", format!("MySQL 9.71 (:{})", env.mysql_port)),
+        "kafka" => ("kafka.log", format!("Apache Kafka (:{})", env.kafka_port)),
+        "ws" => ("ws.log", format!("elvis-connect-ws (:{})", env.ws_port)),
+        "sync" => ("sync.log", format!("elvis-connect-sync (:{})", env.sync_port)),
+        "api" => ("api.log", format!("elvis-control-api (:{})", env.api_port)),
+        _ => return Err(format!("지원되지 않는 로그 서비스입니다: {}", svc)),
+    };
+
+    let full_log_path = PathBuf::from(&env.log_dir)
+        .join(log_file_name)
+        .to_string_lossy()
+        .to_string();
+
+    let ps_display = escape_ps_single_quoted(&display_name);
+    let ps_path = escape_ps_single_quoted(&full_log_path);
+    let ps_file_name = escape_ps_single_quoted(log_file_name);
+
+    let wrap_label = if is_word_wrap { "줄바꿈 ON" } else { "줄바꿈 OFF" };
+    let init_script = if is_word_wrap {
+        "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; chcp 65001 >$null;"
+    } else {
+        PS_NOWRAP_INIT
+    };
+    let post_clear_vt = if is_word_wrap {
+        ""
+    } else {
+        PS_WAIT_WIDTH_STABLE
+    };
+    let pipe_suffix = if is_word_wrap { "" } else { " | Out-NoWrap" };
+
+    let ps_cmd = if is_error_mode {
+        format!(
+            "{init} \
+             Clear-Host; \
+             {post_clear} \
+             Write-Host '=== [에러] {display_name} [{wrap_label}] ===' -ForegroundColor Red; \
+             if (Test-Path '{path}') {{ \
+                 Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }}{pipe} \
+             }} else {{ \
+                 Write-Host '[대기] {log_file_name} 파일 생성 대기 중...' -ForegroundColor Yellow; \
+                 while (-not (Test-Path '{path}')) {{ Start-Sleep -Seconds 2 }}; \
+                 Get-Content -Path '{path}' -Tail 200 -Wait -Encoding utf8 | Where-Object {{ $_ -match 'ERROR|Exception|FATAL|경고|실패|RuntimeException|NullPointer' }}{pipe} \
+             }}",
+            init = init_script,
+            post_clear = post_clear_vt,
+            display_name = ps_display,
+            wrap_label = wrap_label,
+            path = ps_path,
+            log_file_name = ps_file_name,
+            pipe = pipe_suffix
+        )
+    } else {
+        format!(
+            "{init} \
+             Clear-Host; \
+             {post_clear} \
+             Write-Host '=== {display_name} [{wrap_label}] ===' -ForegroundColor Cyan; \
+             if (Test-Path '{path}') {{ \
+                 Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8{pipe} \
+             }} else {{ \
+                 Write-Host '[대기] {log_file_name} 파일 생성 대기 중...' -ForegroundColor Yellow; \
+                 while (-not (Test-Path '{path}')) {{ Start-Sleep -Seconds 2 }}; \
+                 Get-Content -Path '{path}' -Tail 150 -Wait -Encoding utf8{pipe} \
+             }}",
+            init = init_script,
+            post_clear = post_clear_vt,
+            display_name = ps_display,
+            wrap_label = wrap_label,
+            path = ps_path,
+            log_file_name = ps_file_name,
+            pipe = pipe_suffix
+        )
+    };
+
+    Ok(encode_ps_base64(&ps_cmd))
+}
+
+#[cfg(target_os = "windows")]
+fn find_log_viewer_binary() -> Option<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join("elvis-log-viewer.exe"));
+        }
+        // 실행 파일 상위 디렉토리를 따라 워크스페이스 루트의 elvis-log-viewer 탐색
+        let mut cur = exe.parent().map(|p| p.to_path_buf());
+        for _ in 0..6 {
+            if let Some(d) = cur {
+                candidates.push(d.join("elvis-log-viewer/target/release/elvis-log-viewer.exe"));
+                candidates.push(d.join("elvis-log-viewer/target/debug/elvis-log-viewer.exe"));
+                cur = d.parent().map(|p| p.to_path_buf());
+            }
+        }
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        let mut cur = Some(cwd);
+        for _ in 0..4 {
+            if let Some(d) = cur {
+                candidates.push(d.join("elvis-log-viewer/target/release/elvis-log-viewer.exe"));
+                candidates.push(d.join("elvis-log-viewer/target/debug/elvis-log-viewer.exe"));
+                cur = d.parent().map(|p| p.to_path_buf());
+            }
+        }
+    }
+    candidates.into_iter().find(|p| p.exists())
+}
+
+/// 통합 분할 로그 창 기동:
+/// 1) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 우선 실행 (가로 스크롤 + 4축 마우스 드래그 리사이즈)
+/// 2) 바이너리 미빌드 시 Windows Terminal(wt.exe) 5분할 자동 폴백
+#[tauri::command]
+fn open_log_group_window(
+    group: Option<String>,
+    log_type: Option<String>,
+    word_wrap: Option<bool>,
+) -> Result<String, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let grp = group.unwrap_or_else(|| "all".to_string());
+        if !matches!(grp.as_str(), "all" | "infra" | "core") {
+            return Err(format!("지원되지 않는 로그 그룹입니다: {}", grp));
+        }
+
+        let env = load_env_config();
+        let is_error_mode = log_type.as_deref() == Some("error");
+        let is_word_wrap = word_wrap.unwrap_or(false);
+        let mode_suffix = if is_error_mode { "에러 로그" } else { "실시간 로그" };
+        let wrap_tag = if is_word_wrap { "줄바꿈 ON" } else { "줄바꿈 OFF" };
+
+        // 1) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 우선 실행
+        if let Some(viewer_exe) = find_log_viewer_binary() {
+            let ports_arg = format!(
+                "{},{},{},{},{}",
+                env.mysql_port, env.kafka_port, env.ws_port, env.sync_port, env.api_port
+            );
+            let type_arg = if is_error_mode { "error" } else { "all" };
+            let wrap_arg = if is_word_wrap { "1" } else { "0" };
+
+            Command::new(&viewer_exe)
+                .args([
+                    "--log-dir",
+                    &env.log_dir,
+                    "--group",
+                    &grp,
+                    "--type",
+                    type_arg,
+                    "--wrap",
+                    wrap_arg,
+                    "--ports",
+                    &ports_arg,
+                ])
+                .spawn()
+                .map_err(|e| format!("elvis-log-viewer 기동 실패: {}", e))?;
+
+            let msg = match grp.as_str() {
+                "infra" => format!("미들웨어 2분할 {} 뷰어를 열었습니다. ({})", mode_suffix, wrap_tag),
+                "core" => format!("코어 엔진 3분할 {} 뷰어를 열었습니다. ({})", mode_suffix, wrap_tag),
+                _ => format!("전체 5분할 {} 뷰어를 열었습니다. ({})", mode_suffix, wrap_tag),
+            };
+            return Ok(msg);
+        }
+
+        let mut args: Vec<String> = vec!["-M".into(), "-w".into(), "new".into()];
+
+        match grp.as_str() {
+            "infra" => {
+                let mysql_b64 = build_pane_log_ps_encoded(&env, "mysql", is_error_mode, is_word_wrap)?;
+                let kafka_b64 = build_pane_log_ps_encoded(&env, "kafka", is_error_mode, is_word_wrap)?;
+                let tab_title = format!("ELVIS 미들웨어 {} (2분할 · {})", mode_suffix, wrap_tag);
+
+                args.extend([
+                    "new-tab".into(), "--title".into(), tab_title, "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), mysql_b64,
+                    ";".into(),
+                    "split-pane".into(), "-V".into(), "-s".into(), "0.5".into(), "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), kafka_b64,
+                ]);
+            }
+            "core" => {
+                let ws_b64 = build_pane_log_ps_encoded(&env, "ws", is_error_mode, is_word_wrap)?;
+                let sync_b64 = build_pane_log_ps_encoded(&env, "sync", is_error_mode, is_word_wrap)?;
+                let api_b64 = build_pane_log_ps_encoded(&env, "api", is_error_mode, is_word_wrap)?;
+                let tab_title = format!("ELVIS 코어 엔진 {} (3분할 · {})", mode_suffix, wrap_tag);
+
+                args.extend([
+                    "new-tab".into(), "--title".into(), tab_title, "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), ws_b64,
+                    ";".into(),
+                    "split-pane".into(), "-V".into(), "-s".into(), "0.5".into(), "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), api_b64,
+                    ";".into(),
+                    "move-focus".into(), "left".into(),
+                    ";".into(),
+                    "split-pane".into(), "-H".into(), "-s".into(), "0.5".into(), "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), sync_b64,
+                ]);
+            }
+            _ => {
+                // 3행 2열 격자: 1:WS, 3:SYNC, 2+4:API, 5:MYSQL, 6:KAFKA
+                let ws_b64 = build_pane_log_ps_encoded(&env, "ws", is_error_mode, is_word_wrap)?;
+                let sync_b64 = build_pane_log_ps_encoded(&env, "sync", is_error_mode, is_word_wrap)?;
+                let api_b64 = build_pane_log_ps_encoded(&env, "api", is_error_mode, is_word_wrap)?;
+                let mysql_b64 = build_pane_log_ps_encoded(&env, "mysql", is_error_mode, is_word_wrap)?;
+                let kafka_b64 = build_pane_log_ps_encoded(&env, "kafka", is_error_mode, is_word_wrap)?;
+                let tab_title = format!("ELVIS 전체 {} (5분할 · {})", mode_suffix, wrap_tag);
+
+                args.extend([
+                    "new-tab".into(), "--title".into(), tab_title, "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), ws_b64,
+                    ";".into(),
+                    "split-pane".into(), "-H".into(), "-s".into(), "0.333".into(), "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), mysql_b64,
+                    ";".into(),
+                    "split-pane".into(), "-V".into(), "-s".into(), "0.5".into(), "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), kafka_b64,
+                    ";".into(),
+                    "move-focus".into(), "up".into(),
+                    ";".into(),
+                    "split-pane".into(), "-V".into(), "-s".into(), "0.5".into(), "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), api_b64,
+                    ";".into(),
+                    "move-focus".into(), "left".into(),
+                    ";".into(),
+                    "split-pane".into(), "-H".into(), "-s".into(), "0.5".into(), "--suppressApplicationTitle".into(),
+                    "powershell".into(), "-NoProfile".into(), "-NoExit".into(), "-EncodedCommand".into(), sync_b64,
+                ]);
+            }
+        }
+
+        Command::new("wt.exe")
+            .args(&args)
+            .spawn()
+            .map_err(|e| format!("Windows Terminal(wt.exe) 분할 창 기동 실패: {}", e))?;
+
+        let msg = match grp.as_str() {
+            "infra" => format!("미들웨어 2분할 {} 터미널을 열었습니다. ({})", mode_suffix, wrap_tag),
+            "core" => format!("코어 엔진 3분할 {} 터미널을 열었습니다. ({})", mode_suffix, wrap_tag),
+            _ => format!("전체 5분할 {} 터미널을 열었습니다. ({})", mode_suffix, wrap_tag),
+        };
+        Ok(msg)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Windows OS에서만 지원됩니다.".to_string())
+    }
+}
+
 #[tauri::command]
 fn open_process_status_window(target: Option<String>) -> Result<String, String> {
     #[cfg(target_os = "windows")]
@@ -864,6 +1210,43 @@ fn open_process_status_window(target: Option<String>) -> Result<String, String> 
         let target_arg = target.unwrap_or_else(|| "all".to_string());
         if !matches!(target_arg.as_str(), "all" | "infra" | "core" | "extension") {
             return Err(format!("허용되지 않은 진단 타겟입니다: {}", target_arg));
+        }
+
+        // 0) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 프로세스 진단 모드 우선 실행
+        if let Some(viewer_exe) = find_log_viewer_binary() {
+            let env = load_env_config();
+            let ports_arg = format!(
+                "{},{},{},{},{}",
+                env.mysql_port, env.kafka_port, env.ws_port, env.sync_port, env.api_port
+            );
+            let scope_arg = if target_arg == "infra" || target_arg == "core" {
+                target_arg.as_str()
+            } else {
+                "all"
+            };
+            Command::new(&viewer_exe)
+                .args([
+                    "--log-dir",
+                    &env.log_dir,
+                    "--mode",
+                    "process",
+                    "--target",
+                    scope_arg,
+                    "--ports",
+                    &ports_arg,
+                ])
+                .spawn()
+                .map_err(|e| format!("elvis-log-viewer 프로세스 진단창 실행 실패: {}", e))?;
+
+            let scope_label = match scope_arg {
+                "infra" => "미들웨어",
+                "core" => "코어 엔진",
+                _ => "전체 시스템",
+            };
+            return Ok(format!(
+                "[{}] 프로세스 및 포트 진단 뷰어를 열었습니다.",
+                scope_label
+            ));
         }
 
         let win_title = "ELVIS - 프로세스 및 포트 점유 실시간 진단";
@@ -1275,6 +1658,7 @@ pub fn run() {
             start_middleware_detached,
             stop_middleware_detached,
             open_log_window,
+            open_log_group_window,
             open_process_status_window,
             show_main_window,
             reset_tray_pending

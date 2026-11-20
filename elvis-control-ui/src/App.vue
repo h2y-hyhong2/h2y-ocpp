@@ -4,13 +4,14 @@
     <!-- LS E-LINK 마스터 브랜드 시그니처 악센트 라인 -->
     <div class="h-[2.5px] w-full bg-gradient-to-r from-[#0A1E5A] via-[#FA002D] to-[#E96600] flex-shrink-0 z-40"></div>
 
-    <!-- GNB 컴팩트 상단 헤더 (48px) - 로그인 화면이 아닐 때만 표시 -->
-    <header v-if="route.path !== '/login'" class="window-titlebar flex items-center justify-between px-3 md:px-4 h-12 min-h-[48px] bg-white/95 backdrop-blur-md border-b border-slate-200/90 z-30 flex-shrink-0 shadow-2xs gap-3">
+    <!-- GNB 컴팩트 상단 헤더 (52px) - 로그인 화면이 아닐 때만 표시 -->
+    <header v-if="route.path !== '/login'" class="window-titlebar flex items-center justify-between px-3 md:px-4 h-[52px] min-h-[52px] bg-white/95 backdrop-blur-md border-b border-slate-200/90 z-30 flex-shrink-0 shadow-2xs gap-3">
       
       <!-- Left: 로고 및 타이틀 & 관제 메뉴 네비게이션 -->
       <div class="flex items-center gap-3 flex-shrink-0">
-        <!-- 모바일/태블릿용 사이드바 토글 버튼 (1024px 미만에서 노출) -->
+        <!-- 모바일/태블릿용 사이드바 토글 버튼 (충전기 관제 화면, 1024px 미만에서 노출) -->
         <button
+          v-if="route.name === 'Chargers'"
           @click="store.toggleSidebar()"
           class="lg:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-hidden flex items-center justify-center flex-shrink-0 border border-slate-200 cursor-pointer"
           title="충전소 목록 토글"
@@ -31,12 +32,12 @@
               <span class="text-sky-600 mx-0.5">•</span>
               <span class="text-slate-500 font-semibold">LITE</span>
             </span>
-            <span class="hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200">v1.0.0</span>
+            <span class="hidden md:inline-block text-[12px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200">v1.0.0</span>
             
             <!-- MySQL 실시간 연동 뱃지 -->
             <span
               v-if="store.isDbConnected"
-              class="hidden lg:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs font-mono"
+              class="hidden lg:inline-flex items-center gap-1 text-[12px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs font-mono"
               title="MySQL 9.71 실시간 연동 상태"
             >
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -47,11 +48,23 @@
 
         <div class="h-4 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
-        <!-- 관제 메뉴 탭 (심플 2대 메뉴) -->
+        <!-- 관제 메뉴 탭 (충전기 목록 메인) -->
         <nav class="hidden sm:flex items-center gap-1 text-xs">
           <router-link
             to="/"
             exact-active-class="bg-sky-50 text-sky-700 font-bold border-sky-200/90 shadow-2xs"
+            class="px-2.5 py-1 rounded-lg border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+            title="충전기 목록 (메인)"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span>충전기 목록</span>
+          </router-link>
+
+          <router-link
+            to="/chargers"
+            active-class="bg-sky-50 text-sky-700 font-bold border-sky-200/90 shadow-2xs"
             class="px-2.5 py-1 rounded-lg border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all flex items-center gap-1.5 cursor-pointer"
             title="실시간 충전기 통합 관제"
           >
@@ -59,18 +72,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <span>충전기 관제</span>
-          </router-link>
-
-          <router-link
-            to="/simple"
-            active-class="bg-sky-50 text-sky-700 font-bold border-sky-200/90 shadow-2xs"
-            class="px-2.5 py-1 rounded-lg border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all flex items-center gap-1.5 cursor-pointer"
-            title="초간편 카드형 충전 관제 대시보드 (Stitch)"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-            <span>간편 관제</span>
           </router-link>
 
           <router-link
@@ -111,15 +112,16 @@
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <kbd class="hidden lg:inline-flex items-center px-1.5 py-0.2 text-[9px] font-bold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs font-mono">Ctrl+K</kbd>
+            <kbd class="hidden lg:inline-flex items-center px-1.5 py-0.2 text-[11px] font-bold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs font-mono">Ctrl+K</kbd>
           </div>
         </div>
       </div>
 
       <!-- Right: 지표 & 컨트롤 -->
       <div class="flex items-center gap-2 text-xs font-semibold flex-shrink-0">
-        <!-- 소형 창 전용 [단말 제어반 열기] 버튼 (1280px 미만에서 노출) -->
+        <!-- 소형 창 전용 [단말 제어반 열기] 버튼 (충전기 관제 화면, 1280px 미만에서 노출) -->
         <button
+          v-if="route.name === 'Chargers'"
           @click="store.toggleControlDrawer(true)"
           class="xl:hidden flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-bold text-xs shadow-2xs transition-all whitespace-nowrap cursor-pointer"
           title="단말 계측치 및 제어반 열기"
@@ -151,14 +153,14 @@
         </div>
 
         <!-- 시계 -->
-        <div class="font-mono text-slate-500 text-[11px] hidden md:inline">{{ currentTime }}</div>
+        <div class="font-mono text-slate-500 text-[13px] hidden md:inline">{{ currentTime }}</div>
 
         <!-- 로그인 사용자 프로필 및 로그아웃 -->
         <div v-if="authStore.isAuthenticated" class="flex items-center gap-2 pl-2 border-l border-slate-200">
           <div class="hidden lg:flex items-center gap-1.5 text-xs">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
             <span class="font-mono font-bold text-slate-700">{{ authStore.username }}</span>
-            <span v-if="authStore.role" class="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-100 text-slate-500 border border-slate-200">
+            <span v-if="authStore.role" class="text-[12px] px-1.5 py-0.2 rounded font-mono bg-slate-100 text-slate-500 border border-slate-200">
               {{ authStore.role.replace('ROLE_', '') }}
             </span>
           </div>
@@ -291,6 +293,14 @@ function handleResize() {
   if (window.innerWidth >= 1280) store.toggleControlDrawer(false)
   if (window.innerWidth >= 1024) store.toggleSidebar(false)
 }
+
+watch(
+  () => route.path,
+  () => {
+    store.toggleSidebar(false)
+    store.toggleControlDrawer(false)
+  }
+)
 
 watch(
   () => authStore.isAuthenticated,

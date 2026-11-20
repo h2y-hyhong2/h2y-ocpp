@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import ChargerContextMenu from '@/components/ChargerContextMenu.vue'
+import { SAMPLE_CHARGERS } from '@/data/sampleChargers'
 import {
   useCsmsStore,
   getStatusMeta,
@@ -27,322 +29,7 @@ const isRefreshing = ref(false)
 const isPreviewSampleMode = ref(false)
 const detailChargerId = ref<string | null>(null)
 const detailConnectorId = ref<number>(1)
-
-// Stitch 디자인 확인용 10기 샘플 데이터 (기본값은 OFF, MySQL 실데이터 사용)
-const SAMPLE_CHARGERS: ChargerItem[] = [
-  {
-    id: '00000101-1',
-    chargeBoxId: '00000101',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '01',
-    connectorId: 1,
-    status: 'Available',
-    connected: true,
-    spec: '급속 200kW (듀얼건)',
-    powerKw: 0,
-    voltageV: 0,
-    currentA: 0,
-    socPercent: 0,
-    batteryTempC: 24,
-    vendor: 'LS E-Link Power',
-    model: 'ELVIS-HPC-200K',
-    carModel: '',
-    userTag: '',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '방금 전',
-    accumulatedKwh: 0,
-    chargingMinutes: 0,
-    connectors: [
-      { connectorId: 1, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 24, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 24, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' }
-    ]
-  },
-  {
-    id: '00000102-1',
-    chargeBoxId: '00000102',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '02',
-    connectorId: 1,
-    status: 'Charging',
-    connected: true,
-    spec: '초급속 350kW (듀얼건)',
-    powerKw: 142.5,
-    voltageV: 780,
-    currentA: 182.7,
-    socPercent: 82,
-    batteryTempC: 33,
-    vendor: 'LS E-Link Power',
-    model: 'ELVIS-HPC-350K',
-    carModel: 'EV6 GT-Line',
-    userTag: 'C005413',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '방금 전',
-    accumulatedKwh: 52.4,
-    chargingMinutes: 26,
-    connectors: [
-      { connectorId: 1, status: 'Charging', powerKw: 142.5, voltageV: 780, currentA: 182.7, socPercent: 82, batteryTempC: 33, carModel: 'EV6 GT-Line', userTag: 'C005413', accumulatedKwh: 52.4, chargingMinutes: 26, lastHeartbeat: '방금 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' }
-    ]
-  },
-  {
-    id: '00000103-1',
-    chargeBoxId: '00000103',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '03',
-    connectorId: 1,
-    status: 'Charging',
-    connected: true,
-    spec: '초급속 350kW (듀얼건)',
-    powerKw: 186.0,
-    voltageV: 760,
-    currentA: 244.7,
-    socPercent: 45,
-    batteryTempC: 31,
-    vendor: 'SK 시그넷',
-    model: 'V2-350K',
-    carModel: '아이오닉 6',
-    userTag: 'M102938',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '방금 전',
-    accumulatedKwh: 28.6,
-    chargingMinutes: 14,
-    connectors: [
-      { connectorId: 1, status: 'Charging', powerKw: 186.0, voltageV: 760, currentA: 244.7, socPercent: 45, batteryTempC: 31, carModel: '아이오닉 6', userTag: 'M102938', accumulatedKwh: 28.6, chargingMinutes: 14, lastHeartbeat: '방금 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' }
-    ]
-  },
-  {
-    id: '00000104-1',
-    chargeBoxId: '00000104',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '04',
-    connectorId: 1,
-    status: 'Preparing',
-    connected: true,
-    spec: '급속 100kW (듀얼건)',
-    powerKw: 0,
-    voltageV: 0,
-    currentA: 0,
-    socPercent: 0,
-    batteryTempC: 25,
-    vendor: '대영채비',
-    model: 'CHAEVI-100K',
-    carModel: '',
-    userTag: 'M774120',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '방금 전',
-    accumulatedKwh: 0,
-    chargingMinutes: 0,
-    connectors: [
-      { connectorId: 1, status: 'Preparing', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, userTag: 'M774120', accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' }
-    ]
-  },
-  {
-    id: '00000105-1',
-    chargeBoxId: '00000105',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '05',
-    connectorId: 1,
-    status: 'Available',
-    connected: true,
-    spec: '완속 7kW (4채널)',
-    powerKw: 0,
-    voltageV: 0,
-    currentA: 0,
-    socPercent: 0,
-    batteryTempC: 23,
-    vendor: 'PNE 시스템즈',
-    model: 'PNE-AC4',
-    carModel: '',
-    userTag: '',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '방금 전',
-    accumulatedKwh: 0,
-    chargingMinutes: 0,
-    connectors: [
-      { connectorId: 1, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 23, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 23, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' },
-      { connectorId: 3, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 23, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' },
-      { connectorId: 4, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 23, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' }
-    ]
-  },
-  {
-    id: '00000106-1',
-    chargeBoxId: '00000106',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '06',
-    connectorId: 1,
-    status: 'Available',
-    connected: true,
-    spec: '급속 100kW (듀얼건)',
-    powerKw: 0,
-    voltageV: 0,
-    currentA: 0,
-    socPercent: 0,
-    batteryTempC: 24,
-    vendor: '클린앤차지',
-    model: 'CC-100K',
-    carModel: '',
-    userTag: '',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '20분 전',
-    accumulatedKwh: 0,
-    chargingMinutes: 0,
-    connectors: [
-      { connectorId: 1, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 24, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '20분 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 24, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '20분 전' }
-    ]
-  },
-  {
-    id: '00000107-1',
-    chargeBoxId: '00000107',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '07',
-    connectorId: 1,
-    status: 'Finishing',
-    connected: true,
-    spec: '초급속 200kW (듀얼건)',
-    powerKw: 0,
-    voltageV: 0,
-    currentA: 0,
-    socPercent: 100,
-    batteryTempC: 28,
-    vendor: '중앙제어',
-    model: 'JC-200K',
-    carModel: 'GV60',
-    userTag: 'C008821',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '방금 전',
-    accumulatedKwh: 61.2,
-    chargingMinutes: 38,
-    connectors: [
-      { connectorId: 1, status: 'Finishing', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 100, batteryTempC: 28, carModel: 'GV60', userTag: 'C008821', accumulatedKwh: 61.2, chargingMinutes: 38, lastHeartbeat: '방금 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' }
-    ]
-  },
-  {
-    id: '00000108-1',
-    chargeBoxId: '00000108',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '08',
-    connectorId: 1,
-    status: 'Faulted',
-    connected: true,
-    spec: '급속 200kW (듀얼건)',
-    powerKw: 0,
-    voltageV: 0,
-    currentA: 0,
-    socPercent: 0,
-    batteryTempC: 26,
-    vendor: 'LS E-Link Power',
-    model: 'ELVIS-HPC-200K',
-    carModel: '',
-    userTag: '',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '1분 전',
-    accumulatedKwh: 0,
-    chargingMinutes: 0,
-    connectors: [
-      { connectorId: 1, status: 'Faulted', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 26, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '1분 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '1분 전' }
-    ]
-  },
-  {
-    id: '00000109-1',
-    chargeBoxId: '00000109',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '09',
-    connectorId: 1,
-    status: 'Charging',
-    connected: true,
-    spec: '급속 100kW (듀얼건)',
-    powerKw: 88.4,
-    voltageV: 410,
-    currentA: 215.6,
-    socPercent: 65,
-    batteryTempC: 30,
-    vendor: 'LS E-Link Power',
-    model: 'ELVIS-QC-100K',
-    carModel: 'EV6 순수 전기차',
-    userTag: 'K10100102010',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '방금 전',
-    accumulatedKwh: 34.8,
-    chargingMinutes: 22,
-    connectors: [
-      { connectorId: 1, status: 'Charging', powerKw: 88.4, voltageV: 410, currentA: 215.6, socPercent: 65, batteryTempC: 30, carModel: 'EV6 순수 전기차', userTag: 'K10100102010', accumulatedKwh: 34.8, chargingMinutes: 22, lastHeartbeat: '방금 전' },
-      { connectorId: 2, status: 'Available', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '방금 전' }
-    ]
-  },
-  {
-    id: '00000110-1',
-    chargeBoxId: '00000110',
-    stId: '000001',
-    stationName: '강남 테헤란로점',
-    corpId: 'CORP01',
-    corpName: 'LS E-Link',
-    corpShortName: 'LS',
-    cpId: '10',
-    connectorId: 1,
-    status: '연결안됨',
-    connected: false,
-    spec: '급속 350kW (듀얼건)',
-    powerKw: 0,
-    voltageV: 0,
-    currentA: 0,
-    socPercent: 0,
-    batteryTempC: 25,
-    vendor: 'LS E-Link Power',
-    model: 'ELVIS-HPC-350K',
-    carModel: '',
-    userTag: '',
-    protocol: 'ocpp1.6',
-    lastHeartbeat: '2026-11-19 08:52:08',
-    accumulatedKwh: 0,
-    chargingMinutes: 0,
-    connectors: [
-      { connectorId: 1, status: '연결안됨', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '2026-11-19 08:52:08' },
-      { connectorId: 2, status: '연결안됨', powerKw: 0, voltageV: 0, currentA: 0, socPercent: 0, batteryTempC: 25, accumulatedKwh: 0, chargingMinutes: 0, lastHeartbeat: '2026-11-19 08:52:08' }
-    ]
-  }
-]
+const contextMenuRef = ref<InstanceType<typeof ChargerContextMenu> | null>(null)
 
 const sourceChargers = computed<ChargerItem[]>(() => {
   if (isPreviewSampleMode.value) {
@@ -463,6 +150,10 @@ function closeChargerDetail() {
   detailChargerId.value = null
 }
 
+function openContextMenu(e: MouseEvent, chg: ChargerItem, connectorId?: number) {
+  contextMenuRef.value?.open(e, chg, connectorId)
+}
+
 async function triggerCardAction(chg: ChargerItem, action: string, e?: Event) {
   if (e) e.stopPropagation()
   if (isPreviewSampleMode.value) {
@@ -514,12 +205,212 @@ const offlineChargerCount = computed(() => {
   return sourceChargers.value.length - onlineChargerCount.value
 })
 
+const totalLivePowerKw = computed(() => {
+  return sourceChargers.value.reduce((acc, chg) => acc + getChargerTotalPowerKw(chg), 0)
+})
+
+interface FooterRollingItem {
+  id: string
+  badge: string
+  tone: 'rose' | 'blue' | 'emerald' | 'indigo' | 'amber' | 'slate'
+  title: string
+  detail: string
+  filterKey?: SimpleFilterKey
+  charger?: ChargerItem
+  connectorId?: number
+}
+
+const footerWrapRef = ref<HTMLElement | null>(null)
+const isFooterRolledUp = ref(false)
+const isRollingPaused = ref(false)
+const isRollingHovered = ref(false)
+const rollingIndex = ref(0)
+const rollingDirection = ref<'up' | 'down'>('up')
+
+const rollingItems = computed<FooterRollingItem[]>(() => {
+  const items: FooterRollingItem[] = []
+  const chargers = sourceChargers.value
+
+  const faultedList = chargers.filter(c => resolveCardBucket(c) === 'faulted')
+  if (faultedList.length > 0) {
+    const first = faultedList[0]
+    items.push({
+      id: 'summary-faulted',
+      badge: '경보',
+      tone: 'rose',
+      title: `고장·점검 충전기 ${faultedList.length}기 감지`,
+      detail: faultedList.length === 1
+        ? `[${first.chargeBoxId}] ${first.stationName} 상태 확인 및 원격 리셋 점검 필요`
+        : `[${first.chargeBoxId}] 외 ${faultedList.length - 1}기 점검 필요 (클릭 시 고장 필터 보기)`,
+      filterKey: 'faulted'
+    })
+    faultedList.slice(0, 2).forEach(chg => {
+      const primary = getPrimaryConnector(chg)
+      items.push({
+        id: `fault-${chg.chargeBoxId}`,
+        badge: '고장',
+        tone: 'rose',
+        title: `[${chg.chargeBoxId}] ${chg.stationName}`,
+        detail: `#${primary?.connectorId ?? 1} ${getStatusMeta(primary?.status ?? chg.status).name} · 최종수신 ${chg.lastHeartbeat || '-'}`,
+        charger: chg,
+        connectorId: primary?.connectorId ?? 1
+      })
+    })
+  }
+
+  const chargingList = chargers.filter(c => resolveCardBucket(c) === 'charging')
+  if (chargingList.length > 0) {
+    items.push({
+      id: 'summary-charging',
+      badge: '충전',
+      tone: 'blue',
+      title: `실시간 충전중 ${chargingList.length}기 · 합계 ${totalLivePowerKw.value.toFixed(1)} kW`,
+      detail: `대기 ${filterCounts.value.standby}기 · 준비 ${filterCounts.value.preparing}기 · 완료 ${filterCounts.value.finished}기`,
+      filterKey: 'charging'
+    })
+    chargingList.slice(0, 2).forEach(chg => {
+      const primary = getPrimaryConnector(chg)
+      items.push({
+        id: `charging-${chg.chargeBoxId}`,
+        badge: '진행',
+        tone: 'blue',
+        title: `[${chg.chargeBoxId}] #${primary?.connectorId ?? 1} 충전중 (${primary?.socPercent ?? chg.socPercent ?? 0}%)`,
+        detail: `${(primary?.powerKw ?? chg.powerKw ?? 0).toFixed(1)} kW · 누적 ${(primary?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toFixed(1)} kWh · ${primary?.carModel || chg.stationName}`,
+        charger: chg,
+        connectorId: primary?.connectorId ?? 1
+      })
+    })
+  }
+
+  if (filterCounts.value.preparing > 0) {
+    items.push({
+      id: 'summary-preparing',
+      badge: '준비',
+      tone: 'amber',
+      title: `충전 준비·승인 대기 ${filterCounts.value.preparing}기`,
+      detail: '커넥터 체결 후 인증 또는 원격 시작 승인을 대기 중인 단말이 있습니다.',
+      filterKey: 'preparing'
+    })
+  }
+
+  items.push({
+    id: 'summary-status',
+    badge: '가동',
+    tone: 'emerald',
+    title: `충전기 온라인 ${onlineChargerCount.value} / 전체 ${chargers.length}기 · 커넥터 ${totalConnectorCount.value}개`,
+    detail: `충전대기 ${filterCounts.value.standby} · 충전중 ${filterCounts.value.charging} · 오프라인 ${offlineChargerCount.value}`,
+    filterKey: 'ALL'
+  })
+
+  items.push({
+    id: 'summary-kpi',
+    badge: '집계',
+    tone: 'indigo',
+    title: `금일 누적 ${(Number(store.summary.todayTotalKwh) || 0).toFixed(1)} kWh · 실시간 ${store.summary.liveTps.toLocaleString()} TPS`,
+    detail: `활성 세션 ${store.summary.activeSessions}건 · 서버 ${store.isDbConnected ? 'MySQL 실시간 연동 중' : '연결 대기 중'}`
+  })
+
+  items.push({
+    id: 'guide-controls',
+    badge: '안내',
+    tone: 'slate',
+    title: 'ELVIS·LITE 충전기 목록 관제 대시보드 (OCPP 1.6J)',
+    detail: '카드 좌클릭: 상세 제어반 · 카드 우클릭: 빠른 원격제어 · 하단바 롤업: 전체 피드 펼치기'
+  })
+
+  return items
+})
+
+watch(
+  () => rollingItems.value.length,
+  (len) => {
+    if (len === 0) {
+      rollingIndex.value = 0
+    } else if (rollingIndex.value >= len) {
+      rollingIndex.value = 0
+    }
+  }
+)
+
+const currentRollingItem = computed<FooterRollingItem | null>(() => {
+  const list = rollingItems.value
+  if (list.length === 0) return null
+  return list[rollingIndex.value % list.length]
+})
+
+function nextRollingItem() {
+  const len = rollingItems.value.length
+  if (len <= 1) return
+  rollingDirection.value = 'up'
+  rollingIndex.value = (rollingIndex.value + 1) % len
+}
+
+function prevRollingItem() {
+  const len = rollingItems.value.length
+  if (len <= 1) return
+  rollingDirection.value = 'down'
+  rollingIndex.value = (rollingIndex.value - 1 + len) % len
+}
+
+function toggleFooterRollup() {
+  isFooterRolledUp.value = !isFooterRolledUp.value
+}
+
+function handleRollingItemClick(item: FooterRollingItem) {
+  if (item.charger) {
+    openChargerDetail(item.charger, item.connectorId)
+    isFooterRolledUp.value = false
+    return
+  }
+  if (item.filterKey) {
+    activeFilter.value = item.filterKey
+    isFooterRolledUp.value = false
+  }
+}
+
+function getRollingBadgeClass(tone: FooterRollingItem['tone']): string {
+  switch (tone) {
+    case 'rose':
+      return 'bg-rose-50 text-rose-700 border-rose-200'
+    case 'blue':
+      return 'bg-blue-50 text-blue-700 border-blue-200'
+    case 'emerald':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    case 'indigo':
+      return 'bg-indigo-50 text-indigo-700 border-indigo-200'
+    case 'amber':
+      return 'bg-amber-50 text-amber-700 border-amber-200'
+    default:
+      return 'bg-slate-100 text-slate-600 border-slate-200'
+  }
+}
+
+function getRollingDotClass(tone: FooterRollingItem['tone']): string {
+  switch (tone) {
+    case 'rose':
+      return 'bg-rose-500'
+    case 'blue':
+      return 'bg-blue-500'
+    case 'emerald':
+      return 'bg-emerald-500'
+    case 'indigo':
+      return 'bg-indigo-500'
+    case 'amber':
+      return 'bg-amber-500'
+    default:
+      return 'bg-slate-400'
+  }
+}
+
+let rollingTimer: number | null = null
+
 function getConnectorStatusTextClass(status?: string | null): string {
   const key = getStatusMeta(status).key
   if (key === 'charging') return 'text-blue-700'
   if (key === 'standby') return 'text-emerald-700'
   if (key === 'preparing') return 'text-teal-700'
   if (key === 'finished') return 'text-violet-700'
+  if (key === 'reserved') return 'text-lime-700'
   if (key === 'faulted' || key === 'commerr') return 'text-rose-700'
   if (key === 'inspecting' || key === 'paused') return 'text-amber-700'
   if (key === 'suspended') return 'text-purple-700'
@@ -537,30 +428,63 @@ function formatConnectorSubText(conn: ConnectorDetail): string {
     const kwh = Number(conn.accumulatedKwh ?? 0)
     return kwh > 0 ? `${kwh.toFixed(1)}kWh` : '완료'
   }
+  if (key === 'reserved') return '예약'
+  if (key === 'paused') return '일시중지'
   if (key === 'disconnected') return '미연결'
   if (key === 'faulted' || key === 'commerr') return '점검'
+  if (key === 'inspecting') return '점검중'
+  if (key === 'suspended') return '중지'
   if (key === 'preparing') return '준비'
+  if (key === 'unknown') return '미확인'
   return ''
+}
+
+function getFaultedDescription(chg: ChargerItem): string {
+  const key = getStatusMeta(getChargerEffectiveStatus(chg)).key
+  if (key === 'commerr') return '충전기 내부 통신 이상이 감지되었습니다. 통신선·모뎀 점검 또는 원격 재부팅을 시도해 주세요.'
+  if (key === 'inspecting') return '현장 또는 원격 점검(Unavailable/Maintenance) 모드입니다. 점검 완료 후 대기 전환이 필요합니다.'
+  if (key === 'suspended') return '운영 정책에 의해 사용이 중지된 단말입니다. 운영 재개 전까지 충전이 차단됩니다.'
+  return '단말 오류 또는 하드웨어 이상 상태입니다. 원격 재부팅 후 상태를 확인해 주세요.'
 }
 
 function handleOutsideClick(e: MouseEvent) {
   if (stationDropdownRef.value && !stationDropdownRef.value.contains(e.target as Node)) {
     isStationDropdownOpen.value = false
   }
+  if (footerWrapRef.value && !footerWrapRef.value.contains(e.target as Node)) {
+    isFooterRolledUp.value = false
+  }
+}
+
+function handleFooterKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isFooterRolledUp.value) {
+    isFooterRolledUp.value = false
+  }
 }
 
 onMounted(() => {
   store.fetchInitialData(true)
   document.addEventListener('click', handleOutsideClick)
+  window.addEventListener('keydown', handleFooterKeydown)
+  rollingTimer = window.setInterval(() => {
+    if (!isRollingPaused.value && !isRollingHovered.value && !isFooterRolledUp.value && rollingItems.value.length > 1) {
+      nextRollingItem()
+    }
+  }, 3500)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
+  window.removeEventListener('keydown', handleFooterKeydown)
+  if (rollingTimer !== null) {
+    clearInterval(rollingTimer)
+    rollingTimer = null
+  }
 })
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-col gap-2.5 overflow-hidden select-none bg-[#F1F4F9] rounded-xl p-2.5">
+  <div class="w-full h-full flex flex-col gap-2.5 overflow-hidden select-none">
     <!-- 1. 상단 요약 & 컨트롤 바 (Stitch 디자인 반영) -->
     <div class="w-full bg-white rounded-xl px-3.5 py-2 border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 flex-shrink-0">
       <!-- 좌측: 충전소 전환 드롭다운 + ID 복사 배지 + 샘플 토글 -->
@@ -576,7 +500,7 @@ onUnmounted(() => {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               <span class="text-sm text-slate-900 font-extrabold tracking-tight truncate">{{ currentStationLabel.name }}</span>
-              <span class="px-2 py-0.5 rounded-full bg-sky-600 text-white text-[11px] font-bold flex-shrink-0 font-mono">
+              <span class="px-2 py-0.5 rounded-full bg-sky-600 text-white text-[13px] font-bold flex-shrink-0 font-mono">
                 {{ currentStationLabel.count }}기
               </span>
             </div>
@@ -597,9 +521,9 @@ onUnmounted(() => {
             v-if="isStationDropdownOpen"
             class="absolute left-0 top-full mt-1.5 w-80 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50 flex flex-col gap-1"
           >
-            <div class="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-400 border-b border-slate-100">
+            <div class="px-2 py-1 flex items-center justify-between text-[13px] font-bold text-slate-400 border-b border-slate-100">
               <span>충전소 전환</span>
-              <span class="text-[10px] text-sky-600 font-semibold">총 {{ store.stations.length }}개 지점</span>
+              <span class="text-[12px] text-sky-600 font-semibold">총 {{ store.stations.length }}개 지점</span>
             </div>
 
             <button
@@ -610,7 +534,7 @@ onUnmounted(() => {
             >
               <div class="flex flex-col">
                 <span class="text-xs font-bold">전체 충전소 통합 관제</span>
-                <span class="text-[10px] text-slate-500">전체 {{ store.chargers.length }}기</span>
+                <span class="text-[12px] text-slate-500">전체 {{ store.chargers.length }}기</span>
               </div>
               <svg v-if="!isPreviewSampleMode && store.curStFilter === 'ALL'" class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -631,12 +555,12 @@ onUnmounted(() => {
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
                     <span class="truncate">{{ st.name }}</span>
                   </span>
-                  <span class="text-[10px] text-slate-500 font-mono">ID {{ st.id }} · {{ st.chargerCount }}기</span>
+                  <span class="text-[12px] text-slate-500 font-mono">ID {{ st.id }} · {{ st.chargerCount }}기</span>
                 </div>
                 <svg v-if="!isPreviewSampleMode && store.curStFilter === st.id" class="w-4 h-4 text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span v-else class="text-[10px] text-slate-400 font-semibold flex-shrink-0">선택</span>
+                <span v-else class="text-[12px] text-slate-400 font-semibold flex-shrink-0">선택</span>
               </button>
             </div>
           </div>
@@ -647,7 +571,7 @@ onUnmounted(() => {
           v-if="currentStationLabel.id !== 'ALL'"
           type="button"
           @click="copyText(currentStationLabel.id, '충전소 ID', $event)"
-          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-300 text-[11px] font-bold text-slate-600 border border-slate-200 cursor-pointer transition-all font-mono"
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-300 text-[13px] font-bold text-slate-600 border border-slate-200 cursor-pointer transition-all font-mono"
           title="클릭하여 충전소 ID 복사"
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -657,7 +581,7 @@ onUnmounted(() => {
         </button>
 
         <!-- 충전기·커넥터 요약 배지 -->
-        <div class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-mono font-bold text-slate-600">
+        <div class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[13px] font-mono font-bold text-slate-600">
           <span class="inline-flex items-center gap-1 text-emerald-700">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span>온라인 {{ onlineChargerCount }}</span>
@@ -671,18 +595,18 @@ onUnmounted(() => {
           <span class="text-sky-700">커넥터 {{ totalConnectorCount }}개</span>
         </div>
 
-        <!-- 데이터 소스 전환 (MySQL 실데이터 vs Stitch 10기 디자인 샘플) -->
+        <!-- 데이터 소스 전환 (MySQL 실데이터 vs 전수 케이스 디자인 샘플) -->
         <button
           type="button"
           @click="isPreviewSampleMode = !isPreviewSampleMode"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[13px] font-bold border transition-all cursor-pointer"
           :class="isPreviewSampleMode
             ? 'bg-violet-50 text-violet-700 border-violet-300'
             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
-          title="MySQL 실데이터와 Stitch 10기 디자인 샘플 화면 전환"
+          :title="`MySQL 실데이터와 전수 케이스 디자인 샘플(${SAMPLE_CHARGERS.length}기) 화면 전환`"
         >
           <span class="w-1.5 h-1.5 rounded-full" :class="isPreviewSampleMode ? 'bg-violet-500' : 'bg-emerald-500'"></span>
-          <span>{{ isPreviewSampleMode ? '샘플 10기 보기 중 (실데이터로 전환)' : '디자인 샘플 10기 미리보기' }}</span>
+          <span>{{ isPreviewSampleMode ? `샘플 ${SAMPLE_CHARGERS.length}기 보기 중 (실데이터로 전환)` : `디자인 샘플 ${SAMPLE_CHARGERS.length}기 미리보기` }}</span>
         </button>
       </div>
 
@@ -808,7 +732,7 @@ onUnmounted(() => {
           </svg>
         </div>
         <p class="text-sm font-bold text-slate-800">표시할 충전기가 없습니다</p>
-        <p class="text-xs text-slate-500 mt-1">검색어나 상태 필터를 변경하거나 상단 [디자인 샘플 10기 미리보기]를 눌러 전체 카드 시안을 확인할 수 있습니다.</p>
+        <p class="text-xs text-slate-500 mt-1">검색어나 상태 필터를 변경하거나 상단 [디자인 샘플 {{ SAMPLE_CHARGERS.length }}기 미리보기]를 눌러 전체 상태 케이스 시안을 확인할 수 있습니다.</p>
       </div>
 
       <div
@@ -819,7 +743,8 @@ onUnmounted(() => {
           v-for="chg in filteredChargers"
           :key="chg.chargeBoxId"
           @click="openChargerDetail(chg)"
-          class="bg-white rounded-xl p-3 flex flex-col justify-between min-h-[260px] relative overflow-hidden group border shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
+          @contextmenu.prevent="openContextMenu($event, chg)"
+          class="bg-white rounded-xl p-3 flex flex-col justify-between min-h-[280px] relative overflow-hidden group border shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
           :class="{
             'border-slate-200 hover:border-slate-300': resolveCardBucket(chg) === 'standby',
             'border-blue-200 bg-gradient-to-b from-blue-50/70 via-white to-white': resolveCardBucket(chg) === 'charging',
@@ -854,19 +779,19 @@ onUnmounted(() => {
                   <button
                     type="button"
                     @click="copyText(chg.chargeBoxId, '충전기 ID', $event)"
-                    class="px-1.5 py-0.2 rounded bg-slate-50 hover:bg-sky-50 text-slate-600 hover:text-sky-700 text-[10px] font-mono font-semibold border border-slate-200 cursor-pointer transition-colors"
+                    class="px-1.5 py-0.2 rounded bg-slate-50 hover:bg-sky-50 text-slate-600 hover:text-sky-700 text-[12px] font-mono font-semibold border border-slate-200 cursor-pointer transition-colors"
                     title="충전기 ID 복사"
                   >
                     {{ chg.chargeBoxId }}
                   </button>
-                  <span class="text-[10px] text-slate-400 truncate">{{ chg.stationName }}</span>
+                  <span class="text-[12px] text-slate-400 truncate">{{ chg.stationName }}</span>
                 </div>
               </div>
             </div>
 
             <!-- 충전기 상태 배지 (온라인 / 오프라인) -->
             <span
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border flex-shrink-0"
+              class="px-2 py-0.5 rounded-full text-[12px] font-bold inline-flex items-center gap-1 border flex-shrink-0"
               :class="getChargerConnectionMeta(chg).badgeClass"
               :title="isChargerConnected(chg) ? '충전기 WebSocket 온라인' : '충전기 WebSocket 오프라인'"
             >
@@ -895,68 +820,110 @@ onUnmounted(() => {
                 </svg>
               </div>
               <p class="font-bold text-sm text-slate-900 tracking-tight">비어있음</p>
-              <p class="font-medium text-[11px] text-slate-500 mt-0.5">케이블을 꽂으면 바로 충전 시작</p>
+              <p class="font-medium text-[13px] text-slate-500 mt-0.5">케이블을 꽂으면 바로 충전 시작</p>
             </template>
           </div>
 
           <!-- B. 충전중 (Charging) -->
           <div v-else-if="resolveCardBucket(chg) === 'charging'" class="my-auto flex flex-col items-center justify-center text-center py-1">
             <div class="flex items-baseline gap-1 text-blue-700 font-bold leading-none mb-1 font-mono">
-              <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 self-center">#{{ getPrimaryConnector(chg)?.connectorId ?? 1 }}</span>
+              <span class="text-[13px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 self-center">#{{ getPrimaryConnector(chg)?.connectorId ?? 1 }}</span>
               <span class="text-3xl font-black tracking-tight">{{ getPrimaryConnector(chg)?.socPercent ?? chg.socPercent ?? 0 }}</span>
               <span class="text-sm font-bold">%</span>
             </div>
-            <div class="w-full bg-slate-200 rounded-full h-2 mb-1.5 overflow-hidden p-0.5">
+            <div class="w-full bg-slate-200 rounded-full h-2.5 mb-1.5 overflow-hidden p-0.5">
               <div
-                class="bg-blue-600 h-full rounded-full transition-all duration-500"
+                class="bg-gradient-to-r from-blue-600 via-sky-500 to-blue-500 charging-bar-shimmer h-full rounded-full transition-all duration-500"
                 :style="{ width: `${Math.min(100, getPrimaryConnector(chg)?.socPercent ?? chg.socPercent ?? 0)}%` }"
               ></div>
             </div>
-            <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-full text-[10px] font-bold font-mono">
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-full text-[12px] font-bold font-mono">
               <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>약 {{ estimateRemainMinutes(getPrimaryConnector(chg)?.socPercent ?? chg.socPercent ?? 0) }}분 후 완료 · {{ getChargerTotalPowerKw(chg).toFixed(1) }} kW</span>
             </div>
-            <span class="text-[10px] text-slate-500 font-medium mt-1 truncate max-w-full">
+            <span class="text-[12px] text-slate-500 font-medium mt-1 truncate max-w-full">
               {{ getPrimaryConnector(chg)?.carModel || `현재 ${estimateCostWon(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toLocaleString()}원 충전 중` }}
             </span>
           </div>
 
-          <!-- C. 충전준비중 (Preparing) -->
+          <!-- C. 충전준비중 / 일시중지 (Preparing / Paused) -->
           <div v-else-if="resolveCardBucket(chg) === 'preparing'" class="my-auto flex flex-col items-center justify-center text-center py-1">
-            <div class="w-11 h-11 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-600 mb-1.5 group-hover:scale-105 transition-transform">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </div>
-            <p class="font-bold text-sm text-slate-900 tracking-tight">
-              #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 케이블 연결됨
-            </p>
-            <p class="font-medium text-[11px] text-slate-500 mt-0.5 leading-snug px-1">
-              운전자가 인증 및 충전 시작을 준비 중입니다
-            </p>
+            <template v-if="getStatusMeta(getChargerEffectiveStatus(chg)).key === 'paused'">
+              <div class="w-11 h-11 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 mb-1.5 group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p class="font-bold text-sm text-amber-800 tracking-tight">
+                #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 충전 일시중지
+              </p>
+              <p class="font-medium text-[13px] text-slate-500 mt-0.5 leading-snug px-1">
+                {{ getPrimaryConnector(chg)?.status === 'SuspendedEV'
+                  ? '차량(EV) 요청으로 충전이 일시 정지됨'
+                  : getPrimaryConnector(chg)?.status === 'SuspendedEVSE'
+                    ? '충전기(EVSE) 전력 제어로 일시 정지됨'
+                    : '충전 세션이 일시중지 상태입니다' }}
+              </p>
+              <span v-if="(getPrimaryConnector(chg)?.socPercent ?? 0) > 0" class="inline-block mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-md text-[12px] text-amber-800 font-mono font-semibold">
+                SoC {{ getPrimaryConnector(chg)?.socPercent }}% · {{ Number(getPrimaryConnector(chg)?.accumulatedKwh ?? 0).toFixed(1) }} kWh
+              </span>
+            </template>
+
+            <template v-else>
+              <div class="w-11 h-11 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-600 mb-1.5 group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </div>
+              <p class="font-bold text-sm text-slate-900 tracking-tight">
+                #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 케이블 연결됨
+              </p>
+              <p class="font-medium text-[13px] text-slate-500 mt-0.5 leading-snug px-1">
+                운전자가 인증 및 충전 시작을 준비 중입니다
+              </p>
+            </template>
           </div>
 
-          <!-- D. 충전완료 (Finished) -->
+          <!-- D. 충전완료 / 예약중 (Finished / Reserved) -->
           <div v-else-if="resolveCardBucket(chg) === 'finished'" class="my-auto flex flex-col items-center justify-center text-center py-1">
-            <div class="w-11 h-11 rounded-full bg-violet-100 border border-violet-300 flex items-center justify-center text-violet-600 mb-1.5 group-hover:scale-105 transition-transform">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p class="font-bold text-sm text-slate-900 tracking-tight">
-              #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 충전 끝 ({{ getPrimaryConnector(chg)?.socPercent || 100 }}%)
-            </p>
-            <p class="font-medium text-[11px] text-slate-500 mt-0.5">
-              누적 {{ Number(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toFixed(1) }} kWh · 예상 {{ estimateCostWon(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toLocaleString() }}원
-            </p>
-            <span class="inline-block mt-1 px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-[10px] text-violet-700 font-semibold">
-              커넥터 분리 후 출차 대기
-            </span>
+            <template v-if="getStatusMeta(getChargerEffectiveStatus(chg)).key === 'reserved'">
+              <div class="w-11 h-11 rounded-full bg-lime-100 border border-lime-300 flex items-center justify-center text-lime-700 mb-1.5 group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p class="font-bold text-sm text-slate-900 tracking-tight">
+                #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 예약 대기 중
+              </p>
+              <p class="font-medium text-[13px] text-slate-500 mt-0.5">
+                {{ getPrimaryConnector(chg)?.carModel || '예약 차량 도착 및 태그 인증 대기' }}
+              </p>
+              <span v-if="getPrimaryConnector(chg)?.userTag" class="inline-block mt-1 px-2 py-0.5 bg-lime-50 border border-lime-200 rounded-md text-[12px] text-lime-800 font-mono font-semibold">
+                예약 태그 {{ getPrimaryConnector(chg)?.userTag }}
+              </span>
+            </template>
+
+            <template v-else>
+              <div class="w-11 h-11 rounded-full bg-violet-100 border border-violet-300 flex items-center justify-center text-violet-600 mb-1.5 group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p class="font-bold text-sm text-slate-900 tracking-tight">
+                #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} 충전 끝 ({{ getPrimaryConnector(chg)?.socPercent || 100 }}%)
+              </p>
+              <p class="font-medium text-[13px] text-slate-500 mt-0.5">
+                누적 {{ Number(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toFixed(1) }} kWh · 예상 {{ estimateCostWon(getPrimaryConnector(chg)?.accumulatedKwh ?? chg.accumulatedKwh ?? 0).toLocaleString() }}원
+              </p>
+              <span class="inline-block mt-1 px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-[12px] text-violet-700 font-semibold">
+                커넥터 분리 후 출차 대기
+              </span>
+            </template>
           </div>
 
-          <!-- E. 고장/점검 (Faulted) -->
+          <!-- E. 고장/통신이상/점검중/운영중지 (Faulted) -->
           <div v-else-if="resolveCardBucket(chg) === 'faulted'" class="my-auto flex flex-col items-center justify-center text-center py-1">
             <div class="w-11 h-11 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-600 mb-1 group-hover:scale-105 transition-transform">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -967,28 +934,33 @@ onUnmounted(() => {
               #{{ getPrimaryConnector(chg)?.connectorId ?? 1 }} {{ getStatusMeta(getChargerEffectiveStatus(chg)).name }}
             </p>
             <div class="mt-1 p-1.5 bg-rose-50 border border-rose-200 rounded-lg text-left w-full">
-              <p class="text-[10px] text-rose-800 font-medium leading-snug">
-                단말 오류 또는 점검 상태입니다. 원격 재부팅 후 상태를 확인해 주세요.
+              <p class="text-[12px] text-rose-800 font-medium leading-snug">
+                {{ getFaultedDescription(chg) }}
               </p>
             </div>
           </div>
 
-          <!-- F. 연결안됨 (Disconnected) -->
+          <!-- F. 연결안됨 / 알수없음 (Disconnected / Unknown) -->
           <div v-else class="my-auto flex flex-col items-center justify-center text-center py-2">
             <div class="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-1.5">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <svg v-if="isChargerConnected(chg)" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728M5.636 5.636a9 9 0 000 12.728M15.536 8.464a5 5 0 010 7.072M8.464 8.464a5 5 0 000 7.072M3 3l18 18" />
               </svg>
             </div>
-            <p class="font-bold text-sm text-slate-700 tracking-tight">연결안됨</p>
-            <p class="font-medium text-[10px] text-slate-400 mt-0.5 font-mono">
+            <p class="font-bold text-sm text-slate-700 tracking-tight">
+              {{ isChargerConnected(chg) ? '상태 알수없음' : '연결안됨' }}
+            </p>
+            <p class="font-medium text-[12px] text-slate-400 mt-0.5 font-mono">
               최종 수신: {{ chg.lastHeartbeat || '-' }}
             </p>
           </div>
 
           <!-- 공통: 커넥터별 실시간 상태 (모든 충전기 카드에 항상 표시) -->
           <div class="mt-2 pt-2 border-t border-slate-100 space-y-1">
-            <div class="flex items-center justify-between text-[10px]">
+            <div class="flex items-center justify-between text-[12px]">
               <span class="font-bold text-slate-500">커넥터 상태</span>
               <span class="font-mono text-slate-400">
                 {{ getChargerConnectors(chg).length }}채널<template v-if="isChargerConnected(chg)"> · 가용 {{ getAvailableConnectorCount(chg) }}</template>
@@ -1003,6 +975,7 @@ onUnmounted(() => {
                 :key="`${chg.chargeBoxId}-conn-${conn.connectorId}`"
                 type="button"
                 @click.stop="openChargerDetail(chg, conn.connectorId)"
+                @contextmenu.prevent.stop="openContextMenu($event, chg, conn.connectorId)"
                 class="px-1.5 py-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between gap-1 hover:border-sky-400"
                 :class="detailChargerId === chg.chargeBoxId && detailConnectorId === conn.connectorId
                   ? 'border-sky-500 ring-1 ring-sky-400 bg-sky-50/70'
@@ -1010,13 +983,13 @@ onUnmounted(() => {
                 :title="`#${conn.connectorId} 커넥터 상세 보기 (${getStatusMeta(conn.status).name})`"
               >
                 <div class="flex items-center gap-1 min-w-0">
-                  <span class="font-mono font-extrabold text-[10px] text-slate-600 flex-shrink-0">#{{ conn.connectorId }}</span>
+                  <span class="font-mono font-extrabold text-[12px] text-slate-600 flex-shrink-0">#{{ conn.connectorId }}</span>
                   <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="getStatusMeta(conn.status).dotClass"></span>
-                  <span class="text-[10px] font-bold truncate" :class="getConnectorStatusTextClass(conn.status)">
+                  <span class="text-[12px] font-bold truncate" :class="getConnectorStatusTextClass(conn.status)">
                     {{ getStatusMeta(conn.status).name }}
                   </span>
                 </div>
-                <span v-if="formatConnectorSubText(conn)" class="text-[9px] font-mono text-slate-500 flex-shrink-0">
+                <span v-if="formatConnectorSubText(conn)" class="text-[11px] font-mono text-slate-500 flex-shrink-0">
                   {{ formatConnectorSubText(conn) }}
                 </span>
               </button>
@@ -1103,17 +1076,238 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 3. 하단 상태 바 (Stitch Footer 반영) -->
-    <footer class="w-full bg-white rounded-xl px-4 py-1.5 border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 flex-shrink-0">
-      <span>ELVIS·LITE 초간편 통합 관제 대시보드 (OCPP 1.6J)</span>
-      <div class="flex items-center gap-3 font-mono">
-        <span class="inline-flex items-center gap-1.5 font-semibold" :class="store.isDbConnected ? 'text-emerald-700' : 'text-slate-400'">
-          <span class="w-1.5 h-1.5 rounded-full" :class="store.isDbConnected ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-          <span>{{ store.isDbConnected ? '관제 서버 온라인' : '서버 연결 대기' }}</span>
-        </span>
-        <span>표시 {{ filteredChargers.length }} / 전체 {{ sourceChargers.length }}기 · 커넥터 {{ totalConnectorCount }}개</span>
-      </div>
-    </footer>
+    <!-- 3. 하단 롤링 + 롤업 상태 바 -->
+    <div ref="footerWrapRef" class="relative w-full flex-shrink-0 z-20">
+      <!-- 3-A. 롤업(Roll-up) 확장 패널 -->
+      <Transition name="footer-rollup">
+        <section
+          v-if="isFooterRolledUp"
+          class="absolute left-0 right-0 bottom-full mb-2 bg-white/98 backdrop-blur-md border border-slate-200 rounded-xl shadow-2xl overflow-hidden"
+        >
+          <!-- 롤업 패널 헤더 -->
+          <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
+              <span class="text-xs font-extrabold text-slate-900">실시간 관제 롤링 피드 &amp; 운전 요약</span>
+              <span class="px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[12px] font-mono font-bold">
+                {{ rollingItems.length }}건
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[13px]">
+              <button
+                type="button"
+                @click="isRollingPaused = !isRollingPaused"
+                class="px-2 py-1 rounded-lg border font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                :class="isRollingPaused
+                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
+                :title="isRollingPaused ? '자동 롤링 재개' : '자동 롤링 일시정지'"
+              >
+                <svg v-if="isRollingPaused" class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                <svg v-else class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z" /></svg>
+                <span>{{ isRollingPaused ? '롤링 정지됨' : '자동 롤링 중' }}</span>
+              </button>
+              <button
+                type="button"
+                @click="isFooterRolledUp = false"
+                class="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                title="롤업 패널 접기 (ESC)"
+              >
+                <span>접기</span>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- 롤업 패널 본문: 4열 미니 KPI + 전체 롤링 피드 -->
+          <div class="p-3 space-y-2.5">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <button
+                type="button"
+                @click="activeFilter = 'ALL'; isFooterRolledUp = false"
+                class="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/60 border border-slate-200 text-left transition-colors cursor-pointer"
+              >
+                <div class="text-[12px] font-bold text-slate-500">온라인 / 전체 충전기</div>
+                <div class="mt-0.5 flex items-baseline justify-between font-mono">
+                  <span class="text-sm font-black text-emerald-700">{{ onlineChargerCount }} / {{ sourceChargers.length }}기</span>
+                  <span class="text-[12px] text-slate-500">커넥터 {{ totalConnectorCount }}개</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                @click="activeFilter = 'charging'; isFooterRolledUp = false"
+                class="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/70 border border-slate-200 text-left transition-colors cursor-pointer"
+              >
+                <div class="text-[12px] font-bold text-slate-500">실시간 합계 출력</div>
+                <div class="mt-0.5 flex items-baseline justify-between font-mono">
+                  <span class="text-sm font-black text-blue-700">{{ totalLivePowerKw.toFixed(1) }} kW</span>
+                  <span class="text-[12px] text-slate-500">충전중 {{ filterCounts.charging }}기</span>
+                </div>
+              </button>
+
+              <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="text-[12px] font-bold text-slate-500">금일 누적 전력량 · TPS</div>
+                <div class="mt-0.5 flex items-baseline justify-between font-mono">
+                  <span class="text-sm font-black text-indigo-700">{{ (Number(store.summary.todayTotalKwh) || 0).toFixed(1) }} kWh</span>
+                  <span class="text-[12px] text-slate-500">{{ store.summary.liveTps.toLocaleString() }} TPS</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                @click="activeFilter = filterCounts.faulted > 0 ? 'faulted' : 'disconnected'; isFooterRolledUp = false"
+                class="p-2.5 rounded-xl bg-slate-50 hover:bg-rose-50/70 border border-slate-200 text-left transition-colors cursor-pointer"
+              >
+                <div class="text-[12px] font-bold text-slate-500">고장 · 오프라인 현황</div>
+                <div class="mt-0.5 flex items-baseline justify-between font-mono">
+                  <span class="text-sm font-black" :class="filterCounts.faulted > 0 ? 'text-rose-600' : 'text-slate-700'">고장 {{ filterCounts.faulted }}기</span>
+                  <span class="text-[12px] text-slate-500">오프라인 {{ offlineChargerCount }}기</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- 전체 롤링 항목 리스트 -->
+            <div class="max-h-52 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl bg-white">
+              <button
+                v-for="(item, idx) in rollingItems"
+                :key="item.id"
+                type="button"
+                @click="handleRollingItemClick(item)"
+                class="w-full px-3 py-2 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                :class="idx === (rollingIndex % rollingItems.length)
+                  ? 'bg-sky-50/70'
+                  : 'hover:bg-slate-50'"
+              >
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-[12px] font-mono font-bold text-slate-400 w-4 text-right shrink-0">{{ idx + 1 }}</span>
+                  <span
+                    class="px-1.5 py-0.2 rounded text-[12px] font-bold border shrink-0 inline-flex items-center gap-1"
+                    :class="getRollingBadgeClass(item.tone)"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full" :class="getRollingDotClass(item.tone)"></span>
+                    <span>{{ item.badge }}</span>
+                  </span>
+                  <span class="text-xs font-bold text-slate-800 truncate">{{ item.title }}</span>
+                  <span class="hidden md:inline text-[13px] text-slate-500 truncate">{{ item.detail }}</span>
+                </div>
+                <span
+                  v-if="item.charger || item.filterKey"
+                  class="text-[12px] font-semibold text-sky-600 shrink-0 inline-flex items-center gap-0.5"
+                >
+                  <span>{{ item.charger ? '상세' : '필터' }}</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </Transition>
+
+      <!-- 3-B. 하단 고정 롤링 상태 바 -->
+      <footer
+        @mouseenter="isRollingHovered = true"
+        @mouseleave="isRollingHovered = false"
+        class="w-full bg-white rounded-xl px-3 py-1.5 border border-slate-200 shadow-2xs flex items-center justify-between gap-2.5 text-[13px] text-slate-500"
+      >
+        <!-- 좌측: 롤링 컨트롤 (이전/다음/일시정지 + 카운터) -->
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            @click="prevRollingItem"
+            class="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            title="이전 피드"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            @click="nextRollingItem"
+            class="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            title="다음 피드"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            @click="isRollingPaused = !isRollingPaused"
+            class="p-1 rounded-md transition-colors cursor-pointer"
+            :class="isRollingPaused ? 'text-amber-600 bg-amber-50 hover:bg-amber-100' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'"
+            :title="isRollingPaused ? '자동 롤링 재생' : '자동 롤링 일시정지'"
+          >
+            <svg v-if="isRollingPaused" class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+            <svg v-else class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z" /></svg>
+          </button>
+          <span class="hidden sm:inline-block font-mono text-[12px] text-slate-400 px-1 min-w-[28px] text-center">
+            {{ rollingItems.length > 0 ? (rollingIndex % rollingItems.length) + 1 : 0 }}/{{ rollingItems.length }}
+          </span>
+        </div>
+
+        <!-- 중앙: 수직 롤링 티커 -->
+        <div class="relative flex-1 min-w-0 h-7 overflow-hidden">
+          <Transition :name="rollingDirection === 'up' ? 'ticker-roll-up' : 'ticker-roll-down'">
+            <button
+              v-if="currentRollingItem"
+              :key="currentRollingItem.id"
+              type="button"
+              @click="handleRollingItemClick(currentRollingItem)"
+              class="absolute inset-0 w-full flex items-center gap-2 text-left rounded-md px-1.5 hover:bg-slate-50 transition-colors cursor-pointer"
+              :title="`${currentRollingItem.title} — ${currentRollingItem.detail}`"
+            >
+              <span
+                class="px-1.5 py-0.2 rounded text-[12px] font-bold border shrink-0 inline-flex items-center gap-1"
+                :class="getRollingBadgeClass(currentRollingItem.tone)"
+              >
+                <span class="w-1.5 h-1.5 rounded-full" :class="getRollingDotClass(currentRollingItem.tone)"></span>
+                <span>{{ currentRollingItem.badge }}</span>
+              </span>
+              <span class="text-[13px] font-bold text-slate-800 truncate">{{ currentRollingItem.title }}</span>
+              <span class="hidden xl:inline text-[13px] text-slate-500 truncate">{{ currentRollingItem.detail }}</span>
+            </button>
+          </Transition>
+        </div>
+
+        <!-- 우측: 서버 상태 + 표시 건수 + 롤업 토글 버튼 -->
+        <div class="flex items-center gap-2.5 flex-shrink-0">
+          <span class="hidden md:inline-flex items-center gap-1.5 font-mono font-semibold" :class="store.isDbConnected ? 'text-emerald-700' : 'text-slate-400'">
+            <span class="w-1.5 h-1.5 rounded-full" :class="store.isDbConnected ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+            <span>{{ store.isDbConnected ? '관제 서버 온라인' : '서버 연결 대기' }}</span>
+          </span>
+          <span class="hidden lg:inline font-mono text-slate-500">
+            표시 {{ filteredChargers.length }}/{{ sourceChargers.length }}기 · 커넥터 {{ totalConnectorCount }}개
+          </span>
+          <button
+            type="button"
+            @click="toggleFooterRollup"
+            class="px-2.5 py-1 rounded-lg border text-[13px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+            :class="isFooterRolledUp
+              ? 'bg-sky-600 text-white border-sky-600 hover:bg-sky-700'
+              : 'bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-sky-700 border-slate-200 hover:border-sky-200'"
+            :title="isFooterRolledUp ? '하단 롤업 패널 접기' : '하단 롤업 패널 펼치기'"
+          >
+            <span>{{ isFooterRolledUp ? '접기' : '롤업' }}</span>
+            <svg
+              class="w-3 h-3 transition-transform duration-200"
+              :class="isFooterRolledUp ? 'rotate-180' : ''"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+        </div>
+      </footer>
+    </div>
 
     <!-- 4. 우측 슬라이드 충전기 상세·원격제어 드로어 -->
     <div
@@ -1124,7 +1318,7 @@ onUnmounted(() => {
 
     <aside
       v-if="detailCharger"
-      class="fixed top-14 right-3 bottom-3 w-80 max-w-[90vw] bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50 flex flex-col justify-between overflow-y-auto"
+      class="fixed top-[60px] right-3 bottom-3 w-[356px] max-w-[92vw] bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50 flex flex-col justify-between overflow-y-auto"
     >
       <div class="space-y-3">
         <div class="flex items-center justify-between pb-2.5 border-b border-slate-200">
@@ -1132,14 +1326,14 @@ onUnmounted(() => {
             <div class="flex items-center gap-1.5">
               <span class="font-mono font-extrabold text-sm text-sky-700">{{ detailCharger.chargeBoxId }}</span>
               <span
-                class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                class="px-2 py-0.5 rounded-full text-[12px] font-bold border"
                 :class="getStatusMeta(detailConnector?.status ?? detailCharger.status).badgeClass"
               >
                 #{{ detailConnector?.connectorId ?? 1 }} {{ getStatusMeta(detailConnector?.status ?? detailCharger.status).name }}
               </span>
             </div>
             <div class="text-xs font-bold text-slate-800 mt-0.5">{{ detailCharger.stationName }}</div>
-            <div class="text-[10px] text-slate-500">{{ detailCharger.vendor }} · {{ detailCharger.model }}</div>
+            <div class="text-[12px] text-slate-500">{{ detailCharger.vendor }} · {{ detailCharger.model }}</div>
           </div>
           <button
             type="button"
@@ -1155,9 +1349,9 @@ onUnmounted(() => {
 
         <!-- 충전기 상태 요약 (온라인 / 오프라인) -->
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
-          <span class="text-[11px] font-bold text-slate-600">충전기 상태</span>
+          <span class="text-[13px] font-bold text-slate-600">충전기 상태</span>
           <span
-            class="px-2 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1"
+            class="px-2 py-0.5 rounded-full text-[12px] font-bold border inline-flex items-center gap-1"
             :class="getChargerConnectionMeta(detailCharger).badgeClass"
           >
             <span class="w-1.5 h-1.5 rounded-full" :class="getChargerConnectionMeta(detailCharger).dotClass"></span>
@@ -1167,7 +1361,7 @@ onUnmounted(() => {
 
         <!-- 커넥터별 상태 · 채널 선택 -->
         <div class="space-y-1.5">
-          <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
+          <div class="flex items-center justify-between text-[13px] font-bold text-slate-500">
             <span>커넥터별 상태 · 채널 선택</span>
             <span class="font-mono text-sky-600">{{ detailConnectors.length }}채널</span>
           </div>
@@ -1184,11 +1378,11 @@ onUnmounted(() => {
             >
               <div class="flex items-center justify-between">
                 <span class="font-mono font-bold text-xs text-slate-800">#{{ conn.connectorId }}</span>
-                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded border" :class="getStatusMeta(conn.status).badgeClass">
+                <span class="text-[12px] font-bold px-1.5 py-0.2 rounded border" :class="getStatusMeta(conn.status).badgeClass">
                   {{ getStatusMeta(conn.status).name }}
                 </span>
               </div>
-              <div class="text-[10px] font-mono text-slate-500 mt-1">
+              <div class="text-[12px] font-mono text-slate-500 mt-1">
                 {{ (conn.powerKw ?? 0) > 0 ? `${conn.powerKw.toFixed(1)} kW` : (getStatusMeta(conn.status).key === 'disconnected' ? '미연결' : '대기 0.0 kW') }}
               </div>
             </button>
@@ -1199,25 +1393,25 @@ onUnmounted(() => {
         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between text-xs font-bold text-slate-600">
             <span>#{{ detailConnector?.connectorId ?? 1 }} 계측 정보</span>
-            <span class="font-mono text-[10px]" :class="isChargerConnected(detailCharger) ? 'text-emerald-600' : 'text-slate-400'">
+            <span class="font-mono text-[12px]" :class="isChargerConnected(detailCharger) ? 'text-emerald-600' : 'text-slate-400'">
               {{ isChargerConnected(detailCharger) ? '실시간 연결' : '미연결' }}
             </span>
           </div>
           <div class="grid grid-cols-2 gap-2 font-mono text-xs">
             <div class="p-2 rounded-lg bg-white border border-slate-200">
-              <div class="text-[10px] text-slate-500 font-sans">순시 출력</div>
+              <div class="text-[12px] text-slate-500 font-sans">순시 출력</div>
               <div class="font-bold text-sky-700 mt-0.5">{{ (detailConnector?.powerKw ?? 0).toFixed(1) }} kW</div>
             </div>
             <div class="p-2 rounded-lg bg-white border border-slate-200">
-              <div class="text-[10px] text-slate-500 font-sans">배터리 SoC</div>
+              <div class="text-[12px] text-slate-500 font-sans">배터리 SoC</div>
               <div class="font-bold text-emerald-600 mt-0.5">{{ detailConnector?.socPercent ?? 0 }} %</div>
             </div>
             <div class="p-2 rounded-lg bg-white border border-slate-200">
-              <div class="text-[10px] text-slate-500 font-sans">전압 / 전류</div>
+              <div class="text-[12px] text-slate-500 font-sans">전압 / 전류</div>
               <div class="font-bold text-slate-800 mt-0.5">{{ (detailConnector?.voltageV ?? 0).toFixed(0) }}V / {{ (detailConnector?.currentA ?? 0).toFixed(0) }}A</div>
             </div>
             <div class="p-2 rounded-lg bg-white border border-slate-200">
-              <div class="text-[10px] text-slate-500 font-sans">누적 전력량</div>
+              <div class="text-[12px] text-slate-500 font-sans">누적 전력량</div>
               <div class="font-bold text-slate-800 mt-0.5">{{ (detailConnector?.accumulatedKwh ?? 0).toFixed(1) }} kWh</div>
             </div>
           </div>
@@ -1225,7 +1419,7 @@ onUnmounted(() => {
 
         <!-- OCPP 원격 제어 -->
         <div class="space-y-2">
-          <div class="text-[11px] font-bold text-slate-500">OCPP 원격 제어 (#{{ detailConnector?.connectorId ?? 1 }})</div>
+          <div class="text-[13px] font-bold text-slate-500">OCPP 원격 제어 (#{{ detailConnector?.connectorId ?? 1 }})</div>
           <div class="grid grid-cols-2 gap-1.5 text-xs font-bold">
             <button
               type="button"
@@ -1259,10 +1453,59 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono flex justify-between">
+      <div class="pt-3 border-t border-slate-100 text-[12px] text-slate-400 font-mono flex justify-between">
         <span>프로토콜: {{ detailCharger.protocol }}</span>
         <span>수신: {{ detailCharger.lastHeartbeat }}</span>
       </div>
     </aside>
+
+    <!-- 5. 우클릭 플로팅 컨텍스트 메뉴 -->
+    <ChargerContextMenu
+      ref="contextMenuRef"
+      :chargers="sourceChargers"
+      :is-sample-mode="isPreviewSampleMode"
+      @open-detail="openChargerDetail"
+    />
   </div>
 </template>
+
+<style scoped>
+/* 하단바 수직 롤링 티커 (위로) */
+.ticker-roll-up-enter-active,
+.ticker-roll-up-leave-active,
+.ticker-roll-down-enter-active,
+.ticker-roll-down-leave-active {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+}
+
+.ticker-roll-up-enter-from {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.ticker-roll-up-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+/* 하단바 수직 롤링 티커 (아래로 - 이전 버튼) */
+.ticker-roll-down-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+.ticker-roll-down-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+/* 하단바 위로 펼쳐지는 롤업(Roll-up) 패널 트랜지션 */
+.footer-rollup-enter-active,
+.footer-rollup-leave-active {
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+  transform-origin: bottom center;
+}
+.footer-rollup-enter-from,
+.footer-rollup-leave-to {
+  transform: translateY(12px) scaleY(0.96);
+  opacity: 0;
+}
+</style>

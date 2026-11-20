@@ -143,10 +143,16 @@ public class LocalSessionStore {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("[SessionStore] [%s] 현재 활성 연결 세션 현황 (총 %d건):%n", triggerReason, totalSessions));
+        sb.append(String.format("[SessionStore] [%s] 현재 활성 연결 세션 현황 (총 %d건): ", triggerReason, totalSessions));
 
         Instant now = Instant.now();
+        boolean first = true;
         for (var entry : sessionMap.entrySet()) {
+            if (!first) {
+                sb.append(" | ");
+            }
+            first = false;
+
             String chargeBoxId = entry.getKey();
             WebSocketSession session = entry.getValue();
 
@@ -158,12 +164,11 @@ public class LocalSessionStore {
             long idleSec = Duration.between(lastActive, now).toSeconds();
             boolean isOpen = session.isOpen();
 
-            sb.append(String.format("  • [%s] sessionId=%s, remote=%s, idle=%ds, open=%b%n",
+            sb.append(String.format("[%s] sessionId=%s, remote=%s, idle=%ds, open=%b",
                     chargeBoxId, sessionId, remoteStr, idleSec, isOpen));
         }
 
-        String summaryLog = sb.toString().trim();
-        log.info("{}", summaryLog);
+        log.info("{}", sb);
     }
 
     /**

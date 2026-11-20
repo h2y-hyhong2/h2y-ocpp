@@ -116,7 +116,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div class="font-bold text-xs text-[var(--text-bright)]">과금 원장 내역이 없습니다</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 조건에 맞는 충전 세션이 없습니다.</div>
+                <div class="text-[13px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 조건에 맞는 충전 세션이 없습니다.</div>
               </td>
             </tr>
             <tr v-for="rec in filteredRecords" :key="rec.transactionId">
@@ -130,8 +130,8 @@
               <td>{{ Number(rec.avgPriceWon ?? 0).toLocaleString() }} 원</td>
               <td class="font-bold text-emerald-600">{{ Number(rec.totalAmountWon ?? 0).toLocaleString() }} 원</td>
               <td>
-                <span v-if="rec.paymentStatus === 'COMPLETED'" class="badge badge-available text-[10px]">정산 완료</span>
-                <span v-else class="badge badge-charging text-[10px]">충전 진행중</span>
+                <span v-if="rec.paymentStatus === 'COMPLETED'" class="badge badge-available text-[12px]">정산 완료</span>
+                <span v-else class="badge badge-charging text-[12px]">충전 진행중</span>
               </td>
             </tr>
           </tbody>

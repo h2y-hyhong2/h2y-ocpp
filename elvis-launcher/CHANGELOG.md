@@ -10,6 +10,15 @@
 
 ## 변경 이력
 
+### [2026-11-20] 런처 UI 간결화·상태 애니메이션 및 독립 로그·프로세스 뷰어 연동
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (런처 UI 정비 및 `elvis-log-viewer` 연동)
+- **변경 내용**:
+  - `src/style.css`: GPU `transform` 기반 `.launcher-live-ring` 이중 파동 도트 애니메이션 추가 (`prefers-reduced-motion` 대응 포함)
+  - `src/App.vue`: 상단 `RUNNING` 배지 및 5대 서비스(MySQL, Kafka, WS, Sync, API) 각 행의 상태 도트에 실행중(`ONLINE`) 이중 파동 애니메이션 적용
+  - `tailwind.config.js` / `src/App.vue` / `src-tauri/tauri.conf.json`: 전역 폰트 크기 +2px 일괄 상향(`text-xs` 14px, `9/10/10.5/11px` → `11/12/12.5/13px`), 5대 서비스 상태 텍스트(`ONLINE`/`OFFLINE`, `min-w-[56px] text-right`) 및 `Port` 배지(`min-w-[82px]`)를 우측 버튼군 좌측으로 세로 일렬 정렬, 중복 `로그`/`에러로그`/`프로세스` 버튼을 그룹 헤더·개별 행에서 제거하고 최상단 헤더(`로그 | 에러로그 · 프로세스`)로 일원화, 5대 서비스 모든 행에서 `시작`·`종료`·`재기동` 3버튼을 항상 표시(불가 상태 비활성화)하고 그룹 헤더와 동일 폭(`min-w-[54px]`)으로 세로 정렬, 창 폭(`700×432`, 최소 `660×400`) 최적화
+  - `src-tauri/src/lib.rs` / `vite.config.ts` / `src/App.vue`: 독립 Rust 네이티브 GUI 모듈(`elvis-log-viewer/target/{release,debug}/elvis-log-viewer.exe`) 자동 탐색·실행 연동 — 일괄 분할(`all`/`core`/`infra`), 개별 프로세스 `로그`/`에러`(`--service <svc>`), 그룹 **`프로세스` 진단 창**(`--mode process --target infra|core|all`) 모두 네이티브 뷰어로 우선 실행 (`elvis-log-viewer` 미빌드 시 기존 Windows Terminal / PowerShell / `check-status.bat` 자동 폴백), 상단 `줄바꿈 OFF/ON` 토글 및 그룹 명칭(`미들웨어` / `코어 엔진`) 간결화
+- **영향 범위**: 런처 UI 전역 타이포그래피, 상태 도트 및 창 크기(`App.vue`, `style.css`, `tailwind.config.js`, `tauri.conf.json`)
+
 ### [2026-11-17] 5대 서비스 기준 런처 컴팩트 레이아웃 및 창 크기 최적화
 - **과제/커밋**: `[3368]WBS-COMMON-OP-003`
 - **변경 내용**:

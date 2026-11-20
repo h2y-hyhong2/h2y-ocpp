@@ -48,6 +48,7 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 - **`elvis-connect-sync`**: Kafka 이벤트 파싱, MySQL 실시간 상태/세션/과금/장애 동기화 엔진 (`:9081`)
 - **`elvis-control-api`**: 관제 REST API, SSE 실시간 알림 푸시 및 Spring Security JWT 관리자 인증 백엔드 (`:9082`)
 - **`elvis-launcher`**: 로컬 미들웨어 및 코어 서비스 통합 런처 데스크톱 앱 (Tauri 2.0 / Vue 3, `:1420`)
+- **`elvis-log-viewer`**: 순수 Rust 네이티브 GUI(`eframe`/`egui`) 5분할 실시간 로그 뷰어 및 포트·프로세스 실시간 진단 도구
 - **`elvis-control-ui`**: ELVIS-CSMS 관제 데스크톱 센터 (Tauri 2.0 / Vue 3, `:1421`)
 - **`elvis-tester-ui`**: 가상 충전기(EVSE) 에뮬레이터 및 WireTap 패킷 시뮬레이터 UI (Tauri 2.0 / Vue 3, `:1422`)
 
@@ -62,6 +63,7 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 | **`elvis-control-api`** | [elvis-control-api/CHANGELOG.md](elvis-control-api/CHANGELOG.md) | [elvis-control-api/TROUBLESHOOTING.md](elvis-control-api/TROUBLESHOOTING.md) |
 | **`elvis-control-ui`** | [elvis-control-ui/CHANGELOG.md](elvis-control-ui/CHANGELOG.md) | [elvis-control-ui/TROUBLESHOOTING.md](elvis-control-ui/TROUBLESHOOTING.md) |
 | **`elvis-launcher`** | [elvis-launcher/CHANGELOG.md](elvis-launcher/CHANGELOG.md) | [elvis-launcher/TROUBLESHOOTING.md](elvis-launcher/TROUBLESHOOTING.md) |
+| **`elvis-log-viewer`** | [elvis-log-viewer/CHANGELOG.md](elvis-log-viewer/CHANGELOG.md) | [elvis-log-viewer/TROUBLESHOOTING.md](elvis-log-viewer/TROUBLESHOOTING.md) |
 | **`elvis-tester-ui`** | [elvis-tester-ui/CHANGELOG.md](elvis-tester-ui/CHANGELOG.md) | [elvis-tester-ui/TROUBLESHOOTING.md](elvis-tester-ui/TROUBLESHOOTING.md) |
 | **`scripts` (인프라·기동)** | [scripts/CHANGELOG.md](scripts/CHANGELOG.md) | [scripts/TROUBLESHOOTING.md](scripts/TROUBLESHOOTING.md) |
 

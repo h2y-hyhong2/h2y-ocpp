@@ -55,3 +55,33 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+
+/* ==========================================================================
+   제품별 실행중(ONLINE) 이중 파동 도트 애니메이션 (GPU transform 기반)
+   ========================================================================== */
+@keyframes launcher-live-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.72;
+  }
+  70% {
+    transform: scale(2.25);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.25);
+    opacity: 0;
+  }
+}
+
+.launcher-live-ring {
+  animation: launcher-live-ring 2.2s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launcher-live-ring {
+    animation: none;
+    display: none;
+  }
+}

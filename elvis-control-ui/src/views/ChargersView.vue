@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import ChargerContextMenu from '@/components/ChargerContextMenu.vue'
 import {
   useCsmsStore,
   STATUS_MAP,
@@ -21,6 +22,7 @@ onMounted(() => {
 })
 
 const searchQuery = ref<string>('')
+const contextMenuRef = ref<InstanceType<typeof ChargerContextMenu> | null>(null)
 
 // 법인 필터링된 충전소 목록
 const filteredStations = computed(() => {
@@ -171,6 +173,11 @@ function onSelectCharger(chg: ChargerItem, connectorId?: number) {
   if (window.innerWidth < 1280) store.toggleControlDrawer(true)
 }
 
+// 우클릭 플로팅 컨텍스트 메뉴 열기
+function openContextMenu(e: MouseEvent, chg: ChargerItem, connectorId?: number) {
+  contextMenuRef.value?.open(e, chg, connectorId)
+}
+
 // 원격 제어 커맨드 전송
 function sendRemoteCommand(action: string) {
   const targetConnId = selectedConnector.value?.connectorId
@@ -196,7 +203,7 @@ function sendRemoteCommand(action: string) {
             <span>충전소 목록</span>
           </div>
           <div class="flex items-center gap-1">
-            <span class="text-[10px] text-sky-600 font-bold bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
+            <span class="text-[12px] text-sky-600 font-bold bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
               {{ store.stations.length }}개소
             </span>
             <button
@@ -238,7 +245,7 @@ function sendRemoteCommand(action: string) {
             <svg class="w-4 h-4 text-sky-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span>전체 충전소 관제</span>
           </span>
-          <span class="text-[10px] opacity-75 font-bold flex-shrink-0">{{ store.chargers.length }}기</span>
+          <span class="text-[12px] opacity-75 font-bold flex-shrink-0">{{ store.chargers.length }}기</span>
         </div>
       </div>
 
@@ -246,8 +253,8 @@ function sendRemoteCommand(action: string) {
       <div class="mt-2 space-y-1.5 overflow-y-auto flex-1 text-xs pr-1">
         <div v-if="filteredStations.length === 0" class="p-4 text-center text-slate-400 space-y-1 my-4">
           <svg class="w-8 h-8 mx-auto text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-          <div class="font-bold text-[11px] text-slate-600">등록된 충전소가 없습니다</div>
-          <div class="text-[10px] text-slate-500">DB 초기화 상태 (0건)</div>
+          <div class="font-bold text-[13px] text-slate-600">등록된 충전소가 없습니다</div>
+          <div class="text-[12px] text-slate-500">DB 초기화 상태 (0건)</div>
         </div>
 
         <div
@@ -259,24 +266,24 @@ function sendRemoteCommand(action: string) {
         >
           <div class="flex items-center justify-between gap-1 mb-0.5">
             <div class="flex items-center gap-1">
-              <span v-if="store.curCorpFilter === 'ALL'" class="text-[9px] font-bold px-1 py-0.2 rounded bg-slate-200/50">
+              <span v-if="store.curCorpFilter === 'ALL'" class="text-[11px] font-bold px-1 py-0.2 rounded bg-slate-200/50">
                 {{ st.corpShortName }}
               </span>
               <button
                 type="button"
                 @click="copyStationId(st.id, $event)"
-                class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-[var(--border-glass)] hover:bg-sky-50 flex items-center gap-1 cursor-pointer"
+                class="text-[12px] font-mono font-bold px-1.5 py-0.2 rounded border border-[var(--border-glass)] hover:bg-sky-50 flex items-center gap-1 cursor-pointer"
                 title="충전소 ID 복사"
               >
                 <span>{{ st.id }}</span>
                 <svg class="w-2.5 h-2.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               </button>
             </div>
-            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 border border-sky-500/20">
+            <span class="text-[11px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 border border-sky-500/20">
               {{ st.chargerCount }}기
             </span>
           </div>
-          <div class="text-[11px] font-bold leading-snug truncate">
+          <div class="text-[13px] font-bold leading-snug truncate">
             {{ st.name }}
           </div>
         </div>
@@ -295,14 +302,14 @@ function sendRemoteCommand(action: string) {
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-xs font-bold text-[var(--text-bright)]">충전기 · 커넥터 관제 목록</span>
             <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-              <span class="text-[10px] font-bold text-slate-700 truncate max-w-[200px]">
+              <span class="text-[12px] font-bold text-slate-700 truncate max-w-[200px]">
                 {{ currentStationInfo.name }}
               </span>
-              <span class="text-[10px] font-mono font-bold text-sky-600">
+              <span class="text-[12px] font-mono font-bold text-sky-600">
                 (충전기 {{ filteredChargers.length }}/{{ currentStationChargers.length }}기 · 커넥터 {{ totalConnectorCount }}개)
               </span>
             </div>
-            <div class="hidden sm:flex items-center gap-1 text-[10px] font-mono font-bold">
+            <div class="hidden sm:flex items-center gap-1 text-[12px] font-mono font-bold">
               <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span>온라인 {{ onlineChargerCount }}</span>
@@ -347,7 +354,7 @@ function sendRemoteCommand(action: string) {
               : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
           >
             <span>전체</span>
-            <span class="font-mono text-[11px] opacity-90">{{ totalConnectorCount }}</span>
+            <span class="font-mono text-[13px] opacity-90">{{ totalConnectorCount }}</span>
           </button>
 
           <!-- 세부 상태 칩 버튼 목록 -->
@@ -367,7 +374,7 @@ function sendRemoteCommand(action: string) {
             <span class="w-1.5 h-1.5 rounded-full" :class="getStatusMeta(key).dotClass"></span>
             <span>{{ key }}</span>
             <span 
-              class="font-mono text-[11px] px-1 py-0.2 rounded"
+              class="font-mono text-[13px] px-1 py-0.2 rounded"
               :class="(statusCounts[key] || 0) > 0 ? 'bg-slate-100 font-bold text-slate-800' : 'text-slate-400'"
             >
               {{ statusCounts[key] || 0 }}
@@ -378,7 +385,7 @@ function sendRemoteCommand(action: string) {
         <!-- 단일 고성능 데이터 테이블 -->
         <div class="flex-1 overflow-y-auto mt-2 pr-0.5">
           <table class="w-full text-left text-xs border-collapse">
-            <thead class="sticky top-0 bg-[var(--bg-surface-1)] border-b border-slate-200 text-slate-500 font-semibold text-[11px] z-10">
+            <thead class="sticky top-0 bg-[var(--bg-surface-1)] border-b border-slate-200 text-slate-500 font-semibold text-[13px] z-10">
               <tr>
                 <th class="py-2 px-2.5">충전기 ID</th>
                 <th class="py-2 px-2">소속 충전소</th>
@@ -391,18 +398,19 @@ function sendRemoteCommand(action: string) {
                 <th class="py-2 px-2.5 text-right">최종 수신 일시</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 font-mono text-[11px]">
+            <tbody class="divide-y divide-slate-100 font-mono text-[13px]">
               <tr v-if="filteredChargers.length === 0">
                 <td colspan="9" class="py-16 text-center text-slate-400">
                   <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   <div class="font-bold text-xs text-[var(--text-bright)]">조회된 충전기가 없습니다</div>
-                  <div class="text-[11px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 검색 조건에 맞는 충전기가 없습니다.</div>
+                  <div class="text-[13px] text-slate-500 mt-0.5">데이터베이스가 비어 있거나 검색 조건에 맞는 충전기가 없습니다.</div>
                 </td>
               </tr>
               <tr
                 v-for="chg in filteredChargers"
                 :key="chg.chargeBoxId"
                 @click="onSelectCharger(chg)"
+                @contextmenu.prevent="openContextMenu($event, chg)"
                 class="hover:bg-slate-50/80 cursor-pointer transition-colors"
                 :class="store.selectedCharger?.chargeBoxId === chg.chargeBoxId ? 'bg-sky-50/60 font-semibold' : ''"
               >
@@ -415,14 +423,14 @@ function sendRemoteCommand(action: string) {
                     ></span>
                     <span class="font-bold text-sky-700">{{ chg.chargeBoxId }}</span>
                   </div>
-                  <div class="text-[9px] text-slate-400 font-sans">{{ getChargerConnectors(chg).length }}채널 · {{ chg.spec }}</div>
+                  <div class="text-[11px] text-slate-400 font-sans">{{ getChargerConnectors(chg).length }}채널 · {{ chg.spec }}</div>
                 </td>
                 <td class="py-2.5 px-2 font-medium truncate max-w-[140px] whitespace-nowrap">{{ chg.stationName }}</td>
                 <td class="py-2.5 px-2 text-slate-600 truncate max-w-[130px] whitespace-nowrap">{{ chg.vendor }} {{ chg.model }}</td>
                 <td class="py-2.5 px-2 whitespace-nowrap">
                   <span
                     :class="getChargerConnectionMeta(chg).badgeClass"
-                    class="px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap inline-flex items-center gap-1"
+                    class="px-2 py-0.5 rounded-full text-[12px] font-bold border whitespace-nowrap inline-flex items-center gap-1"
                     :title="isChargerConnected(chg) ? '충전기 WebSocket 온라인' : '충전기 WebSocket 오프라인'"
                   >
                     <span class="w-1.5 h-1.5 rounded-full" :class="getChargerConnectionMeta(chg).dotClass"></span>
@@ -436,19 +444,20 @@ function sendRemoteCommand(action: string) {
                       :key="`${chg.chargeBoxId}-${conn.connectorId}`"
                       type="button"
                       @click.stop="onSelectCharger(chg, conn.connectorId)"
+                      @contextmenu.prevent.stop="openContextMenu($event, chg, conn.connectorId)"
                       :class="[
                         getStatusMeta(conn.status).badgeClass,
                         store.selectedCharger?.chargeBoxId === chg.chargeBoxId && store.selectedConnectorId === conn.connectorId
                           ? 'ring-2 ring-sky-500'
                           : ''
                       ]"
-                      class="px-1.5 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap inline-flex items-center gap-1 cursor-pointer transition-all hover:opacity-90"
+                      class="px-1.5 py-0.5 rounded text-[12px] font-bold border whitespace-nowrap inline-flex items-center gap-1 cursor-pointer transition-all hover:opacity-90"
                       :title="`#${conn.connectorId} 커넥터 선택 (${getStatusMeta(conn.status).name})`"
                     >
                       <span class="opacity-70">#{{ conn.connectorId }}</span>
                       <span class="w-1.5 h-1.5 rounded-full" :class="getStatusMeta(conn.status).dotClass"></span>
                       <span>{{ getStatusMeta(conn.status).name }}</span>
-                      <span v-if="(conn.powerKw ?? 0) > 0" class="text-[9px] opacity-80 font-mono">
+                      <span v-if="(conn.powerKw ?? 0) > 0" class="text-[11px] opacity-80 font-mono">
                         {{ (conn.powerKw ?? 0).toFixed(1) }}kW
                       </span>
                     </button>
@@ -459,24 +468,24 @@ function sendRemoteCommand(action: string) {
                 </td>
                 <td class="py-2.5 px-2 text-slate-500 whitespace-nowrap">
                   <template v-if="getRowDisplayConnector(chg) && (getRowDisplayConnector(chg)?.powerKw ?? 0) > 0">
-                    <span v-if="getChargerConnectors(chg).length > 1" class="text-[9px] text-sky-600 mr-1">#{{ getRowDisplayConnector(chg)?.connectorId }}</span>
+                    <span v-if="getChargerConnectors(chg).length > 1" class="text-[11px] text-sky-600 mr-1">#{{ getRowDisplayConnector(chg)?.connectorId }}</span>
                     <span>{{ (getRowDisplayConnector(chg)?.voltageV ?? 0).toFixed(0) }}V / {{ (getRowDisplayConnector(chg)?.currentA ?? 0).toFixed(0) }}A</span>
                   </template>
                   <span v-else>-</span>
                 </td>
                 <td class="py-2.5 px-2 whitespace-nowrap">
                   <div v-if="getRowDisplayConnector(chg) && getStatusMeta(getRowDisplayConnector(chg)?.status).key === 'charging'" class="w-20">
-                    <div class="flex justify-between text-[10px] mb-0.5 font-bold text-emerald-600">
+                    <div class="flex justify-between text-[12px] mb-0.5 font-bold text-emerald-600">
                       <span v-if="getChargerConnectors(chg).length > 1" class="text-sky-600">#{{ getRowDisplayConnector(chg)?.connectorId }}</span>
                       <span>{{ getRowDisplayConnector(chg)?.socPercent ?? 0 }}%</span>
                     </div>
                     <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div class="h-full bg-emerald-500" :style="{ width: `${getRowDisplayConnector(chg)?.socPercent ?? 0}%` }"></div>
+                      <div class="h-full bg-emerald-500 charging-bar-shimmer rounded-full" :style="{ width: `${getRowDisplayConnector(chg)?.socPercent ?? 0}%` }"></div>
                     </div>
                   </div>
                   <span v-else class="text-slate-400">-</span>
                 </td>
-                <td class="py-2.5 px-2.5 text-right text-[10px] text-slate-500 whitespace-nowrap">{{ chg.lastHeartbeat }}</td>
+                <td class="py-2.5 px-2.5 text-right text-[12px] text-slate-500 whitespace-nowrap">{{ chg.lastHeartbeat }}</td>
               </tr>
             </tbody>
           </table>
@@ -502,7 +511,7 @@ function sendRemoteCommand(action: string) {
             <span
               v-if="store.selectedCharger"
               :class="getStatusMeta(selectedConnector?.status ?? store.selectedCharger.status).badgeClass"
-              class="text-[10px] px-1.5 py-0.2 rounded border font-bold"
+              class="text-[12px] px-1.5 py-0.2 rounded border font-bold"
             >
               #{{ selectedConnector?.connectorId ?? 1 }} {{ getStatusMeta(selectedConnector?.status ?? store.selectedCharger.status).name }}
             </span>
@@ -524,20 +533,20 @@ function sendRemoteCommand(action: string) {
           <div class="p-2.5 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-glass)] space-y-1.5">
             <div class="flex items-center justify-between text-xs">
               <span class="font-bold text-sky-700 font-mono">{{ store.selectedCharger.chargeBoxId }}</span>
-              <span class="text-[10px] font-bold text-slate-500">{{ store.selectedCharger.spec }}</span>
+              <span class="text-[12px] font-bold text-slate-500">{{ store.selectedCharger.spec }}</span>
             </div>
-            <div class="text-[11px] font-bold text-[var(--text-bright)] truncate">{{ store.selectedCharger.stationName }}</div>
+            <div class="text-[13px] font-bold text-[var(--text-bright)] truncate">{{ store.selectedCharger.stationName }}</div>
             <div class="flex items-center justify-between gap-1 pt-1 border-t border-slate-200/70">
-              <span class="text-[10px] font-bold text-slate-500">충전기 상태</span>
+              <span class="text-[12px] font-bold text-slate-500">충전기 상태</span>
               <span
                 :class="getChargerConnectionMeta(store.selectedCharger).badgeClass"
-                class="px-2 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1"
+                class="px-2 py-0.5 rounded-full text-[12px] font-bold border inline-flex items-center gap-1"
               >
                 <span class="w-1.5 h-1.5 rounded-full" :class="getChargerConnectionMeta(store.selectedCharger).dotClass"></span>
                 <span>{{ getChargerConnectionMeta(store.selectedCharger).label }}</span>
               </span>
             </div>
-            <div class="text-[10px] text-slate-500 font-mono flex justify-between pt-0.5">
+            <div class="text-[12px] text-slate-500 font-mono flex justify-between pt-0.5">
               <span>{{ store.selectedCharger.vendor }}</span>
               <span>{{ store.selectedCharger.protocol }}</span>
             </div>
@@ -545,7 +554,7 @@ function sendRemoteCommand(action: string) {
 
           <!-- 커넥터별 상태 · 채널 선택 -->
           <div class="p-2 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-glass)] space-y-1.5">
-            <div class="flex items-center justify-between text-[10px] font-bold text-slate-500">
+            <div class="flex items-center justify-between text-[12px] font-bold text-slate-500">
               <span>커넥터별 상태 · 채널 선택</span>
               <span class="font-mono text-sky-600">{{ selectedChargerConnectors.length }}채널</span>
             </div>
@@ -561,13 +570,13 @@ function sendRemoteCommand(action: string) {
                   : 'bg-white border-slate-200 hover:bg-slate-50'"
               >
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-mono font-bold text-[10px] text-slate-700">#{{ conn.connectorId }}</span>
-                  <span :class="getStatusMeta(conn.status).badgeClass" class="px-1 py-0.2 rounded text-[9px] font-bold border inline-flex items-center gap-1">
+                  <span class="font-mono font-bold text-[12px] text-slate-700">#{{ conn.connectorId }}</span>
+                  <span :class="getStatusMeta(conn.status).badgeClass" class="px-1 py-0.2 rounded text-[11px] font-bold border inline-flex items-center gap-1">
                     <span class="w-1 h-1 rounded-full" :class="getStatusMeta(conn.status).dotClass"></span>
                     <span>{{ getStatusMeta(conn.status).name }}</span>
                   </span>
                 </div>
-                <div class="text-[10px] font-mono text-slate-500 mt-0.5 truncate">
+                <div class="text-[12px] font-mono text-slate-500 mt-0.5 truncate">
                   {{ (conn.powerKw ?? 0) > 0 ? `${(conn.powerKw ?? 0).toFixed(1)} kW` : (getStatusMeta(conn.status).key === 'disconnected' ? '미연결' : '대기 0.0 kW') }}
                 </div>
               </button>
@@ -576,10 +585,10 @@ function sendRemoteCommand(action: string) {
 
           <!-- 실시간 텔레메트리 계측치 (선택 커넥터 기준) -->
           <div class="p-2.5 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-glass)] space-y-2">
-            <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
+            <div class="flex items-center justify-between text-[13px] font-bold text-slate-500">
               <span>#{{ selectedConnector?.connectorId ?? 1 }} 커넥터 계측치</span>
               <span
-                class="font-mono text-[10px]"
+                class="font-mono text-[12px]"
                 :class="isChargerConnected(store.selectedCharger) ? 'text-emerald-600' : 'text-slate-400'"
               >
                 {{ isChargerConnected(store.selectedCharger) ? '실시간' : '미연결' }}
@@ -589,7 +598,7 @@ function sendRemoteCommand(action: string) {
             <!-- 순시 출력 -->
             <div class="space-y-1">
               <div class="flex items-baseline justify-between">
-                <span class="text-[11px] text-slate-500">순시 출력</span>
+                <span class="text-[13px] text-slate-500">순시 출력</span>
                 <span class="text-sm font-black font-mono text-sky-700">{{ (selectedConnector?.powerKw ?? 0).toFixed(1) }} kW</span>
               </div>
               <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
@@ -597,37 +606,41 @@ function sendRemoteCommand(action: string) {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-1.5 pt-1 font-mono text-[11px]">
+            <div class="grid grid-cols-2 gap-1.5 pt-1 font-mono text-[13px]">
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
-                <div class="text-[9px] text-slate-500">충전 전압</div>
+                <div class="text-[11px] text-slate-500">충전 전압</div>
                 <div class="font-bold">{{ (selectedConnector?.voltageV ?? 0).toFixed(0) }} V</div>
               </div>
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
-                <div class="text-[9px] text-slate-500">충전 전류</div>
+                <div class="text-[11px] text-slate-500">충전 전류</div>
                 <div class="font-bold">{{ (selectedConnector?.currentA ?? 0).toFixed(0) }} A</div>
               </div>
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
-                <div class="text-[9px] text-slate-500">누적 전력량</div>
+                <div class="text-[11px] text-slate-500">누적 전력량</div>
                 <div class="font-bold">{{ (selectedConnector?.accumulatedKwh ?? 0).toFixed(1) }} kWh</div>
               </div>
               <div class="p-1.5 rounded bg-[var(--bg-surface-1)] border border-[var(--border-glass)]">
-                <div class="text-[9px] text-slate-500">배터리 온도</div>
+                <div class="text-[11px] text-slate-500">배터리 온도</div>
                 <div class="font-bold text-amber-600">{{ selectedConnector?.batteryTempC ?? 25 }} °C</div>
               </div>
             </div>
 
             <!-- 배터리 SoC -->
             <div class="space-y-1 pt-1">
-              <div class="flex items-baseline justify-between text-[11px]">
+              <div class="flex items-baseline justify-between text-[13px]">
                 <span class="text-slate-500">배터리 SoC</span>
                 <span class="font-bold font-mono text-emerald-600">{{ selectedConnector?.socPercent ?? 0 }}%</span>
               </div>
               <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${selectedConnector?.socPercent ?? 0}%` }"></div>
+                <div
+                  class="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                  :class="getStatusMeta(selectedConnector?.status).key === 'charging' ? 'charging-bar-shimmer' : ''"
+                  :style="{ width: `${selectedConnector?.socPercent ?? 0}%` }"
+                ></div>
               </div>
             </div>
 
-            <div v-if="selectedConnector?.carModel || selectedConnector?.userTag" class="pt-1 border-t border-slate-200/70 flex items-center justify-between text-[10px] font-mono text-slate-500">
+            <div v-if="selectedConnector?.carModel || selectedConnector?.userTag" class="pt-1 border-t border-slate-200/70 flex items-center justify-between text-[12px] font-mono text-slate-500">
               <span class="truncate">{{ selectedConnector?.carModel || '-' }}</span>
               <span class="truncate">{{ selectedConnector?.userTag || '-' }}</span>
             </div>
@@ -635,11 +648,11 @@ function sendRemoteCommand(action: string) {
 
           <!-- OCPP 원격 제어 커맨드 -->
           <div class="space-y-1.5 pt-1">
-            <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
+            <div class="flex items-center justify-between text-[13px] font-bold text-slate-500">
               <span>OCPP 원격 제어</span>
-              <span class="font-mono text-[10px] text-sky-600">#{{ selectedConnector?.connectorId ?? 1 }} 커넥터 대상</span>
+              <span class="font-mono text-[12px] text-sky-600">#{{ selectedConnector?.connectorId ?? 1 }} 커넥터 대상</span>
             </div>
-            <div class="grid grid-cols-2 gap-1.5 font-bold text-[11px]">
+            <div class="grid grid-cols-2 gap-1.5 font-bold text-[13px]">
               <button
                 type="button"
                 @click="sendRemoteCommand('Reset')"
@@ -684,11 +697,18 @@ function sendRemoteCommand(action: string) {
         <div v-else class="py-16 text-center text-slate-400 space-y-2">
           <svg class="w-10 h-10 mx-auto text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
           <div class="font-bold text-xs text-[var(--text-bright)]">선택된 충전기 없음</div>
-          <div class="text-[10px] text-slate-500 leading-relaxed px-3">
+          <div class="text-[12px] text-slate-500 leading-relaxed px-3">
             목록에서 충전기를 선택하면 상세 계측치 및 원격 제어반이 활성화됩니다.
           </div>
         </div>
       </div>
     </aside>
+
+    <!-- 우클릭 플로팅 컨텍스트 메뉴 -->
+    <ChargerContextMenu
+      ref="contextMenuRef"
+      :chargers="store.chargers"
+      @open-detail="onSelectCharger"
+    />
   </div>
 </template>

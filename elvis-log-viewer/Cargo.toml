@@ -1,0 +1,9 @@
+[package]
+name = "elvis-log-viewer"
+version = "1.0.0"
+description = "ELVIS CSMS Lite 순수 Rust 네이티브 GUI 5분할 실시간 로그 뷰어"
+authors = ["LS E-Link Platform Team"]
+edition = "2021"
+
+[dependencies]
+eframe = "0.31"

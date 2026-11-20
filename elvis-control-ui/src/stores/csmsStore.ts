@@ -498,6 +498,40 @@ export const useCsmsStore = defineStore('csms', {
       }
     },
 
+    // OCPP TriggerMessage 즉시 보고 요청 API 연동
+    async sendTriggerMessage(chargeBoxId: string, requestedMessage: string, connectorId?: number) {
+      if (!chargeBoxId || !requestedMessage) return
+
+      const targetLabel = connectorId ? `${chargeBoxId} #${connectorId}` : chargeBoxId
+      try {
+        const payload: { chargeBoxId: string; requestedMessage: string; connectorId?: number } = {
+          chargeBoxId,
+          requestedMessage
+        }
+        if (connectorId && connectorId > 0) {
+          payload.connectorId = connectorId
+        }
+
+        const res = await authFetch('/api/v1/commands/trigger-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+
+        const result = await res.json().catch(() => null)
+        if (res.ok && result?.success !== false) {
+          this.addToast('success', `${requestedMessage} 보고 요청`, result?.message || `[${targetLabel}] 단말에 ${requestedMessage} 트리거 명령을 전송했습니다.`)
+          setTimeout(() => this.fetchInitialData(true), 1000)
+          return
+        }
+
+        const errMsg = result?.message || `[${targetLabel}] ${requestedMessage} 요청을 전달하지 못했습니다. (HTTP ${res.status})`
+        this.addToast('error', `${requestedMessage} 요청 실패`, errMsg)
+      } catch (err: any) {
+        this.addToast('error', `${requestedMessage} 요청 실패`, err?.message || '트리거 명령 전송 중 오류가 발생했습니다.')
+      }
+    },
+
     addToast(typeOrObj: 'success' | 'info' | 'error' | { title: string; detail: string; type: 'success' | 'info' | 'error' }, title = '', detail = '') {
       const id = 'toast-' + Date.now() + Math.random()
       let toastItem: ToastMessage

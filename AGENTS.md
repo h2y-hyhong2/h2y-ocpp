@@ -137,6 +137,6 @@
 
 ## 7. 📝 모듈별 변경·오류 이력 문서 관리 규칙
 
-- **모듈별 독립 관리 원칙**: 모듈별 담당자 분리 운영에 맞춰, 통합 이력 파일 대신 각 모듈(`elvis-connect-ws`, `elvis-connect-sync`, `elvis-control-api`, `elvis-control-ui`, `elvis-launcher`, `elvis-tester-ui`, `scripts`) 내부의 `CHANGELOG.md`와 `TROUBLESHOOTING.md`에 각각 기록합니다.
+- **모듈별 독립 관리 원칙**: 모듈별 담당자 분리 운영에 맞춰, 통합 이력 파일 대신 각 모듈(`elvis-connect-ws`, `elvis-connect-sync`, `elvis-control-api`, `elvis-control-ui`, `elvis-launcher`, `elvis-log-viewer`, `elvis-tester-ui`, `scripts`) 내부의 `CHANGELOG.md`와 `TROUBLESHOOTING.md`에 각각 기록합니다.
 - **`CHANGELOG.md` 기록 기준**: 기능 추가/수정, 설정·포트·DB 스키마·API/메시지 스펙 변경 등 동작에 영향을 미치는 변경 사항을 날짜·커밋/WBS ID·영향 범위와 함께 기록합니다(사소한 오타·단순 스타일 수정 제외).
 - **`TROUBLESHOOTING.md` 기록 기준**: 재발 가능성이 있는 환경·빌드·런타임 오류에 대해 증상/에러 메시지, 근본 원인, 해결 방법, 관련 파일을 기록합니다.
