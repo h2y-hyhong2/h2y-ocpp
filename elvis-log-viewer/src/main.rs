@@ -95,6 +95,35 @@ struct ProcRow {
 }
 
 #[derive(Default, Clone)]
+struct DiskMetric {
+    drive: String,
+    used_gb: f64,
+    total_gb: f64,
+    free_gb: f64,
+    used_pct: f32,
+}
+
+#[derive(Default, Clone)]
+struct SystemResources {
+    cpu_pct: f32,
+    cpu_cores: usize,
+    mem_used_gb: f64,
+    mem_total_gb: f64,
+    mem_free_gb: f64,
+    mem_pct: f32,
+    uptime_secs: u64,
+    disks: Vec<DiskMetric>,
+    loaded: bool,
+}
+
+#[derive(Clone, Copy, Default)]
+struct CpuTimesSample {
+    idle: u64,
+    kernel: u64,
+    user: u64,
+}
+
+#[derive(Default, Clone)]
 struct ProcessSnapshot {
     checked_at: String,
     ports: Vec<PortRow>,
@@ -246,6 +275,10 @@ struct LogGuiApp {
     process_snapshot: Arc<Mutex<ProcessSnapshot>>,
     process_in_flight: Arc<AtomicBool>,
     last_process_refresh: Instant,
+    // 호스트 시스템 자원 현황 (네이티브 Win32 경량 수집)
+    sys_resources: SystemResources,
+    prev_cpu_sample: Option<CpuTimesSample>,
+    last_sys_refresh: Instant,
     kill_port_input: String,
     confirm_kill_pid: Option<u32>,
     process_feedback: Arc<Mutex<Option<(String, bool, Instant)>>>,
@@ -327,10 +360,14 @@ impl LogGuiApp {
             process_snapshot: Arc::new(Mutex::new(ProcessSnapshot::default())),
             process_in_flight: Arc::new(AtomicBool::new(false)),
             last_process_refresh: Instant::now() - Duration::from_secs(10),
+            sys_resources: SystemResources::default(),
+            prev_cpu_sample: sample_cpu_times(),
+            last_sys_refresh: Instant::now() - Duration::from_secs(10),
             kill_port_input: String::new(),
             confirm_kill_pid: None,
             process_feedback: Arc::new(Mutex::new(None)),
         };
+        app.refresh_system_resources();
         if matches!(app.group, LogGroup::Process) {
             app.trigger_process_refresh(&cc.egui_ctx);
         } else {
@@ -654,6 +691,14 @@ impl LogGuiApp {
         }
     }
 
+    fn refresh_system_resources(&mut self) {
+        let prev_pct = self.sys_resources.cpu_pct;
+        let mut next = collect_system_resources(&mut self.prev_cpu_sample, prev_pct);
+        next.loaded = true;
+        self.sys_resources = next;
+        self.last_sys_refresh = Instant::now();
+    }
+
     fn trigger_process_refresh(&mut self, ctx: &egui::Context) {
         if self
             .process_in_flight
@@ -749,6 +794,232 @@ impl LogGuiApp {
             }
             ctx_clone.request_repaint();
         });
+    }
+
+    fn render_system_resource_bar(&self, ctx: &egui::Context) {
+        let sys = &self.sys_resources;
+        egui::TopBottomPanel::top("sys_resource_bar")
+            .frame(
+                egui::Frame::NONE
+                    .fill(egui::Color32::from_rgb(248, 250, 252))
+                    .inner_margin(egui::Margin::symmetric(10, 4))
+                    .stroke(egui::Stroke::new(
+                        1.0_f32,
+                        egui::Color32::from_rgb(226, 232, 240),
+                    )),
+            )
+            .show(ctx, |ui| {
+                if !sys.loaded {
+                    ui.label(
+                        egui::RichText::new("시스템 자원 수집 중...")
+                            .size(11.0)
+                            .color(egui::Color32::from_rgb(148, 163, 184)),
+                    );
+                    return;
+                }
+
+                let avail_w = ui.available_width().max(520.0);
+                let row_h = 15.0_f32;
+                let label_w = 30.0_f32;
+                let pct_w = 42.0_f32;
+                let meta_w = 84.0_f32;
+                let disk_cnt = sys.disks.len().max(1);
+                let right_w =
+                    ((disk_cnt as f32) * 102.0).clamp(176.0, (avail_w * 0.36).max(176.0));
+                let bar_w = (avail_w - 202.0 - right_w).max(100.0);
+
+                let (cpu_fg, _, _) = resource_level_colors(sys.cpu_pct);
+                let (ram_fg, _, _) = resource_level_colors(sys.mem_pct);
+
+                ui.vertical(|ui| {
+                    ui.spacing_mut().item_spacing.y = 3.0;
+
+                    // 1행: CPU 가로 막대 + 우측 DISK 배지
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 6.0;
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(label_w, row_h),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| {
+                                ui.label(
+                                    egui::RichText::new("CPU")
+                                        .monospace()
+                                        .strong()
+                                        .size(11.0)
+                                        .color(egui::Color32::from_rgb(30, 41, 59)),
+                                );
+                            },
+                        );
+
+                        draw_resource_bar(ui, sys.cpu_pct, bar_w, 7.0, cpu_fg).on_hover_text(
+                            format!(
+                                "전체 CPU 사용률 {:.1}% (논리 프로세서 {}코어)",
+                                sys.cpu_pct, sys.cpu_cores
+                            ),
+                        );
+
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(pct_w, row_h),
+                            egui::Layout::right_to_left(egui::Align::Center),
+                            |ui| {
+                                ui.label(
+                                    egui::RichText::new(format!("{:.1}%", sys.cpu_pct))
+                                        .monospace()
+                                        .strong()
+                                        .size(11.0)
+                                        .color(cpu_fg),
+                                );
+                            },
+                        );
+
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(meta_w, row_h),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| {
+                                ui.label(
+                                    egui::RichText::new(format!("{}C", sys.cpu_cores))
+                                        .monospace()
+                                        .size(10.5)
+                                        .color(egui::Color32::from_rgb(100, 116, 139)),
+                                );
+                            },
+                        );
+
+                        ui.separator();
+
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(right_w, row_h),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| {
+                                ui.spacing_mut().item_spacing.x = 5.0;
+                                for disk in &sys.disks {
+                                    let (d_fg, d_bg, d_border) =
+                                        resource_level_colors(disk.used_pct);
+                                    let resp = egui::Frame::NONE
+                                        .fill(d_bg)
+                                        .stroke(egui::Stroke::new(1.0_f32, d_border))
+                                        .corner_radius(egui::CornerRadius::same(4))
+                                        .inner_margin(egui::Margin::symmetric(5, 0))
+                                        .show(ui, |ui| {
+                                            ui.horizontal(|ui| {
+                                                ui.spacing_mut().item_spacing.x = 3.0;
+                                                ui.label(
+                                                    egui::RichText::new(&disk.drive)
+                                                        .monospace()
+                                                        .strong()
+                                                        .size(10.5)
+                                                        .color(egui::Color32::from_rgb(
+                                                            51, 65, 85,
+                                                        )),
+                                                );
+                                                ui.label(
+                                                    egui::RichText::new(format!(
+                                                        "{:.0}%",
+                                                        disk.used_pct
+                                                    ))
+                                                    .monospace()
+                                                    .strong()
+                                                    .size(10.5)
+                                                    .color(d_fg),
+                                                );
+                                                ui.label(
+                                                    egui::RichText::new(format!(
+                                                        "({:.0}G)",
+                                                        disk.free_gb
+                                                    ))
+                                                    .monospace()
+                                                    .size(10.0)
+                                                    .color(egui::Color32::from_rgb(
+                                                        100, 116, 139,
+                                                    )),
+                                                );
+                                            });
+                                        });
+                                    resp.response.on_hover_text(format!(
+                                        "{} 드라이브 사용 {:.1} / {:.1} GB (여유 {:.1} GB)",
+                                        disk.drive, disk.used_gb, disk.total_gb, disk.free_gb
+                                    ));
+                                }
+                            },
+                        );
+                    });
+
+                    // 2행: RAM 가로 막대 + 우측 UPTIME
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 6.0;
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(label_w, row_h),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| {
+                                ui.label(
+                                    egui::RichText::new("RAM")
+                                        .monospace()
+                                        .strong()
+                                        .size(11.0)
+                                        .color(egui::Color32::from_rgb(30, 41, 59)),
+                                );
+                            },
+                        );
+
+                        draw_resource_bar(ui, sys.mem_pct, bar_w, 7.0, ram_fg).on_hover_text(
+                            format!(
+                                "물리 메모리 사용 {:.1} / {:.1} GB (여유 {:.1} GB)",
+                                sys.mem_used_gb, sys.mem_total_gb, sys.mem_free_gb
+                            ),
+                        );
+
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(pct_w, row_h),
+                            egui::Layout::right_to_left(egui::Align::Center),
+                            |ui| {
+                                ui.label(
+                                    egui::RichText::new(format!("{:.1}%", sys.mem_pct))
+                                        .monospace()
+                                        .strong()
+                                        .size(11.0)
+                                        .color(ram_fg),
+                                );
+                            },
+                        );
+
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(meta_w, row_h),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| {
+                                ui.label(
+                                    egui::RichText::new(format!(
+                                        "{:.1}/{:.1}G",
+                                        sys.mem_used_gb, sys.mem_total_gb
+                                    ))
+                                    .monospace()
+                                    .size(10.5)
+                                    .color(egui::Color32::from_rgb(100, 116, 139)),
+                                )
+                                .on_hover_text(format!("여유 메모리 {:.1} GB", sys.mem_free_gb));
+                            },
+                        );
+
+                        ui.separator();
+
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(right_w, row_h),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| {
+                                ui.label(
+                                    egui::RichText::new(format!(
+                                        "UPTIME {}",
+                                        format_uptime(sys.uptime_secs)
+                                    ))
+                                    .monospace()
+                                    .size(10.5)
+                                    .color(egui::Color32::from_rgb(100, 116, 139)),
+                                )
+                                .on_hover_text("호스트 OS 연속 가동시간");
+                            },
+                        );
+                    });
+                });
+            });
     }
 
     fn render_process_monitor(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
@@ -1417,6 +1688,16 @@ impl eframe::App for LogGuiApp {
         }
 
         let is_process_mode = matches!(self.group, LogGroup::Process);
+        let sys_live = if is_process_mode {
+            self.process_live
+        } else {
+            self.is_live
+        };
+        if !self.sys_resources.loaded
+            || (sys_live && self.last_sys_refresh.elapsed() >= Duration::from_millis(1000))
+        {
+            self.refresh_system_resources();
+        }
         if is_process_mode {
             if self.process_live
                 && self.last_process_refresh.elapsed() >= Duration::from_millis(2500)
@@ -1547,6 +1828,7 @@ impl eframe::App for LogGuiApp {
                     {
                         self.group = LogGroup::Process;
                         self.zoomed = None;
+                        self.refresh_system_resources();
                         self.trigger_process_refresh(ctx);
                     }
 
@@ -1620,11 +1902,13 @@ impl eframe::App for LogGuiApp {
                         if ui.add(live_btn).clicked() {
                             self.process_live = !self.process_live;
                             if self.process_live {
+                                self.refresh_system_resources();
                                 self.trigger_process_refresh(ctx);
                             }
                         }
 
                         if ui.button("새로고침").clicked() {
+                            self.refresh_system_resources();
                             self.trigger_process_refresh(ctx);
                         }
                     } else {
@@ -1751,11 +2035,13 @@ impl eframe::App for LogGuiApp {
                         if ui.add(live_btn).clicked() {
                             self.is_live = !self.is_live;
                             if self.is_live {
+                                self.refresh_system_resources();
                                 self.refresh_visible(false);
                             }
                         }
 
                         if ui.button("새로고침").clicked() {
+                            self.refresh_system_resources();
                             self.refresh_visible(true);
                         }
 
@@ -1767,6 +2053,9 @@ impl eframe::App for LogGuiApp {
                     }
                 });
             });
+
+        // 1-2. 전체 모드 공통 상단 컴팩트 시스템 자원 바 (CPU / RAM 개별 막대 + DISK / UPTIME)
+        self.render_system_resource_bar(ctx);
 
         // 2. 메인 5분할 / 3분할 / 2분할 / 단일 / 프로세스 진단 영역
         egui::CentralPanel::default()
@@ -2152,39 +2441,127 @@ fn strip_ansi_and_tabs(input: &str) -> String {
     out
 }
 
-fn is_error_or_warn_line(line: &str) -> bool {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Unknown,
+}
+
+fn detect_log_level(line: &str) -> LogLevel {
+    let trimmed = line.trim_start();
+
+    // 1) Spring Boot 표준 포맷: "2026-11-20T...  INFO 12345 --- ..."
+    //    (" --- " 이전 헤더 영역만 검사해 본문 JSON의 "NoError" / "0 transport error" 오탐 원천 차단)
+    if let Some(dash_pos) = trimmed.find(" --- ") {
+        let header = &trimmed[..dash_pos];
+        for token in header.split_whitespace() {
+            match token {
+                "ERROR" | "FATAL" => return LogLevel::Error,
+                "WARN" | "WARNING" => return LogLevel::Warn,
+                "INFO" => return LogLevel::Info,
+                "DEBUG" | "TRACE" => return LogLevel::Debug,
+                _ => {}
+            }
+        }
+    }
+
+    // 2) Kafka 포맷: "[2026-11-20 17:09:31,948] INFO ..."
+    if trimmed.starts_with('[') {
+        if let Some(end_bracket) = trimmed.find(']') {
+            let after = trimmed[end_bracket + 1..].trim_start();
+            if let Some(level_tok) = after.split_whitespace().next() {
+                match level_tok {
+                    "ERROR" | "FATAL" => return LogLevel::Error,
+                    "WARN" | "WARNING" => return LogLevel::Warn,
+                    "INFO" => return LogLevel::Info,
+                    "DEBUG" | "TRACE" => return LogLevel::Debug,
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    // 3) MySQL / 스크립트 포맷: 앞부분(64바이트 이내) 태그 검사
+    let prefix_end = trimmed
+        .char_indices()
+        .take_while(|&(i, _)| i < 64)
+        .last()
+        .map(|(i, c)| i + c.len_utf8())
+        .unwrap_or(0);
+    let prefix = &trimmed[..prefix_end];
+    if prefix.contains("[ERROR]") || prefix.contains("[FATAL]") {
+        return LogLevel::Error;
+    }
+    if prefix.contains("[Warning]") || prefix.contains("[WARN]") {
+        return LogLevel::Warn;
+    }
+    if prefix.contains("[System]") || prefix.contains("[Note]") || prefix.contains("[INFO]") {
+        return LogLevel::Info;
+    }
+    if prefix.contains("[DEBUG]") || prefix.contains("[TRACE]") {
+        return LogLevel::Debug;
+    }
+
+    LogLevel::Unknown
+}
+
+fn is_unprefixed_error_line(line: &str) -> bool {
     let lower = line.to_lowercase();
-    lower.contains("error")
-        || lower.contains("exception")
+    lower.contains("exception")
+        || lower.contains("caused by:")
         || lower.contains("fatal")
-        || lower.contains("warn")
-        || lower.contains("실패")
-        || lower.contains("경고")
         || lower.contains("nullpointer")
+        || lower.contains("error:")
+}
+
+fn is_error_or_warn_line(line: &str) -> bool {
+    match detect_log_level(line) {
+        LogLevel::Error | LogLevel::Warn => true,
+        LogLevel::Info | LogLevel::Debug => false,
+        LogLevel::Unknown => is_unprefixed_error_line(line),
+    }
 }
 
 fn classify_line_colors(line: &str) -> (egui::Color32, Option<egui::Color32>, bool) {
-    let lower = line.to_lowercase();
-    if lower.contains("error")
-        || lower.contains("exception")
-        || lower.contains("fatal")
-        || lower.contains("실패")
-    {
-        (
+    match detect_log_level(line) {
+        LogLevel::Error => (
             egui::Color32::from_rgb(190, 18, 60),        // rose-700
             Some(egui::Color32::from_rgb(255, 241, 242)), // rose-50
             true,
-        )
-    } else if lower.contains("warn") || lower.contains("경고") {
-        (
+        ),
+        LogLevel::Warn => (
             egui::Color32::from_rgb(146, 64, 14),        // amber-800
             Some(egui::Color32::from_rgb(255, 251, 235)), // amber-50
             false,
-        )
-    } else if lower.contains("[ocpp]") || lower.contains("ready for connections") {
-        (egui::Color32::from_rgb(3, 105, 161), None, false) // sky-700
-    } else {
-        (egui::Color32::from_rgb(30, 41, 59), None, false) // slate-800
+        ),
+        LogLevel::Debug => (egui::Color32::from_rgb(100, 116, 139), None, false), // slate-500
+        LogLevel::Info => {
+            let lower = line.to_lowercase();
+            if lower.contains("[ocpp]")
+                || lower.contains("[ws-recv]")
+                || lower.contains("[ws-send]")
+                || lower.contains("[sync-recv]")
+                || lower.contains("ready for connections")
+            {
+                (egui::Color32::from_rgb(3, 105, 161), None, false) // sky-700
+            } else {
+                (egui::Color32::from_rgb(30, 41, 59), None, false) // slate-800
+            }
+        }
+        LogLevel::Unknown => {
+            if is_unprefixed_error_line(line) {
+                (
+                    egui::Color32::from_rgb(190, 18, 60),        // rose-700
+                    Some(egui::Color32::from_rgb(255, 241, 242)), // rose-50
+                    true,
+                )
+            } else {
+                (egui::Color32::from_rgb(30, 41, 59), None, false) // slate-800
+            }
+        }
     }
 }
 
@@ -2442,6 +2819,267 @@ foreach ($p in $pids) {{
             port,
             killed.join(", ")
         ))
+    }
+}
+
+fn resource_level_colors(pct: f32) -> (egui::Color32, egui::Color32, egui::Color32) {
+    if pct >= 85.0 {
+        (
+            egui::Color32::from_rgb(225, 29, 72),   // rose-600
+            egui::Color32::from_rgb(255, 241, 242), // rose-50
+            egui::Color32::from_rgb(254, 205, 211), // rose-200
+        )
+    } else if pct >= 70.0 {
+        (
+            egui::Color32::from_rgb(217, 119, 6),   // amber-600
+            egui::Color32::from_rgb(255, 251, 235), // amber-50
+            egui::Color32::from_rgb(253, 230, 138), // amber-200
+        )
+    } else {
+        (
+            egui::Color32::from_rgb(4, 120, 87),    // emerald-700
+            egui::Color32::from_rgb(248, 250, 252), // slate-50
+            egui::Color32::from_rgb(226, 232, 240), // slate-200
+        )
+    }
+}
+
+fn draw_resource_bar(
+    ui: &mut egui::Ui,
+    pct: f32,
+    width: f32,
+    height: f32,
+    color: egui::Color32,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
+    let radius = egui::CornerRadius::same((height * 0.5).round() as u8);
+    ui.painter()
+        .rect_filled(rect, radius, egui::Color32::from_rgb(226, 232, 240));
+    let frac = (pct / 100.0).clamp(0.0, 1.0);
+    if frac > 0.0 {
+        let fill_w = (rect.width() * frac).max(height * 0.6).min(rect.width());
+        let fill_rect = egui::Rect::from_min_size(rect.min, egui::vec2(fill_w, rect.height()));
+        ui.painter().rect_filled(fill_rect, radius, color);
+    }
+    resp
+}
+
+fn format_uptime(secs: u64) -> String {
+    let days = secs / 86_400;
+    let hours = (secs % 86_400) / 3_600;
+    let mins = (secs % 3_600) / 60;
+    if days > 0 {
+        format!("{}일 {:02}시간 {:02}분", days, hours, mins)
+    } else if hours > 0 {
+        format!("{}시간 {:02}분", hours, mins)
+    } else {
+        format!("{}분", mins)
+    }
+}
+
+#[cfg(target_os = "windows")]
+mod win_sys {
+    use super::{CpuTimesSample, DiskMetric, SystemResources};
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    struct FileTime {
+        dw_low_date_time: u32,
+        dw_high_date_time: u32,
+    }
+
+    impl FileTime {
+        fn to_u64(self) -> u64 {
+            ((self.dw_high_date_time as u64) << 32) | (self.dw_low_date_time as u64)
+        }
+    }
+
+    #[repr(C)]
+    #[allow(dead_code)]
+    struct MemoryStatusEx {
+        dw_length: u32,
+        dw_memory_load: u32,
+        ull_total_phys: u64,
+        ull_avail_phys: u64,
+        ull_total_page_file: u64,
+        ull_avail_page_file: u64,
+        ull_total_virtual: u64,
+        ull_avail_virtual: u64,
+        ull_avail_extended_virtual: u64,
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetSystemTimes(
+            lp_idle_time: *mut FileTime,
+            lp_kernel_time: *mut FileTime,
+            lp_user_time: *mut FileTime,
+        ) -> i32;
+        fn GlobalMemoryStatusEx(lp_buffer: *mut MemoryStatusEx) -> i32;
+        fn GetTickCount64() -> u64;
+        fn GetLogicalDrives() -> u32;
+        fn GetDriveTypeW(lp_root_path_name: *const u16) -> u32;
+        fn GetDiskFreeSpaceExW(
+            lp_directory_name: *const u16,
+            lp_free_bytes_available_to_caller: *mut u64,
+            lp_total_number_of_bytes: *mut u64,
+            lp_total_number_of_free_bytes: *mut u64,
+        ) -> i32;
+    }
+
+    pub fn sample_cpu_times() -> Option<CpuTimesSample> {
+        let mut idle = FileTime::default();
+        let mut kernel = FileTime::default();
+        let mut user = FileTime::default();
+        let ok = unsafe { GetSystemTimes(&mut idle, &mut kernel, &mut user) };
+        if ok != 0 {
+            Some(CpuTimesSample {
+                idle: idle.to_u64(),
+                kernel: kernel.to_u64(),
+                user: user.to_u64(),
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn collect_system_resources(
+        prev_cpu: &mut Option<CpuTimesSample>,
+        fallback_cpu_pct: f32,
+    ) -> SystemResources {
+        const GIB: f64 = 1024.0 * 1024.0 * 1024.0;
+        const DRIVE_FIXED: u32 = 3;
+
+        let cpu_pct = if let Some(curr) = sample_cpu_times() {
+            let pct = if let Some(prev) = *prev_cpu {
+                let d_idle = curr.idle.saturating_sub(prev.idle);
+                let d_kernel = curr.kernel.saturating_sub(prev.kernel);
+                let d_user = curr.user.saturating_sub(prev.user);
+                let total = d_kernel.saturating_add(d_user);
+                let busy = total.saturating_sub(d_idle);
+                if total > 0 {
+                    ((busy as f64 / total as f64) * 100.0).clamp(0.0, 100.0) as f32
+                } else {
+                    fallback_cpu_pct
+                }
+            } else {
+                fallback_cpu_pct
+            };
+            *prev_cpu = Some(curr);
+            pct
+        } else {
+            fallback_cpu_pct
+        };
+
+        let cpu_cores = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(1);
+
+        let mut mem_status = MemoryStatusEx {
+            dw_length: std::mem::size_of::<MemoryStatusEx>() as u32,
+            dw_memory_load: 0,
+            ull_total_phys: 0,
+            ull_avail_phys: 0,
+            ull_total_page_file: 0,
+            ull_avail_page_file: 0,
+            ull_total_virtual: 0,
+            ull_avail_virtual: 0,
+            ull_avail_extended_virtual: 0,
+        };
+        let (mem_used_gb, mem_total_gb, mem_free_gb, mem_pct) =
+            if unsafe { GlobalMemoryStatusEx(&mut mem_status) } != 0 {
+                let total_gb = mem_status.ull_total_phys as f64 / GIB;
+                let free_gb = mem_status.ull_avail_phys as f64 / GIB;
+                let used_gb = (total_gb - free_gb).max(0.0);
+                let pct = if total_gb > 0.0 {
+                    ((used_gb / total_gb) * 100.0).clamp(0.0, 100.0) as f32
+                } else {
+                    mem_status.dw_memory_load as f32
+                };
+                (used_gb, total_gb, free_gb, pct)
+            } else {
+                (0.0, 0.0, 0.0, 0.0)
+            };
+
+        let uptime_secs = unsafe { GetTickCount64() } / 1000;
+
+        let mut disks = Vec::new();
+        let mask = unsafe { GetLogicalDrives() };
+        for bit in 0u32..26 {
+            if (mask & (1 << bit)) == 0 {
+                continue;
+            }
+            let letter = (b'A' + bit as u8) as char;
+            let root_utf16: [u16; 4] = [letter as u16, b':' as u16, b'\\' as u16, 0];
+            if unsafe { GetDriveTypeW(root_utf16.as_ptr()) } != DRIVE_FIXED {
+                continue;
+            }
+            let mut avail_bytes: u64 = 0;
+            let mut total_bytes: u64 = 0;
+            let mut free_bytes: u64 = 0;
+            let ok = unsafe {
+                GetDiskFreeSpaceExW(
+                    root_utf16.as_ptr(),
+                    &mut avail_bytes,
+                    &mut total_bytes,
+                    &mut free_bytes,
+                )
+            };
+            if ok != 0 && total_bytes > 0 {
+                let total_gb = total_bytes as f64 / GIB;
+                let free_gb = avail_bytes as f64 / GIB;
+                let used_gb = (total_gb - free_gb).max(0.0);
+                let used_pct = ((used_gb / total_gb) * 100.0).clamp(0.0, 100.0) as f32;
+                disks.push(DiskMetric {
+                    drive: format!("{}:", letter),
+                    used_gb,
+                    total_gb,
+                    free_gb,
+                    used_pct,
+                });
+            }
+        }
+
+        SystemResources {
+            cpu_pct,
+            cpu_cores,
+            mem_used_gb,
+            mem_total_gb,
+            mem_free_gb,
+            mem_pct,
+            uptime_secs,
+            disks,
+            loaded: true,
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn sample_cpu_times() -> Option<CpuTimesSample> {
+    win_sys::sample_cpu_times()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn sample_cpu_times() -> Option<CpuTimesSample> {
+    None
+}
+
+#[cfg(target_os = "windows")]
+fn collect_system_resources(
+    prev_cpu: &mut Option<CpuTimesSample>,
+    fallback_cpu_pct: f32,
+) -> SystemResources {
+    win_sys::collect_system_resources(prev_cpu, fallback_cpu_pct)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn collect_system_resources(
+    _prev_cpu: &mut Option<CpuTimesSample>,
+    _fallback_cpu_pct: f32,
+) -> SystemResources {
+    SystemResources {
+        loaded: true,
+        ..Default::default()
     }
 }
 

@@ -10,6 +10,12 @@
 
 ## 변경 이력
 
+### [2026-11-23] 상단 헤더 `줄바꿈` 토글 버튼 제거
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (런처 상단 툴바 간결화)
+- **변경 내용**:
+  - `src/App.vue`: `elvis-log-viewer` 내부에서 실시간 줄바꿈 토글을 직접 지원함에 따라 런처 상단 헤더의 중복 `줄바꿈 ON/OFF` 버튼 및 관련 상태(`logWordWrap`, `toggleLogWordWrap`)를 제거하고, 로그 실행 시 기본값(`wordWrap: false` / `wrap=0`, 가로 스크롤)으로 전달하도록 정리
+- **영향 범위**: `elvis-launcher/src/App.vue`
+
 ### [2026-11-20] 런처 UI 간결화·상태 애니메이션 및 독립 로그·프로세스 뷰어 연동
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (런처 UI 정비 및 `elvis-log-viewer` 연동)
 - **변경 내용**:

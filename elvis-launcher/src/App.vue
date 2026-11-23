@@ -32,19 +32,8 @@
         </div>
       </div>
 
-      <!-- 상단 액션 툴바: 줄바꿈 토글 + 전체 로그 일괄 열기 + 상태 새로고침 -->
+      <!-- 상단 액션 툴바: 전체 로그 일괄 열기 + 프로세스 진단 + 상태 새로고침 -->
       <div class="flex items-center gap-1.5">
-        <button
-          @click="toggleLogWordWrap"
-          class="px-2 py-1 rounded-md border text-[12px] font-medium transition-all cursor-pointer shadow-sm flex items-center gap-1"
-          :class="!logWordWrap
-            ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
-            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
-          :title="logWordWrap ? '현재: 로그 자동 줄바꿈 ON (클릭 시 1줄 고정 모드로 전환)' : '현재: 로그 자동 줄바꿈 OFF / 1로그 1줄 고정 (클릭 시 줄바꿈 켜기)'"
-        >
-          <span>줄바꿈 {{ logWordWrap ? 'ON' : 'OFF' }}</span>
-        </button>
-
         <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-sm">
           <button
             @click="openLogsBatch('all', 'all')"
@@ -586,16 +575,6 @@ const ports = reactive({
 const isChecking = ref(false)
 const isExecuting = ref(false)
 const isOpeningLogs = ref(false)
-const logWordWrap = ref<boolean>(
-  typeof localStorage !== 'undefined' ? localStorage.getItem('elvis_launcher_log_wrap') === '1' : false
-)
-
-function toggleLogWordWrap() {
-  logWordWrap.value = !logWordWrap.value
-  try {
-    localStorage.setItem('elvis_launcher_log_wrap', logWordWrap.value ? '1' : '0')
-  } catch (_) {}
-}
 
 // 서비스별 비동기 작업 진행 상태 추적 (스피너 및 '기동중/종료중' 텍스트 표시용)
 const pendingAction = reactive<Record<string, string | null>>({
@@ -1152,18 +1131,17 @@ async function openProcessStatus(target: string = 'all') {
   }
 }
 
-// 9. 독립 실시간 콘솔 터미널 창 띄우기 (PowerShell 실시간 스트리밍: 서비스별 단일 창 보장, 에러/줄바꿈 모드 지원)
+// 9. 독립 실시간 콘솔 터미널 창 띄우기 (PowerShell 실시간 스트리밍: 서비스별 단일 창 보장, 에러 모드 지원)
 async function openSingleLogWindow(targetService: string, logType: 'all' | 'error'): Promise<{ ok: boolean; message: string }> {
-  const wrapFlag = logWordWrap.value
   try {
     // 1) Tauri 데스크톱 환경: Rust 커맨드로 PowerShell 콘솔 창 실행
-    const msg = await invoke<string>('open_log_window', { service: targetService, logType, wordWrap: wrapFlag })
+    const msg = await invoke<string>('open_log_window', { service: targetService, logType, wordWrap: false })
     return { ok: true, message: msg }
   } catch (_) {}
 
   // 2) 브라우저 / fallback 환경: Vite 백엔드 API로 PowerShell 콘솔 창 실행
   try {
-    const res = await fetch(`/api/infra/logs/open-terminal?service=${targetService}&type=${logType}&wrap=${wrapFlag ? '1' : '0'}`, { method: 'POST' })
+    const res = await fetch(`/api/infra/logs/open-terminal?service=${targetService}&type=${logType}&wrap=0`, { method: 'POST' })
     const data = await res.json()
     return { ok: !!data.success, message: data.message || '' }
   } catch (err: any) {
@@ -1189,10 +1167,9 @@ async function openLogWindow(svc?: string, logType: 'all' | 'error' = 'all') {
 // - core (3분할): 1:WS, 3:SYNC, 2+4:API
 // - infra (2분할): 5:MYSQL, 6:KAFKA
 async function openGroupLogWindow(group: 'all' | 'infra' | 'core', logType: 'all' | 'error'): Promise<{ ok: boolean; message: string }> {
-  const wrapFlag = logWordWrap.value
   if (isTauriRuntime()) {
     try {
-      const msg = await invoke<string>('open_log_group_window', { group, logType, wordWrap: wrapFlag })
+      const msg = await invoke<string>('open_log_group_window', { group, logType, wordWrap: false })
       return { ok: true, message: msg }
     } catch (err: any) {
       return { ok: false, message: String(err) }
@@ -1200,7 +1177,7 @@ async function openGroupLogWindow(group: 'all' | 'infra' | 'core', logType: 'all
   }
 
   try {
-    const res = await fetch(`/api/infra/logs/open-group?group=${encodeURIComponent(group)}&type=${logType}&wrap=${wrapFlag ? '1' : '0'}`, { method: 'POST' })
+    const res = await fetch(`/api/infra/logs/open-group?group=${encodeURIComponent(group)}&type=${logType}&wrap=0`, { method: 'POST' })
     const data = await res.json()
     return { ok: !!data.success, message: data.message || '' }
   } catch (err: any) {
