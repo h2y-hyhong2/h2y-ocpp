@@ -21,6 +21,13 @@
 
 ## 오류 이력
 
+### [2026-11-24] `icons/icon.ico` 교체 후 재빌드 시 `.exe` 아이콘 미갱신
+- **발생 일시**: `2026-11-24`
+- **증상 / 에러 메시지**: `src-tauri/icons/icon.ico`를 공식 제품 아이콘으로 교체하고 `tauri build --no-bundle`을 재실행했으나, 생성된 `D:\elvis-lite\elvis-launcher.exe`에 이전 리소스 아이콘이 유지됨.
+- **근본 원인**: `tauri_build::build()`가 `icons/icon.ico` 파일 변경을 `cargo:rerun-if-changed`로 감지하지 않아, Cargo가 기존 `target/release/build/elvis-launcher-*/out/resource.lib` 캐시를 그대로 링크함.
+- **해결 방법**: `src-tauri/build.rs`에 `icons/icon.ico` 외 필수 아이콘 5종의 `cargo:rerun-if-changed` 지시어를 추가하고 기존 `target/release/build/elvis-launcher-*` 산출물을 정리한 뒤 재빌드하여 해결.
+- **관련 파일**: `elvis-launcher/src-tauri/build.rs`, `elvis-launcher/src-tauri/icons/icon.ico`
+
 ### [TEMPLATE] 오류 제목
 - **발생 일시**: `YYYY-MM-DD`
 - **증상 / 에러 메시지**:

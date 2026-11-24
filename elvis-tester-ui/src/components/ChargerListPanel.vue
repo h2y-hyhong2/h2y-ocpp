@@ -234,12 +234,24 @@ function handleDelete(e: Event, id: string) {
 }
 
 // 4. 커넥터 상태 시각화 헬퍼 (기본 2개 커넥터 지원)
-function getConnectors(c: ChargerInstance) {
+function getConnectors(c: ChargerInstance): Array<{
+  connectorId: number
+  status: string
+  type?: string
+  carModel?: string
+  userTag?: string
+}> {
   if (c.connectors && c.connectors.length >= 2) {
     return c.connectors
   }
   return [
-    { connectorId: 1, status: c.connectors?.[0]?.status || c.status || 'Available' },
+    {
+      connectorId: 1,
+      status: c.connectors?.[0]?.status || c.status || 'Available',
+      type: c.connectors?.[0]?.type,
+      carModel: c.connectors?.[0]?.carModel,
+      userTag: c.connectors?.[0]?.userTag
+    },
     { connectorId: 2, status: 'Available' }
   ]
 }

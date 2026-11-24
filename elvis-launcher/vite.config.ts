@@ -623,7 +623,7 @@ function infraLauncherPlugin(): Plugin {
 
           // 0) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 프로세스 진단 모드 우선 실행
           const viewerCandidates = [
-            'D:\\elvis-log-viewer.exe',
+            'D:\\elvis-lite\\elvis-log-viewer.exe',
             path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
             path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'debug', 'elvis-log-viewer.exe')
           ]
@@ -813,7 +813,7 @@ function infraLauncherPlugin(): Plugin {
           // 0) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 우선 실행 (5대 서비스 단일 프로세스 모드)
           if (['mysql', 'kafka', 'ws', 'sync', 'api'].includes(service)) {
             const viewerCandidates = [
-              'D:\\elvis-log-viewer.exe',
+              'D:\\elvis-lite\\elvis-log-viewer.exe',
               path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
               path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'debug', 'elvis-log-viewer.exe')
             ]
@@ -910,7 +910,7 @@ function infraLauncherPlugin(): Plugin {
 
           // 1) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 우선 실행
           const viewerCandidates = [
-            'D:\\elvis-log-viewer.exe',
+            'D:\\elvis-lite\\elvis-log-viewer.exe',
             path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
             path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'debug', 'elvis-log-viewer.exe')
           ]

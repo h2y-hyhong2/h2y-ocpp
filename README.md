@@ -79,6 +79,7 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 
 ### 2. 로컬 스토리지 · 포트 · MySQL 접속 정보
 - **경로/포트 설정**: [config/paths.env](config/paths.env) (`ELVIS_DATA_DIR=D:\elvis-lite\data`, `ELVIS_LOG_DIR=D:\elvis-lite\logs`)
+- **데스크톱 4대 앱 릴리스 실행파일 (`D:\elvis-lite\`)**: [scripts/build-desktop-exes.bat](scripts/build-desktop-exes.bat)로 4대 앱(`elvis-launcher.exe`, `elvis-control-ui.exe`, `elvis-log-viewer.exe`, `elvis-tester-ui.exe`)을 공식 제품 아이콘(`icons/`) 적용 상태로 일괄 빌드·배포합니다.
 - **MySQL 9.71 (`127.0.0.1:13306`, DB: `elvis_lite`)**:
   - `root`: 비밀번호 없음 (`--initialize-insecure` 초기화)
   - `elvis` / `elvis1234!`: 애플리케이션 전용 계정 (`elvis_lite.*` 전체 권한)

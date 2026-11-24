@@ -10,6 +10,13 @@
 
 ## 변경 이력
 
+### [2026-11-24] 전용 제품 아이콘 적용 및 `D:\elvis-lite\elvis-launcher.exe` 실행파일 배포 구성
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
+- **변경 내용**:
+  - `src-tauri/icons/*`, `src-tauri/build.rs`, `public/elvis_lite_light.svg`, `index.html`, `src/App.vue`: 루트 `icons/elvis_lite_light.svg` 공식 제품 아이콘 기준으로 필수 Tauri 아이콘 5종(`32x32`, `128x128`, `128x128@2x`, `icon.icns`, `icon.ico`)·파비콘·상단 헤더 로고 일괄 적용, 미사용 레거시 아이콘 정리 및 `build.rs`에 `cargo:rerun-if-changed=icons/*` 추가(아이콘 교체 시 Windows 리소스 자동 재컴파일 보장)
+  - `tsconfig.json`, `src-tauri/src/lib.rs`, `vite.config.ts`: `vue-tsc` 빌드용 `tsconfig.json` 추가 및 `elvis-log-viewer.exe` 우선 탐색 경로를 `D:\elvis-lite\elvis-log-viewer.exe`로 통일
+- **영향 범위**: `elvis-launcher/src-tauri/icons/*`, `elvis-launcher/src-tauri/build.rs`, `elvis-launcher/tsconfig.json`, `elvis-launcher/src-tauri/src/lib.rs`, `elvis-launcher/vite.config.ts`
+
 ### [2026-11-24] 릴리스 실행파일 `D:\elvis-launcher.exe` 출력 통일 및 단독 실행 경로 탐색 보강
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (데스크톱 실행파일 `D:\` 배포 통일)
 - **변경 내용**:

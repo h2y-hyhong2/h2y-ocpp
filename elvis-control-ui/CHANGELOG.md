@@ -11,6 +11,12 @@
 
 ## 변경 이력
 
+### [2026-11-24] 전용 제품 아이콘 적용 및 `D:\elvis-lite\elvis-control-ui.exe` 실행파일 배포 구성
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
+- **변경 내용**:
+  - `src-tauri/icons/*`, `src-tauri/build.rs`, `public/elvis_lite_control_light.svg`, `index.html`, `src/App.vue`, `src/views/LoginView.vue`: 루트 `icons/elvis_lite_control_light.svg` 공식 제품 아이콘 기준으로 필수 Tauri 아이콘 5종(`32x32`, `128x128`, `128x128@2x`, `icon.icns`, `icon.ico`)·파비콘·GNB/로그인 헤더 로고 일괄 적용, 미사용 레거시 아이콘 정리 및 `build.rs`에 `cargo:rerun-if-changed=icons/*` 추가(아이콘 교체 시 Windows 리소스 자동 재컴파일 보장)
+- **영향 범위**: `elvis-control-ui/src-tauri/icons/*`, `elvis-control-ui/src-tauri/build.rs`, `elvis-control-ui/public/elvis_lite_control_light.svg`, `elvis-control-ui/index.html`, `elvis-control-ui/src/App.vue`, `elvis-control-ui/src/views/LoginView.vue`
+
 ### [2026-11-24] 릴리스 실행파일 `D:\elvis-control-ui.exe` 출력 통일 및 단독 실행 경로 탐색 보강
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (데스크톱 실행파일 `D:\` 배포 통일)
 - **변경 내용**:

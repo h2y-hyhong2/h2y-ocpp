@@ -3,7 +3,7 @@ setlocal
 chcp 65001 > nul
 
 set "SCRIPT_DIR=%~dp0"
-set "OUT_DIR=D:\"
+set "OUT_DIR=D:\elvis-lite\"
 set "SRC_EXE=%SCRIPT_DIR%target\release\elvis-log-viewer.exe"
 set "DST_EXE=%OUT_DIR%elvis-log-viewer.exe"
 
@@ -17,6 +17,7 @@ if errorlevel 1 (
 )
 popd
 
+if not exist "%OUT_DIR%" mkdir "%OUT_DIR%"
 echo [elvis-log-viewer] 실행파일 복사: "%DST_EXE%"
 copy /Y "%SRC_EXE%" "%DST_EXE%" > nul
 if errorlevel 1 (

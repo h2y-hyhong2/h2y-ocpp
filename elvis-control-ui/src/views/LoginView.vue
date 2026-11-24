@@ -5,11 +5,11 @@
       <!-- 단순 타이틀 영역 (CI 아이콘 포함) -->
       <div class="mb-6 text-center">
         <div class="inline-flex items-center justify-center gap-2 mb-1">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-xs">
-            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <img
+            src="/elvis_lite_control_light.svg"
+            alt="ELVIS Control"
+            class="w-8 h-8 rounded-lg shadow-xs flex-shrink-0"
+          />
           <h1 class="text-xl font-bold text-slate-900 tracking-tight">ELVIS LITE</h1>
         </div>
         <p class="text-xs text-slate-500">충전 관제 시스템 로그인</p>

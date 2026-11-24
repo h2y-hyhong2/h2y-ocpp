@@ -61,32 +61,32 @@ WebView2나 터미널(`wt.exe`/PowerShell)의 가로 스크롤·창 분할 제�
 
 ## 빌드 및 실행 방법
 
-### 1. 릴리스 빌드 (`D:\elvis-log-viewer.exe` 자동 배포)
-최초 1회(또는 소스 수정 후) 아래 스크립트로 릴리스 빌드를 실행하면 중간 산출물(`target/`)은 모듈 내부에 유지하고 최종 실행파일만 `D:\elvis-log-viewer.exe`로 복사합니다.
+### 1. 릴리스 빌드 (`D:\elvis-lite\elvis-log-viewer.exe` 자동 배포)
+최초 1회(또는 소스 수정 후) 아래 스크립트로 릴리스 빌드를 실행하면 중간 산출물(`target/`)은 모듈 내부에 유지하고 최종 실행파일만 `D:\elvis-lite\elvis-log-viewer.exe`로 복사합니다.
 ```powershell
 .\elvis-log-viewer\build-release.bat
-# 또는 3개 데스크톱 앱 일괄 빌드:
+# 또는 4개 데스크톱 앱 일괄 빌드:
 .\scripts\build-desktop-exes.bat
 ```
 
 ### 2. `elvis-launcher` 자동 연동 (권장)
-`D:\elvis-log-viewer.exe`(또는 모듈 내부 `target/release/elvis-log-viewer.exe`)가 존재하면 `elvis-launcher` 상단의 **`로그`**, **`에러로그`**, **`프로세스`** 버튼 클릭 시 자동으로 `elvis-log-viewer.exe`가 실행됩니다.
+`D:\elvis-lite\elvis-log-viewer.exe`(또는 모듈 내부 `target/release/elvis-log-viewer.exe`)가 존재하면 `elvis-launcher` 상단의 **`로그`**, **`에러로그`**, **`프로세스`** 버튼 클릭 시 자동으로 `elvis-log-viewer.exe`가 실행됩니다.
 - 바이너리가 아직 빌드되지 않은 경우에만 기존 Windows Terminal(`wt.exe`) / `check-status.bat` 콘솔로 자동 폴백됩니다.
 
 ### 3. 단독 실행
 별도 인자 없이 실행하면 워크스페이스 루트의 [`config/paths.env`](../config/paths.env)를 자동 탐색해 `ELVIS_LOG_DIR`과 5대 서비스 포트를 읽어옵니다.
 ```powershell
 # 전체 5분할 실시간 로그 (기본값)
-D:\elvis-log-viewer.exe
+D:\elvis-lite\elvis-log-viewer.exe
 
 # 특정 서비스 단일 로그 보기 (줄바꿈 OFF)
-D:\elvis-log-viewer.exe --service ws --type all --wrap 0
+D:\elvis-lite\elvis-log-viewer.exe --service ws --type all --wrap 0
 
 # 전체 에러 로그만 보기
-D:\elvis-log-viewer.exe --group all --type error
+D:\elvis-lite\elvis-log-viewer.exe --group all --type error
 
 # 프로세스 및 포트 실시간 진단 모드로 바로 열기
-D:\elvis-log-viewer.exe --mode process --target all
+D:\elvis-lite\elvis-log-viewer.exe --mode process --target all
 ```
 
 ---

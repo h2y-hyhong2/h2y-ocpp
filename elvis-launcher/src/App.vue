@@ -6,12 +6,12 @@
     <!-- 초슬림 GNB 헤더 -->
     <header class="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/90 sticky top-0 z-50 px-3 py-1.5 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-2.5">
-        <!-- 모던 미니멀 로고마크 -->
-        <div class="w-6 h-6 rounded-md bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12l4-4m-4 4l4 4M19 12l-4-4m4 4l-4 4" />
-          </svg>
-        </div>
+        <!-- ELVIS Launcher 공식 제품 아이콘 -->
+        <img
+          src="/elvis_lite_light.svg"
+          alt="ELVIS Launcher"
+          class="w-6 h-6 rounded-md shadow-sm flex-shrink-0"
+        />
 
         <div class="flex items-center gap-2">
           <h1 class="font-bold text-xs tracking-tight text-slate-900 flex items-center gap-1.5">

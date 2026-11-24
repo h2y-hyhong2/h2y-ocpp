@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build && node ../scripts/copy-exe.mjs elvis-tester-ui",
+    "tauri:build:exe": "tauri build --no-bundle && node ../scripts/copy-exe.mjs elvis-tester-ui"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

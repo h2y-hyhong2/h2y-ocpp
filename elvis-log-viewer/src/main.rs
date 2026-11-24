@@ -3551,6 +3551,15 @@ fn parse_args() -> (PathBuf, LogGroup, ProcessScope, bool, bool, bool, [u16; 5])
     )
 }
 
+fn load_app_icon() -> Arc<egui::IconData> {
+    const ICON_RGBA: &[u8] = include_bytes!("../icons/icon_64.rgba");
+    Arc::new(egui::IconData {
+        rgba: ICON_RGBA.to_vec(),
+        width: 64,
+        height: 64,
+    })
+}
+
 fn main() -> eframe::Result {
     let (log_dir, group, process_scope, error_only, error_split, word_wrap, ports) = parse_args();
 
@@ -3588,6 +3597,7 @@ fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title(window_title)
+            .with_icon(load_app_icon())
             .with_inner_size(init_size)
             .with_min_inner_size([640.0, 400.0]),
         ..Default::default()

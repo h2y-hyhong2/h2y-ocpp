@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * ELVIS 데스크톱 실행파일(.exe) D:\ 배포 복사 유틸리티
- * - 중간 빌드 산출물(target/, dist/)은 모듈 내부에 유지하고 최종 실행파일만 D:\에 복사합니다.
- * - 사용법: node scripts/copy-exe.mjs <elvis-launcher|elvis-control-ui|elvis-log-viewer>
+ * ELVIS 데스크톱 실행파일(.exe) D:\elvis-lite 배포 복사 유틸리티
+ * - 중간 빌드 산출물(target/, dist/)은 모듈 내부에 유지하고 최종 실행파일만 D:\elvis-lite에 복사합니다.
+ * - 사용법: node scripts/copy-exe.mjs <elvis-launcher|elvis-control-ui|elvis-log-viewer|elvis-tester-ui>
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
 
-const OUT_DIR = process.env.ELVIS_EXE_OUT_DIR || 'D:\\'
+const OUT_DIR = process.env.ELVIS_EXE_OUT_DIR || 'D:\\elvis-lite'
 
 const TARGETS = {
   'elvis-launcher': {
@@ -26,12 +26,16 @@ const TARGETS = {
   'elvis-log-viewer': {
     src: path.join(rootDir, 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
     dest: path.join(OUT_DIR, 'elvis-log-viewer.exe')
+  },
+  'elvis-tester-ui': {
+    src: path.join(rootDir, 'elvis-tester-ui', 'src-tauri', 'target', 'release', 'elvis-tester-ui.exe'),
+    dest: path.join(OUT_DIR, 'elvis-tester-ui.exe')
   }
 }
 
 const name = process.argv[2]
 if (!name || !(name in TARGETS)) {
-  console.error('[copy-exe] 지원 모듈: elvis-launcher | elvis-control-ui | elvis-log-viewer')
+  console.error('[copy-exe] 지원 모듈: elvis-launcher | elvis-control-ui | elvis-log-viewer | elvis-tester-ui')
   process.exit(1)
 }
 
@@ -42,7 +46,10 @@ if (!fs.existsSync(src)) {
 }
 
 try {
-  fs.mkdirSync(path.dirname(dest), { recursive: true })
+  const destDir = path.dirname(dest)
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true })
+  }
   fs.copyFileSync(src, dest)
   const sizeMb = (fs.statSync(dest).size / (1024 * 1024)).toFixed(2)
   console.log(`[copy-exe] 배포 완료: ${dest} (${sizeMb} MB)`)

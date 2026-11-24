@@ -11,6 +11,15 @@
 
 ## 변경 이력
 
+### [2026-11-24] 전용 제품 아이콘 추가 (`exe` 리소스 임베딩 및 창·작업표시줄 아이콘) 및 `D:\elvis-lite` 배포 통일
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
+- **변경 내용**:
+  - `icons/icon.ico`, `icons/icon_64.rgba`: 루트 `icons/elvis_lite_log_light.svg` 공식 제품 아이콘 기준으로 필수 멀티 해상도 `.ico`(16~256px) 및 `64x64` RGBA 아이콘만 유지·적용
+  - `build.rs`: Windows SDK `rc.exe`로 `icons/icon.ico`를 `elvis-log-viewer.exe` 실행파일 리소스에 자동 임베딩 (외부 Cargo 의존성 추가 없음)
+  - `src/main.rs`: `egui::ViewportBuilder::with_icon(load_app_icon())` 적용으로 앱 타이틀바 및 Windows 작업표시줄 아이콘 표시
+  - `build-release.bat`: 실행파일 배포 출력 경로를 `D:\elvis-lite\elvis-log-viewer.exe`로 변경 및 Windows `cmd.exe` CRLF 개행 적용
+- **영향 범위**: `elvis-log-viewer/build.rs`, `elvis-log-viewer/build-release.bat`, `elvis-log-viewer/src/main.rs`, `elvis-log-viewer/icons/*`
+
 ### [2026-11-24] 각 로그 패널 내부 좌·우 `에러 분할` 토글 기능 추가
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (패널별 전체 로그 | 에러·경고 로그 좌·우 양분 뷰 추가)
 - **변경 내용**:

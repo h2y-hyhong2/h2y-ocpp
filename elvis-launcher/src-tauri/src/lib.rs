@@ -1070,8 +1070,8 @@ fn find_log_viewer_binary() -> Option<PathBuf> {
             candidates.push(dir.join("elvis-log-viewer.exe"));
         }
     }
-    // D:\ 표준 실행파일 배포 경로 최우선 탐색
-    candidates.push(PathBuf::from(r"D:\elvis-log-viewer.exe"));
+    // D:\elvis-lite 표준 실행파일 배포 경로 최우선 탐색
+    candidates.push(PathBuf::from(r"D:\elvis-lite\elvis-log-viewer.exe"));
     if let Ok(exe) = std::env::current_exe() {
         // 실행 파일 상위 디렉토리를 따라 워크스페이스 루트의 elvis-log-viewer 탐색
         let mut cur = exe.parent().map(|p| p.to_path_buf());

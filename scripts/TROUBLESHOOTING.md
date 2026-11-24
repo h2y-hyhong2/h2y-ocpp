@@ -55,3 +55,20 @@
   - `D:\project\lselink\ocpp-lite\gradle\gradle-9.9.1` 경로 기준으로 `start-elvis-connect-ws.bat`·`start-elvis-connect-sync.bat`·`start-elvis-control-api.bat` 및 루트 `gradlew.bat`가 1순위로 실행하도록 수정(`binaries\gradle-*` 폴백 유지).
   - `gradle/wrapper/gradle-wrapper.properties`의 `distributionUrl`을 `https://services.gradle.org/distributions/gradle-9.9.1-bin.zip`으로 정비.
 - **관련 파일**: `gradlew.bat`, `gradle/wrapper/gradle-wrapper.properties`, `scripts/start-elvis-connect-ws.bat`, `scripts/start-elvis-connect-sync.bat`, `scripts/start-elvis-control-api.bat`
+
+---
+
+### ISSUE-04: Windows `.bat` 파일 LF 개행 시 `goto` 라벨 깨짐 및 드라이브 루트 `mkdirSync` `EPERM` 오류
+- **발생 일시**: `2026-11-24`
+- **증상 / 에러 메시지**:
+  ```text
+  'iewer' is not recognized as an internal or external command...
+  Error: EPERM: operation not permitted, mkdir 'D:\'
+  ```
+- **근본 원인**:
+  1. `chcp 65001` UTF-8 `.bat` 파일이 Unix LF(`\n`) 개행으로 저장되면 Windows `cmd.exe`의 `goto` 오프셋 계산이 어긋나 라벨 중간부터 명령으로 해석됨.
+  2. `copy-exe.mjs`에서 이미 존재하는 드라이브 루트(`D:\`)에 `fs.mkdirSync(..., { recursive: true })`를 무조건 호출할 때 Windows에서 `EPERM`이 발생함.
+- **해결 방법**:
+  1. `scripts/build-desktop-exes.bat`, `elvis-log-viewer/build-release.bat`을 CRLF(`\r\n`, UTF-8 무BOM) 개행으로 통일.
+  2. `scripts/copy-exe.mjs`에서 `if (!fs.existsSync(destDir))` 검사 후 디렉토리를 생성하고 배포 경로를 `D:\elvis-lite`로 일원화.
+- **관련 파일**: `scripts/build-desktop-exes.bat`, `scripts/copy-exe.mjs`, `elvis-log-viewer/build-release.bat`

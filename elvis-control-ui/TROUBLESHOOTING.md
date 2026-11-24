@@ -11,6 +11,7 @@
    - [ISSUE-03: `link.exe not found` 또는 MSVC C++ 링크 오류](#issue-03-linkexe-not-found-또는-msvc-c-링크-오류)
    - [ISSUE-04: `rustc`, `cargo` 명령어를 찾을 수 없음 (CommandNotFoundException)](#issue-04-rustc-cargo-명령어를-찾을-수-없음-commandnotfoundexception)
    - [ISSUE-09: `icons/icon.ico not found` (Windows Resource 파일 생성 실패)](#issue-09-iconsiconico-not-found-windows-resource-파일-생성-실패)
+   - [ISSUE-11: `icons/icon.ico` 교체 후 재빌드해도 `.exe` 아이콘이 갱신되지 않음](#issue-11-iconsiconico-교체-후-재빌드해도-exe-아이콘이-갱신되지-않음)
 2. [Node.js & Vite 웹 개발 서버 관련 오류](#2-nodejs--vite-웹-개발-서버-관련-오류)
    - [ISSUE-05: `TypeError: crypto$2.getRandomValues is not a function` (Node 16 호환성 오류)](#issue-05-typeerror-crypto2getrandomvalues-is-not-a-function-node-16-호환성-오류)
    - [ISSUE-06: 포트 충돌 (`Port 1421 is in use`)](#issue-06-포트-충돌-port-1421-is-in-use)
@@ -153,6 +154,30 @@ Windows 플랫폼에서 Tauri 빌드 스크립트(`tauri-build`)가 실행 파�
    pnpm tauri icon ./public/ELVIS-LITE-ICON.svg
    ```
 3. `src-tauri/icons/` 내에 `icon.ico` 등 모든 크기별 아이콘이 생성된 후 `pnpm tauri:dev`를 재실행합니다.
+
+---
+
+### ISSUE-11: `icons/icon.ico` 교체 후 재빌드해도 `.exe` 아이콘이 갱신되지 않음
+
+#### 증상 및 에러 메시지
+`src-tauri/icons/icon.ico` 파일을 새 아이콘으로 덮어쓴 뒤 `pnpm tauri:build:exe`로 다시 빌드해도 최종 `elvis-control-ui.exe` 내부에 이전 아이콘이 그대로 남아 있음.
+
+#### 원인 분석
+`tauri_build::build()`는 `tauri.conf.json` 기준으로만 `cargo:rerun-if-changed`를 발행하므로, `src-tauri/icons/icon.ico`만 변경된 경우 Cargo가 `build.rs`를 재실행하지 않고 기존에 캐시된 `target/release/build/elvis-control-ui-*/out/resource.lib`를 그대로 링크합니다.
+
+#### 해결 방법
+1. `src-tauri/build.rs`에 아이콘 5종의 `cargo:rerun-if-changed` 지시어를 추가하여 아이콘 변경 시 Windows 리소스(`resource.lib`)가 자동 재컴파일되도록 합니다.
+   ```rust
+   fn main() {
+       println!("cargo:rerun-if-changed=icons/icon.ico");
+       println!("cargo:rerun-if-changed=icons/32x32.png");
+       println!("cargo:rerun-if-changed=icons/128x128.png");
+       println!("cargo:rerun-if-changed=icons/128x128@2x.png");
+       println!("cargo:rerun-if-changed=icons/icon.icns");
+       tauri_build::build()
+   }
+   ```
+2. Windows 탐색기에서 구 아이콘이 캐시되어 보이는 경우 `ie4uinit.exe -show`로 아이콘 캐시를 갱신합니다.
 
 ---
 

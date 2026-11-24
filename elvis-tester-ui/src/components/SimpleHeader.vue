@@ -37,12 +37,11 @@ async function handleToggleMaximize() {
     <!-- 좌측 브랜드 및 요약 정보 -->
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-sky-600 flex items-center justify-center text-white shadow-2xs">
-          <!-- Lightning bolt SVG -->
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
+        <img
+          src="/elvis_lite_tester_light.svg"
+          alt="ELVIS Tester"
+          class="w-7 h-7 rounded-lg shadow-2xs flex-shrink-0"
+        />
         <div class="flex items-center gap-1.5">
           <span class="text-sm font-black text-slate-900 tracking-tight whitespace-nowrap">
             <span>LSELink</span>

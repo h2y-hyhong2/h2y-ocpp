@@ -19,13 +19,13 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
 
-        <!-- ELVIS Lite CI 로고 & 타이틀 -->
+        <!-- ELVIS Lite Control 공식 제품 아이콘 & 타이틀 -->
         <router-link to="/" class="flex items-center gap-2 group cursor-pointer">
-          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-xs">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <img
+            src="/elvis_lite_control_light.svg"
+            alt="ELVIS Control"
+            class="w-7 h-7 rounded-lg shadow-xs flex-shrink-0"
+          />
           <div class="flex items-center gap-1.5">
             <span class="text-sm font-black text-slate-900 tracking-tight whitespace-nowrap">
               <span>ELVIS</span>

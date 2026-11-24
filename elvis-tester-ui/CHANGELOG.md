@@ -10,6 +10,13 @@
 
 ## 변경 이력
 
+### [2026-11-24] 전용 제품 아이콘 적용 및 `D:\elvis-lite\elvis-tester-ui.exe` 실행파일 배포 구성
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
+- **변경 내용**:
+  - `src-tauri/icons/*`, `src-tauri/build.rs`, `public/elvis_lite_tester_light.svg`, `index.html`, `src/components/SimpleHeader.vue`: 루트 `icons/elvis_lite_tester_light.svg` 공식 제품 아이콘 기준으로 필수 Tauri 아이콘 5종(`32x32`, `128x128`, `128x128@2x`, `icon.icns`, `icon.ico`)·파비콘·상단 헤더 로고 일괄 적용, 미사용 레거시 아이콘 정리 및 `build.rs`에 `cargo:rerun-if-changed=icons/*` 추가
+  - `package.json`, `tsconfig.json`, `src/components/ChargerListPanel.vue`: `pnpm tauri:build` / `pnpm tauri:build:exe` 완료 시 `D:\elvis-lite\elvis-tester-ui.exe` 자동 복사 구성, `tsconfig.json` 추가 및 `getConnectors` 반환 타입 보완
+- **영향 범위**: `elvis-tester-ui/package.json`, `elvis-tester-ui/tsconfig.json`, `elvis-tester-ui/index.html`, `elvis-tester-ui/public/elvis_lite_tester_light.svg`, `elvis-tester-ui/src/components/SimpleHeader.vue`, `elvis-tester-ui/src/components/ChargerListPanel.vue`, `elvis-tester-ui/src-tauri/icons/*`, `elvis-tester-ui/src-tauri/build.rs`
+
 ### [2026-11-18] 기동 시퀀스 듀얼 커넥터(#1, #2) 상태 전문 순차 발송 보완
 - **과제/WBS**: `[3368]WBS-COMMON-OP-001`
 - **변경 내용**:

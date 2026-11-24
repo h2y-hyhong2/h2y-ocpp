@@ -10,6 +10,13 @@
 
 ## 오류 이력
 
+### [2026-11-24] `pnpm tauri:build:exe` 실행 시 `tsconfig.json` 부재로 `vue-tsc` 실패 및 아이콘 재빌드 미반영
+- **발생 일시**: `2026-11-24`
+- **증상 / 에러 메시지**: `pnpm build`(`vue-tsc && vite build`) 실행 시 `tsconfig.json`이 없어 `vue-tsc`가 도움말만 출력하고 종료 코드 1로 실패함. 또한 `ChargerListPanel.vue`의 `getConnectors` 폴백 객체 타입 불일치 오류 발생.
+- **근본 원인**: `elvis-tester-ui/tsconfig.json` 미생성 및 `getConnectors` 반환 타입 정의 누락, Tauri `build.rs`의 아이콘 변경 감지(`cargo:rerun-if-changed`) 미선언.
+- **해결 방법**: `tsconfig.json` 생성, `ChargerListPanel.vue` `getConnectors` 반환 타입 보강, `src-tauri/build.rs`에 필수 아이콘 5종의 `cargo:rerun-if-changed` 지시어 추가.
+- **관련 파일**: `elvis-tester-ui/tsconfig.json`, `elvis-tester-ui/src/components/ChargerListPanel.vue`, `elvis-tester-ui/src-tauri/build.rs`
+
 ### [TEMPLATE] 오류 제목
 - **발생 일시**: `YYYY-MM-DD`
 - **증상 / 에러 메시지**:

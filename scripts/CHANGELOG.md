@@ -10,6 +10,13 @@
 
 ## 변경 이력
 
+### [2026-11-24] 4대 데스크톱 앱 `D:\elvis-lite` 실행파일 배포 통합 및 제품 아이콘 변환 유틸리티 추가
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
+- **변경 내용**:
+  - `copy-exe.mjs`, `build-desktop-exes.bat`: `elvis-tester-ui`를 추가해 4대 데스크톱 앱 전체(`all` | `log-viewer` | `launcher` | `control-ui` | `tester-ui`) 릴리스 빌드 및 `D:\elvis-lite\` 일괄 배포 지원, 드라이브 루트 `mkdirSync` 예외 방어 및 `.bat` CRLF 개행 적용
+  - `generate-app-icons.ps1`: Windows .NET `System.Drawing` 기반 라운드 스퀘어 마스킹 + 멀티 해상도 `.ico`(16~256px) + `64x64` RGBA 변환 유틸리티 추가
+- **영향 범위**: `scripts/copy-exe.mjs`, `scripts/build-desktop-exes.bat`, `scripts/generate-app-icons.ps1`
+
 ### [2026-11-24] 데스크톱 3대 앱 실행파일(`D:\`) 배포 유틸리티 및 통합 빌드 스크립트 추가
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (데스크톱 실행파일 `D:\` 배포 통일)
 - **변경 내용**:
