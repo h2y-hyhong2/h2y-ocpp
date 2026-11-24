@@ -33,6 +33,17 @@ fn find_relative_dir(subpath: &str) -> Option<PathBuf> {
             }
         }
     }
+    if let Ok(ws) = std::env::var("ELVIS_WORKSPACE_DIR") {
+        let p = PathBuf::from(ws);
+        if p.exists() {
+            base_dirs.push(p);
+        }
+    }
+    // D:\elvis-control-ui.exe 단독 실행 시에도 빌드 시점 워크스페이스(config/, scripts/) 자동 탐색
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    if let Some(ws_root) = manifest_dir.parent().and_then(|p| p.parent()) {
+        base_dirs.push(ws_root.to_path_buf());
+    }
 
     base_dirs
         .into_iter()

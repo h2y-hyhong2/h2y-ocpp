@@ -10,6 +10,14 @@
 
 ## 변경 이력
 
+### [2026-11-24] 릴리스 실행파일 `D:\elvis-launcher.exe` 출력 통일 및 단독 실행 경로 탐색 보강
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (데스크톱 실행파일 `D:\` 배포 통일)
+- **변경 내용**:
+  - `package.json`: `pnpm tauri:build` 및 `pnpm tauri:build:exe`(`--no-bundle`) 실행 시 최종 실행파일만 `D:\elvis-launcher.exe`로 자동 복사(`../scripts/copy-exe.mjs`)하도록 구성
+  - `src-tauri/src/lib.rs`: `D:\elvis-launcher.exe` 단독 실행 시에도 `config/paths.env`와 `scripts/`를 정상 탐색하도록 `ELVIS_WORKSPACE_DIR` 및 컴파일 시점 워크스페이스 루트 폴백 추가, `find_log_viewer_binary()`에서 `D:\elvis-log-viewer.exe` 최우선 탐색 추가
+  - `vite.config.ts`: `elvis-log-viewer.exe` 탐색 후보 3곳 모두 `D:\elvis-log-viewer.exe`를 1순위로 추가
+- **영향 범위**: `elvis-launcher/package.json`, `elvis-launcher/src-tauri/src/lib.rs`, `elvis-launcher/vite.config.ts`
+
 ### [2026-11-23] 상단 헤더 `줄바꿈` 토글 버튼 제거
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (런처 상단 툴바 간결화)
 - **변경 내용**:

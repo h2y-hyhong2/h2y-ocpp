@@ -11,6 +11,13 @@
 
 ## 변경 이력
 
+### [2026-11-24] 릴리스 실행파일 `D:\elvis-control-ui.exe` 출력 통일 및 단독 실행 경로 탐색 보강
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (데스크톱 실행파일 `D:\` 배포 통일)
+- **변경 내용**:
+  - `package.json`: `pnpm tauri:build` 및 `pnpm tauri:build:exe`(`--no-bundle`) 실행 시 최종 실행파일만 `D:\elvis-control-ui.exe`로 자동 복사(`../scripts/copy-exe.mjs`)하도록 구성
+  - `src-tauri/src/lib.rs`: `D:\elvis-control-ui.exe` 단독 실행 시에도 `config/paths.env` 및 `scripts/`를 찾을 수 있도록 `ELVIS_WORKSPACE_DIR` 및 컴파일 시점 워크스페이스 루트 폴백 추가
+- **영향 범위**: `elvis-control-ui/package.json`, `elvis-control-ui/src-tauri/src/lib.rs`
+
 ### [2026-11-20] 충전기 목록(카드형 메인) 전환, 우클릭 컨텍스트 메뉴 및 하단 롤링·롤업 바 적용
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (메인 관제 화면 전환 및 우클릭 빠른 제어 메뉴 적용)
 - **변경 내용**:

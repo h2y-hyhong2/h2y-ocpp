@@ -70,6 +70,22 @@ impl Default for EnvConfig {
     }
 }
 
+fn workspace_fallback_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    if let Ok(ws) = std::env::var("ELVIS_WORKSPACE_DIR") {
+        let p = PathBuf::from(ws);
+        if p.exists() {
+            roots.push(p);
+        }
+    }
+    // D:\elvis-launcher.exe 단독 실행 시에도 빌드 시점 워크스페이스(config/, scripts/) 자동 탐색
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    if let Some(ws_root) = manifest_dir.parent().and_then(|p| p.parent()) {
+        roots.push(ws_root.to_path_buf());
+    }
+    roots
+}
+
 fn find_paths_env_file() -> Option<PathBuf> {
     if let Ok(cur_dir) = std::env::current_dir() {
         for ancestor in cur_dir.ancestors().take(5) {
@@ -85,6 +101,12 @@ fn find_paths_env_file() -> Option<PathBuf> {
             if candidate.exists() {
                 return Some(candidate);
             }
+        }
+    }
+    for root in workspace_fallback_roots() {
+        let candidate = root.join("config").join("paths.env");
+        if candidate.exists() {
+            return Some(candidate);
         }
     }
     None
@@ -529,6 +551,13 @@ fn find_script_file(script_file: &str) -> Result<std::path::PathBuf, String> {
             if candidate.exists() {
                 return Ok(candidate);
             }
+        }
+    }
+
+    for root in workspace_fallback_roots() {
+        let candidate = root.join("scripts").join(script_file);
+        if candidate.exists() {
+            return Ok(candidate);
         }
     }
 
@@ -1040,6 +1069,10 @@ fn find_log_viewer_binary() -> Option<PathBuf> {
         if let Some(dir) = exe.parent() {
             candidates.push(dir.join("elvis-log-viewer.exe"));
         }
+    }
+    // D:\ 표준 실행파일 배포 경로 최우선 탐색
+    candidates.push(PathBuf::from(r"D:\elvis-log-viewer.exe"));
+    if let Ok(exe) = std::env::current_exe() {
         // 실행 파일 상위 디렉토리를 따라 워크스페이스 루트의 elvis-log-viewer 탐색
         let mut cur = exe.parent().map(|p| p.to_path_buf());
         for _ in 0..6 {
@@ -1059,6 +1092,10 @@ fn find_log_viewer_binary() -> Option<PathBuf> {
                 cur = d.parent().map(|p| p.to_path_buf());
             }
         }
+    }
+    for root in workspace_fallback_roots() {
+        candidates.push(root.join("elvis-log-viewer/target/release/elvis-log-viewer.exe"));
+        candidates.push(root.join("elvis-log-viewer/target/debug/elvis-log-viewer.exe"));
     }
     candidates.into_iter().find(|p| p.exists())
 }

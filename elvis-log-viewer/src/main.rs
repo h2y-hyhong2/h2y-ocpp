@@ -2280,6 +2280,12 @@ fn handle_h_splitter(
 
 fn find_workspace_root() -> Option<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
+    if let Ok(ws) = std::env::var("ELVIS_WORKSPACE_DIR") {
+        let p = PathBuf::from(ws);
+        if p.exists() {
+            roots.push(p);
+        }
+    }
     if let Ok(exe) = std::env::current_exe() {
         let mut cur = exe.parent().map(|p| p.to_path_buf());
         for _ in 0..6 {
@@ -2297,6 +2303,11 @@ fn find_workspace_root() -> Option<PathBuf> {
                 cur = dir.parent().map(|p| p.to_path_buf());
             }
         }
+    }
+    // D:\elvis-log-viewer.exe 단독 실행 시에도 빌드 시점 워크스페이스(config/paths.env, 로컬 폰트) 자동 탐색
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    if let Some(ws_root) = manifest_dir.parent() {
+        roots.push(ws_root.to_path_buf());
     }
     roots
         .into_iter()

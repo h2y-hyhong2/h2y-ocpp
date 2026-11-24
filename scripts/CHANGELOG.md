@@ -10,6 +10,13 @@
 
 ## 변경 이력
 
+### [2026-11-24] 데스크톱 3대 앱 실행파일(`D:\`) 배포 유틸리티 및 통합 빌드 스크립트 추가
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (데스크톱 실행파일 `D:\` 배포 통일)
+- **변경 내용**:
+  - `copy-exe.mjs`: `elvis-launcher`, `elvis-control-ui`, `elvis-log-viewer`의 릴리스 실행파일만 `D:\`로 복사하는 공용 Node 유틸리티 추가
+  - `build-desktop-exes.bat`: 3개 데스크톱 앱 전체(`all`) 또는 개별(`log-viewer` / `launcher` / `control-ui`) 릴리스 빌드 및 `D:\` 자동 배포 스크립트 추가
+- **영향 범위**: `scripts/copy-exe.mjs`, `scripts/build-desktop-exes.bat`
+
 ### [2026-11-19] 실행 스크립트 콘솔 출력 이모지 제거 및 텍스트 표준화
 - **과제/커밋**: `[3368]WBS-COMMON-OP-006` (전 모듈 로그·콘솔 텍스트 표준화)
 - **변경 내용**:

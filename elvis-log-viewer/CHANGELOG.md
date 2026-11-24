@@ -11,6 +11,13 @@
 
 ## 변경 이력
 
+### [2026-11-24] 릴리스 실행파일 `D:\elvis-log-viewer.exe` 출력 통일 및 단독 실행 경로 탐색 보강
+- **과제/커밋**: `[3368]WBS-COMMON-OP-007` (데스크톱 실행파일 `D:\` 배포 통일)
+- **변경 내용**:
+  - `build-release.bat`: `cargo build --release` 후 최종 실행파일만 `D:\elvis-log-viewer.exe`로 자동 복사하는 릴리스 빌드 스크립트 추가
+  - `src/main.rs`: `D:\elvis-log-viewer.exe` 단독 실행 시에도 `config/paths.env` 및 로컬 폰트(`Pretendard`/`Inconsolata`)를 정상 로드하도록 `find_workspace_root()`에 `ELVIS_WORKSPACE_DIR` 및 컴파일 시점 워크스페이스 루트 폴백 추가
+- **영향 범위**: `elvis-log-viewer/build-release.bat`, `elvis-log-viewer/src/main.rs`, `elvis-log-viewer/README.md`
+
 ### [2026-11-23] 전체 뷰 공통 상단 컴팩트 시스템 자원 바 추가
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (전 모드 공통 호스트 시스템 자원 모니터링 바 추가)
 - **변경 내용**:
