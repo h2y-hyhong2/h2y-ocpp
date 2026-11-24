@@ -149,12 +149,18 @@ struct PaneState {
     accent: egui::Color32,
     badge_bg: egui::Color32,
     raw_lines: Vec<String>,
+    err_lines: Vec<String>,
     exists: bool,
+    err_exists: bool,
     last_len: u64,
     last_mtime: Option<SystemTime>,
+    err_last_len: u64,
+    err_last_mtime: Option<SystemTime>,
+    err_split_ratio: f32,
     local_filter: String,
     auto_follow: bool,
     copied_until: Option<Instant>,
+    err_copied_until: Option<Instant>,
 }
 
 impl PaneState {
@@ -174,71 +180,114 @@ impl PaneState {
             accent,
             badge_bg,
             raw_lines: Vec::new(),
+            err_lines: Vec::new(),
             exists: false,
+            err_exists: false,
             last_len: 0,
             last_mtime: None,
+            err_last_len: 0,
+            err_last_mtime: None,
+            err_split_ratio: 0.5,
             local_filter: String::new(),
             auto_follow: true,
             copied_until: None,
+            err_copied_until: None,
         }
     }
 
-    fn refresh(&mut self, log_dir: &PathBuf, error_only: bool, force: bool) {
+    fn refresh(&mut self, log_dir: &PathBuf, force: bool) {
+        const MAX_READ_BYTES: u64 = 262_144; // 마지막 256KB 읽기
+        const MAX_LINES: usize = 600;
+
         let base_path = log_dir.join(format!("{}.log", self.key));
         let err_path = log_dir.join(format!("{}-err.log", self.key));
-        let use_dedicated_err = error_only && err_path.exists();
-        let target = if use_dedicated_err { err_path } else { base_path };
 
-        let Ok(meta) = fs::metadata(&target) else {
-            self.exists = false;
-            self.raw_lines.clear();
-            self.last_len = 0;
-            self.last_mtime = None;
-            return;
-        };
-
-        let len = meta.len();
-        let mtime = meta.modified().ok();
-        if !force && self.exists && len == self.last_len && mtime == self.last_mtime {
-            return;
+        // 1) 기본 로그 파일 ({key}.log) 변경 감지 및 증분 로드
+        let mut base_changed = force;
+        match fs::metadata(&base_path) {
+            Ok(meta) => {
+                let len = meta.len();
+                let mtime = meta.modified().ok();
+                if force || !self.exists || len != self.last_len || mtime != self.last_mtime {
+                    base_changed = true;
+                    self.exists = true;
+                    self.last_len = len;
+                    self.last_mtime = mtime;
+                    if let Some(lines) =
+                        read_tail_lines(&base_path, len, MAX_READ_BYTES, MAX_LINES)
+                    {
+                        self.raw_lines = lines;
+                    }
+                }
+            }
+            Err(_) => {
+                if self.exists || !self.raw_lines.is_empty() {
+                    base_changed = true;
+                }
+                self.exists = false;
+                self.raw_lines.clear();
+                self.last_len = 0;
+                self.last_mtime = None;
+            }
         }
 
-        self.exists = true;
-        self.last_len = len;
-        self.last_mtime = mtime;
-
-        let Ok(mut file) = File::open(&target) else {
-            return;
-        };
-
-        const MAX_READ_BYTES: u64 = 262_144; // 마지막 256KB 읽기
-        let start = len.saturating_sub(MAX_READ_BYTES);
-        if file.seek(SeekFrom::Start(start)).is_err() {
-            return;
+        // 2) 전용 에러 로그 파일 ({key}-err.log) 변경 감지
+        let mut err_changed = force;
+        match fs::metadata(&err_path) {
+            Ok(meta) => {
+                let len = meta.len();
+                let mtime = meta.modified().ok();
+                if force
+                    || !self.err_exists
+                    || len != self.err_last_len
+                    || mtime != self.err_last_mtime
+                {
+                    err_changed = true;
+                    self.err_exists = true;
+                    self.err_last_len = len;
+                    self.err_last_mtime = mtime;
+                }
+            }
+            Err(_) => {
+                if self.err_exists || self.err_last_len > 0 {
+                    err_changed = true;
+                }
+                self.err_exists = false;
+                self.err_last_len = 0;
+                self.err_last_mtime = None;
+            }
         }
 
-        let mut buf = Vec::with_capacity((len - start) as usize);
-        if file.read_to_end(&mut buf).is_err() {
-            return;
+        // 3) 에러/경고 스트림 갱신 (본문 ERROR/WARN + 전용 stderr 파일 통합)
+        if base_changed || err_changed {
+            let mut errs: Vec<String> = self
+                .raw_lines
+                .iter()
+                .filter(|l| is_error_or_warn_line(l))
+                .cloned()
+                .collect();
+
+            if self.err_exists && self.err_last_len > 0 {
+                if let Some(stderr_lines) =
+                    read_tail_lines(&err_path, self.err_last_len, MAX_READ_BYTES, MAX_LINES)
+                {
+                    let non_empty: Vec<String> = stderr_lines
+                        .into_iter()
+                        .filter(|l| !l.trim().is_empty())
+                        .collect();
+                    if errs.is_empty() {
+                        errs = non_empty;
+                    } else if !non_empty.is_empty() {
+                        errs.extend(non_empty);
+                        if errs.len() > MAX_LINES {
+                            errs.drain(0..(errs.len() - MAX_LINES));
+                        }
+                    }
+                }
+            }
+
+            self.err_lines = errs;
         }
-
-        let text = String::from_utf8_lossy(&buf);
-        let mut lines: Vec<String> = text.lines().map(strip_ansi_and_tabs).collect();
-
-        if start > 0 && !lines.is_empty() {
-            lines.remove(0);
-        }
-
-        if error_only && !use_dedicated_err {
-            lines.retain(|l| is_error_or_warn_line(l));
-        }
-
-        const MAX_LINES: usize = 600;
-        if lines.len() > MAX_LINES {
-            lines.drain(0..(lines.len() - MAX_LINES));
-        }
-
-        self.raw_lines = lines;
     }
 
     fn clear_file(&mut self, log_dir: &PathBuf) {
@@ -246,10 +295,39 @@ impl PaneState {
         if path.exists() {
             let _ = fs::write(&path, "");
         }
+        let err_path = log_dir.join(format!("{}-err.log", self.key));
+        if err_path.exists() {
+            let _ = fs::write(&err_path, "");
+        }
         self.raw_lines.clear();
+        self.err_lines.clear();
         self.last_len = 0;
         self.last_mtime = None;
+        self.err_last_len = 0;
+        self.err_last_mtime = None;
     }
+}
+
+fn read_tail_lines(
+    path: &PathBuf,
+    len: u64,
+    max_bytes: u64,
+    max_lines: usize,
+) -> Option<Vec<String>> {
+    let mut file = File::open(path).ok()?;
+    let start = len.saturating_sub(max_bytes);
+    file.seek(SeekFrom::Start(start)).ok()?;
+    let mut buf = Vec::with_capacity((len - start) as usize);
+    file.read_to_end(&mut buf).ok()?;
+    let text = String::from_utf8_lossy(&buf);
+    let mut lines: Vec<String> = text.lines().map(strip_ansi_and_tabs).collect();
+    if start > 0 && !lines.is_empty() {
+        lines.remove(0);
+    }
+    if lines.len() > max_lines {
+        lines.drain(0..(lines.len() - max_lines));
+    }
+    Some(lines)
 }
 
 struct LogGuiApp {
@@ -258,6 +336,7 @@ struct LogGuiApp {
     group: LogGroup,
     process_scope: ProcessScope,
     error_only: bool,
+    error_split: bool,
     word_wrap: bool,
     is_live: bool,
     font_size: f32,
@@ -291,6 +370,7 @@ impl LogGuiApp {
         group: LogGroup,
         process_scope: ProcessScope,
         error_only: bool,
+        error_split: bool,
         word_wrap: bool,
         ports: [u16; 5], // [mysql, kafka, ws, sync, api]
     ) -> Self {
@@ -345,6 +425,7 @@ impl LogGuiApp {
             group,
             process_scope,
             error_only,
+            error_split,
             word_wrap,
             is_live: true,
             font_size: 12.5,
@@ -399,7 +480,7 @@ impl LogGuiApp {
     fn refresh_visible(&mut self, force: bool) {
         let indices = self.visible_indices();
         for idx in indices {
-            self.panes[idx].refresh(&self.log_dir, self.error_only, force);
+            self.panes[idx].refresh(&self.log_dir, force);
         }
         self.last_refresh = Instant::now();
     }
@@ -409,6 +490,9 @@ impl LogGuiApp {
         self.top_left_ratio = 0.5;
         self.ws_ratio = 0.5;
         self.bottom_left_ratio = 0.5;
+        for pane in &mut self.panes {
+            pane.err_split_ratio = 0.5;
+        }
     }
 
     fn render_pane_in_rect(&mut self, ui: &mut egui::Ui, idx: usize, rect: egui::Rect) {
@@ -417,10 +501,12 @@ impl LogGuiApp {
         let word_wrap = self.word_wrap;
         let font_size = self.font_size;
         let error_only = self.error_only;
+        let error_split = self.error_split && !self.error_only;
         let global_q = self.global_filter.trim().to_lowercase();
         let log_dir = self.log_dir.clone();
 
         let mut toggle_zoom = false;
+        let mut toggle_error_split = false;
 
         let child_ui_builder = egui::UiBuilder::new().max_rect(rect);
         ui.scope_builder(child_ui_builder, |ui| {
@@ -437,25 +523,33 @@ impl LogGuiApp {
                 let pane = &mut self.panes[idx];
                 let local_q = pane.local_filter.trim().to_lowercase();
 
-                let filtered_indices: Vec<usize> = pane
-                    .raw_lines
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, line)| {
-                        if global_q.is_empty() && local_q.is_empty() {
-                            return true;
-                        }
-                        let lower = line.to_lowercase();
-                        if !global_q.is_empty() && !lower.contains(&global_q) {
-                            return false;
-                        }
-                        if !local_q.is_empty() && !lower.contains(&local_q) {
-                            return false;
-                        }
-                        true
-                    })
-                    .map(|(i, _)| i)
-                    .collect();
+                let filter_lines = |src: &[String]| -> Vec<usize> {
+                    src.iter()
+                        .enumerate()
+                        .filter(|(_, line)| {
+                            if global_q.is_empty() && local_q.is_empty() {
+                                return true;
+                            }
+                            let lower = line.to_lowercase();
+                            if !global_q.is_empty() && !lower.contains(&global_q) {
+                                return false;
+                            }
+                            if !local_q.is_empty() && !lower.contains(&local_q) {
+                                return false;
+                            }
+                            true
+                        })
+                        .map(|(i, _)| i)
+                        .collect()
+                };
+
+                let filtered_all_indices = filter_lines(&pane.raw_lines);
+                let filtered_err_indices = filter_lines(&pane.err_lines);
+                let active_line_count = if error_only {
+                    filtered_err_indices.len()
+                } else {
+                    filtered_all_indices.len()
+                };
 
                 // 1) 패널 헤더 바 (라이트 슬레이트)
                 let header_frame = egui::Frame::NONE
@@ -494,11 +588,37 @@ impl LogGuiApp {
                         );
 
                         ui.label(
-                            egui::RichText::new(format!("{}줄", filtered_indices.len()))
+                            egui::RichText::new(format!("{}줄", active_line_count))
                                 .monospace()
                                 .size(11.0)
                                 .color(egui::Color32::from_rgb(148, 163, 184)),
                         );
+
+                        if !error_only && !filtered_err_indices.is_empty() {
+                            let err_chip = egui::Button::new(
+                                egui::RichText::new(format!("에러 {}", filtered_err_indices.len()))
+                                    .monospace()
+                                    .strong()
+                                    .size(10.5)
+                                    .color(if error_split {
+                                        egui::Color32::WHITE
+                                    } else {
+                                        egui::Color32::from_rgb(190, 18, 60)
+                                    }),
+                            )
+                            .fill(if error_split {
+                                egui::Color32::from_rgb(225, 29, 72)
+                            } else {
+                                egui::Color32::from_rgb(255, 241, 242)
+                            });
+                            if ui
+                                .add(err_chip)
+                                .on_hover_text("클릭 시 좌·우 에러 로그 분할 표시 토글")
+                                .clicked()
+                            {
+                                toggle_error_split = true;
+                            }
+                        }
 
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if !is_single_mode {
@@ -559,11 +679,19 @@ impl LogGuiApp {
                                 .on_hover_text("표시된 로그 클립보드 복사")
                                 .clicked()
                             {
-                                let joined: String = filtered_indices
-                                    .iter()
-                                    .map(|&i| pane.raw_lines[i].as_str())
-                                    .collect::<Vec<_>>()
-                                    .join("\n");
+                                let joined: String = if error_only {
+                                    filtered_err_indices
+                                        .iter()
+                                        .map(|&i| pane.err_lines[i].as_str())
+                                        .collect::<Vec<_>>()
+                                        .join("\n")
+                                } else {
+                                    filtered_all_indices
+                                        .iter()
+                                        .map(|&i| pane.raw_lines[i].as_str())
+                                        .collect::<Vec<_>>()
+                                        .join("\n")
+                                };
                                 ui.ctx().copy_text(joined);
                                 pane.copied_until =
                                     Some(Instant::now() + Duration::from_millis(1300));
@@ -611,83 +739,219 @@ impl LogGuiApp {
                     egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(226, 232, 240)),
                 );
 
-                // 2) 로그 본문 영역 (Word Wrap OFF = 네이티브 가로+세로 스크롤바)
-                let body_margin = egui::Frame::NONE
-                    .fill(egui::Color32::WHITE)
-                    .inner_margin(egui::Margin::symmetric(6, 4));
+                // 2) 로그 본문 영역: 에러 분할 ON 시 좌(전체) | 우(에러·경고) 세로 양분
+                if error_split {
+                    let body_rect = ui.available_rect_before_wrap();
+                    if body_rect.width() > 40.0 && body_rect.height() > 20.0 {
+                        let (left_rect, inner_split_rect, right_rect) =
+                            split_horizontal(body_rect, pane.err_split_ratio, 5.0);
 
-                body_margin.show(ui, |ui| {
-                    let avail = ui.available_size();
-                    ui.set_min_size(avail);
+                        // 좌측: 전체 로그
+                        ui.scope_builder(egui::UiBuilder::new().max_rect(left_rect), |ui| {
+                            ui.set_clip_rect(left_rect);
+                            egui::Frame::NONE
+                                .fill(egui::Color32::from_rgb(248, 250, 252))
+                                .inner_margin(egui::Margin::symmetric(6, 2))
+                                .show(ui, |ui| {
+                                    ui.set_width((left_rect.width() - 12.0).max(10.0));
+                                    ui.horizontal(|ui| {
+                                        ui.label(
+                                            egui::RichText::new("전체 로그")
+                                                .strong()
+                                                .size(11.0)
+                                                .color(egui::Color32::from_rgb(71, 85, 105)),
+                                        );
+                                        ui.label(
+                                            egui::RichText::new(format!(
+                                                "{}줄",
+                                                filtered_all_indices.len()
+                                            ))
+                                            .monospace()
+                                            .size(10.5)
+                                            .color(egui::Color32::from_rgb(148, 163, 184)),
+                                        );
+                                    });
+                                });
 
-                    if !pane.exists {
-                        ui.centered_and_justified(|ui| {
-                            ui.label(
-                                egui::RichText::new(format!(
-                                    "[대기] {}.log 파일 생성 대기 중...",
-                                    pane.key
-                                ))
-                                .size(12.5)
-                                .color(egui::Color32::from_rgb(148, 163, 184)),
+                            let sub_sep = ui.available_rect_before_wrap();
+                            ui.painter().hline(
+                                sub_sep.x_range(),
+                                sub_sep.top(),
+                                egui::Stroke::new(
+                                    1.0_f32,
+                                    egui::Color32::from_rgb(226, 232, 240),
+                                ),
                             );
-                        });
-                        return;
-                    }
 
-                    if filtered_indices.is_empty() {
-                        ui.centered_and_justified(|ui| {
-                            ui.label(
-                                egui::RichText::new(if error_only {
-                                    "감지된 에러/경고 로그가 없습니다."
-                                } else {
-                                    "표시할 로그가 없습니다."
-                                })
-                                .size(12.5)
-                                .color(egui::Color32::from_rgb(148, 163, 184)),
+                            egui::Frame::NONE
+                                .fill(egui::Color32::WHITE)
+                                .inner_margin(egui::Margin::symmetric(6, 4))
+                                .show(ui, |ui| {
+                                    render_log_lines_area(
+                                        ui,
+                                        format!("log-scroll-split-all-{}-{}", pane.key, word_wrap),
+                                        &pane.raw_lines,
+                                        &filtered_all_indices,
+                                        pane.exists,
+                                        "표시할 로그가 없습니다.",
+                                        &format!("[대기] {}.log 파일 생성 대기 중...", pane.key),
+                                        word_wrap,
+                                        pane.auto_follow,
+                                        font_size,
+                                    );
+                                });
+                        });
+
+                        // 중앙 세로 분할 드래그 스플리터
+                        handle_v_splitter(
+                            ui,
+                            &format!("split_pane_err_{}", pane.key),
+                            inner_split_rect,
+                            body_rect,
+                            &mut pane.err_split_ratio,
+                        );
+
+                        // 우측: 에러 · 경고 로그
+                        ui.scope_builder(egui::UiBuilder::new().max_rect(right_rect), |ui| {
+                            ui.set_clip_rect(right_rect);
+                            egui::Frame::NONE
+                                .fill(egui::Color32::from_rgb(255, 241, 242))
+                                .inner_margin(egui::Margin::symmetric(6, 2))
+                                .show(ui, |ui| {
+                                    ui.set_width((right_rect.width() - 12.0).max(10.0));
+                                    ui.horizontal(|ui| {
+                                        ui.label(
+                                            egui::RichText::new("에러 · 경고")
+                                                .strong()
+                                                .size(11.0)
+                                                .color(egui::Color32::from_rgb(190, 18, 60)),
+                                        );
+                                        ui.label(
+                                            egui::RichText::new(format!(
+                                                "{}줄",
+                                                filtered_err_indices.len()
+                                            ))
+                                            .monospace()
+                                            .size(10.5)
+                                            .color(egui::Color32::from_rgb(225, 29, 72)),
+                                        );
+
+                                        ui.with_layout(
+                                            egui::Layout::right_to_left(egui::Align::Center),
+                                            |ui| {
+                                                let err_copied = pane
+                                                    .err_copied_until
+                                                    .map(|t| Instant::now() < t)
+                                                    .unwrap_or(false);
+                                                if ui
+                                                    .add(
+                                                        egui::Button::new(
+                                                            egui::RichText::new(if err_copied {
+                                                                "복사됨"
+                                                            } else {
+                                                                "복사"
+                                                            })
+                                                            .size(10.5)
+                                                            .color(if err_copied {
+                                                                egui::Color32::from_rgb(5, 150, 105)
+                                                            } else {
+                                                                egui::Color32::from_rgb(190, 18, 60)
+                                                            }),
+                                                        )
+                                                        .fill(egui::Color32::WHITE),
+                                                    )
+                                                    .on_hover_text("에러/경고 로그만 클립보드 복사")
+                                                    .clicked()
+                                                {
+                                                    let joined: String = filtered_err_indices
+                                                        .iter()
+                                                        .map(|&i| pane.err_lines[i].as_str())
+                                                        .collect::<Vec<_>>()
+                                                        .join("\n");
+                                                    ui.ctx().copy_text(joined);
+                                                    pane.err_copied_until = Some(
+                                                        Instant::now()
+                                                            + Duration::from_millis(1300),
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    });
+                                });
+
+                            let sub_sep = ui.available_rect_before_wrap();
+                            ui.painter().hline(
+                                sub_sep.x_range(),
+                                sub_sep.top(),
+                                egui::Stroke::new(
+                                    1.0_f32,
+                                    egui::Color32::from_rgb(254, 205, 211),
+                                ),
                             );
+
+                            egui::Frame::NONE
+                                .fill(egui::Color32::WHITE)
+                                .inner_margin(egui::Margin::symmetric(6, 4))
+                                .show(ui, |ui| {
+                                    render_log_lines_area(
+                                        ui,
+                                        format!("log-scroll-split-err-{}-{}", pane.key, word_wrap),
+                                        &pane.err_lines,
+                                        &filtered_err_indices,
+                                        pane.exists || pane.err_exists,
+                                        "감지된 에러/경고 로그가 없습니다.",
+                                        &format!("[대기] {}.log 파일 생성 대기 중...", pane.key),
+                                        word_wrap,
+                                        pane.auto_follow,
+                                        font_size,
+                                    );
+                                });
                         });
-                        return;
                     }
+                } else {
+                    let body_margin = egui::Frame::NONE
+                        .fill(egui::Color32::WHITE)
+                        .inner_margin(egui::Margin::symmetric(6, 4));
 
-                    let scroll = if word_wrap {
-                        egui::ScrollArea::vertical()
-                    } else {
-                        egui::ScrollArea::both()
-                    }
-                    .id_salt(format!("log-scroll-{}-{}", pane.key, word_wrap))
-                    .auto_shrink([false, false])
-                    .stick_to_bottom(pane.auto_follow);
-
-                    scroll.show(ui, |ui| {
-                        ui.style_mut().wrap_mode = Some(if word_wrap {
-                            egui::TextWrapMode::Wrap
+                    body_margin.show(ui, |ui| {
+                        if error_only {
+                            render_log_lines_area(
+                                ui,
+                                format!("log-scroll-err-{}-{}", pane.key, word_wrap),
+                                &pane.err_lines,
+                                &filtered_err_indices,
+                                pane.exists || pane.err_exists,
+                                "감지된 에러/경고 로그가 없습니다.",
+                                &format!("[대기] {}.log 파일 생성 대기 중...", pane.key),
+                                word_wrap,
+                                pane.auto_follow,
+                                font_size,
+                            );
                         } else {
-                            egui::TextWrapMode::Extend
-                        });
-                        ui.spacing_mut().item_spacing.y = 2.0;
-
-                        for &line_idx in &filtered_indices {
-                            let line = &pane.raw_lines[line_idx];
-                            let (fg, bg_opt, bold) = classify_line_colors(line);
-                            let mut rt = egui::RichText::new(line)
-                                .monospace()
-                                .size(font_size)
-                                .color(fg);
-                            if bold {
-                                rt = rt.strong();
-                            }
-                            if let Some(bg) = bg_opt {
-                                rt = rt.background_color(bg);
-                            }
-                            ui.add(egui::Label::new(rt).selectable(true));
+                            render_log_lines_area(
+                                ui,
+                                format!("log-scroll-{}-{}", pane.key, word_wrap),
+                                &pane.raw_lines,
+                                &filtered_all_indices,
+                                pane.exists,
+                                "표시할 로그가 없습니다.",
+                                &format!("[대기] {}.log 파일 생성 대기 중...", pane.key),
+                                word_wrap,
+                                pane.auto_follow,
+                                font_size,
+                            );
                         }
                     });
-                });
+                }
             });
         });
 
         if toggle_zoom {
             self.zoomed = if is_zoomed { None } else { Some(idx) };
+        }
+        if toggle_error_split {
+            self.error_only = false;
+            self.error_split = !self.error_split;
         }
     }
 
@@ -1912,30 +2176,74 @@ impl eframe::App for LogGuiApp {
                             self.trigger_process_refresh(ctx);
                         }
                     } else {
+                        let visible_err_count: usize = self
+                            .visible_indices()
+                            .into_iter()
+                            .map(|i| self.panes[i].err_lines.len())
+                            .sum();
+                        let all_active = !self.error_only && !self.error_split;
+                        let split_active = self.error_split && !self.error_only;
                         let err_active = self.error_only;
+
                         if ui
                             .add(
                                 egui::Button::new(
                                     egui::RichText::new("전체 로그")
                                         .size(12.0)
                                         .strong()
-                                        .color(if !err_active {
+                                        .color(if all_active {
                                             egui::Color32::from_rgb(15, 23, 42)
                                         } else {
                                             egui::Color32::from_rgb(100, 116, 139)
                                         }),
                                 )
-                                .fill(if !err_active {
+                                .fill(if all_active {
                                     egui::Color32::WHITE
                                 } else {
                                     egui::Color32::from_rgb(241, 245, 249)
                                 }),
                             )
                             .clicked()
-                            && err_active
+                            && !all_active
                         {
                             self.error_only = false;
-                            self.refresh_visible(true);
+                            self.error_split = false;
+                        }
+
+                        let split_label = if visible_err_count > 0 {
+                            format!("에러 분할 ({})", visible_err_count)
+                        } else {
+                            "에러 분할".to_string()
+                        };
+                        if ui
+                            .add(
+                                egui::Button::new(
+                                    egui::RichText::new(split_label)
+                                        .size(12.0)
+                                        .strong()
+                                        .color(if split_active {
+                                            egui::Color32::WHITE
+                                        } else {
+                                            egui::Color32::from_rgb(190, 18, 60)
+                                        }),
+                                )
+                                .fill(if split_active {
+                                    egui::Color32::from_rgb(190, 18, 60)
+                                } else {
+                                    egui::Color32::from_rgb(255, 241, 242)
+                                }),
+                            )
+                            .on_hover_text(
+                                "각 로그 패널을 좌(전체 로그) | 우(에러·경고 로그)로 양분 표시 토글",
+                            )
+                            .clicked()
+                        {
+                            if split_active {
+                                self.error_split = false;
+                            } else {
+                                self.error_only = false;
+                                self.error_split = true;
+                            }
                         }
 
                         if ui
@@ -1953,14 +2261,14 @@ impl eframe::App for LogGuiApp {
                                 .fill(if err_active {
                                     egui::Color32::from_rgb(225, 29, 72)
                                 } else {
-                                    egui::Color32::from_rgb(255, 241, 242)
+                                    egui::Color32::from_rgb(241, 245, 249)
                                 }),
                             )
                             .clicked()
                             && !err_active
                         {
                             self.error_only = true;
-                            self.refresh_visible(true);
+                            self.error_split = false;
                         }
 
                         ui.separator();
@@ -2045,7 +2353,7 @@ impl eframe::App for LogGuiApp {
                             self.refresh_visible(true);
                         }
 
-                        if !matches!(self.group, LogGroup::Single(_))
+                        if (!matches!(self.group, LogGroup::Single(_)) || self.error_split)
                             && ui.button("비율 초기화").clicked()
                         {
                             self.reset_ratios();
@@ -2174,6 +2482,79 @@ impl eframe::App for LogGuiApp {
                 }
             });
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_log_lines_area(
+    ui: &mut egui::Ui,
+    scroll_id: String,
+    lines: &[String],
+    indices: &[usize],
+    file_exists: bool,
+    empty_msg: &str,
+    wait_msg: &str,
+    word_wrap: bool,
+    auto_follow: bool,
+    font_size: f32,
+) {
+    let avail = ui.available_size();
+    ui.set_min_size(avail);
+
+    if !file_exists {
+        ui.centered_and_justified(|ui| {
+            ui.label(
+                egui::RichText::new(wait_msg)
+                    .size(12.0)
+                    .color(egui::Color32::from_rgb(148, 163, 184)),
+            );
+        });
+        return;
+    }
+
+    if indices.is_empty() {
+        ui.centered_and_justified(|ui| {
+            ui.label(
+                egui::RichText::new(empty_msg)
+                    .size(12.0)
+                    .color(egui::Color32::from_rgb(148, 163, 184)),
+            );
+        });
+        return;
+    }
+
+    let scroll = if word_wrap {
+        egui::ScrollArea::vertical()
+    } else {
+        egui::ScrollArea::both()
+    }
+    .id_salt(scroll_id)
+    .auto_shrink([false, false])
+    .stick_to_bottom(auto_follow);
+
+    scroll.show(ui, |ui| {
+        ui.style_mut().wrap_mode = Some(if word_wrap {
+            egui::TextWrapMode::Wrap
+        } else {
+            egui::TextWrapMode::Extend
+        });
+        ui.spacing_mut().item_spacing.y = 2.0;
+
+        for &line_idx in indices {
+            let line = &lines[line_idx];
+            let (fg, bg_opt, bold) = classify_line_colors(line);
+            let mut rt = egui::RichText::new(line)
+                .monospace()
+                .size(font_size)
+                .color(fg);
+            if bold {
+                rt = rt.strong();
+            }
+            if let Some(bg) = bg_opt {
+                rt = rt.background_color(bg);
+            }
+            ui.add(egui::Label::new(rt).selectable(true));
+        }
+    });
 }
 
 fn split_horizontal(rect: egui::Rect, ratio: f32, gap: f32) -> (egui::Rect, egui::Rect, egui::Rect) {
@@ -3094,11 +3475,12 @@ fn collect_system_resources(
     }
 }
 
-fn parse_args() -> (PathBuf, LogGroup, ProcessScope, bool, bool, [u16; 5]) {
+fn parse_args() -> (PathBuf, LogGroup, ProcessScope, bool, bool, bool, [u16; 5]) {
     let (mut log_dir, mut ports) = load_defaults_from_paths_env();
     let mut group = LogGroup::All;
     let mut process_scope = ProcessScope::All;
     let mut error_only = false;
+    let mut error_split = false;
     let mut word_wrap = false;
 
     let args: Vec<String> = std::env::args().collect();
@@ -3126,7 +3508,16 @@ fn parse_args() -> (PathBuf, LogGroup, ProcessScope, bool, bool, [u16; 5]) {
                 i += 2;
             }
             "--type" if i + 1 < args.len() => {
-                error_only = args[i + 1].eq_ignore_ascii_case("error");
+                if args[i + 1].eq_ignore_ascii_case("error") {
+                    error_only = true;
+                    error_split = false;
+                } else if args[i + 1].eq_ignore_ascii_case("split") {
+                    error_only = false;
+                    error_split = true;
+                } else {
+                    error_only = false;
+                    error_split = false;
+                }
                 i += 2;
             }
             "--wrap" if i + 1 < args.len() => {
@@ -3149,13 +3540,27 @@ fn parse_args() -> (PathBuf, LogGroup, ProcessScope, bool, bool, [u16; 5]) {
         }
     }
 
-    (log_dir, group, process_scope, error_only, word_wrap, ports)
+    (
+        log_dir,
+        group,
+        process_scope,
+        error_only,
+        error_split,
+        word_wrap,
+        ports,
+    )
 }
 
 fn main() -> eframe::Result {
-    let (log_dir, group, process_scope, error_only, word_wrap, ports) = parse_args();
+    let (log_dir, group, process_scope, error_only, error_split, word_wrap, ports) = parse_args();
 
-    let mode_label = if error_only { "에러 로그" } else { "실시간 로그" };
+    let mode_label = if error_only {
+        "에러 로그"
+    } else if error_split {
+        "로그 · 에러 분할"
+    } else {
+        "실시간 로그"
+    };
     let (window_title, init_size) = match group {
         LogGroup::Process => (
             format!("ELVIS 프로세스 및 포트 진단 - {}", process_scope.label()),
@@ -3198,6 +3603,7 @@ fn main() -> eframe::Result {
                 group,
                 process_scope,
                 error_only,
+                error_split,
                 word_wrap,
                 ports,
             )))
