@@ -93,7 +93,8 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 
 | 영역 | 구성 모듈 / 산출물 | 진행 상태 | 주요 구현 내용 |
 | :--- | :--- | :---: | :--- |
-| **표준 인스톨·배포** | `D:\elvis-lite\`, [scripts/deploy-elvis-lite.ps1](scripts/deploy-elvis-lite.ps1) | 완료 | Standalone 제품 디렉터리 표준화(`apps/`, `binaries/`, `config/`, `scripts/`, `data/`, `logs/`), 무창 독립 데몬 기동(`run-daemon.ps1`/`vbs`), 개발/Release 경로 자동 분기 |
+| **로컬 배포 스크립트** | `D:\elvis-lite\`, [scripts/deploy-elvis-lite.ps1](scripts/deploy-elvis-lite.ps1) | 완료 | Standalone 제품 디렉터리 표준화(`apps/`, `binaries/`, `config/`, `scripts/`, `data/`, `logs/`), 무창 독립 데몬 기동(`run-daemon.ps1`/`vbs`), 개발/Release 경로 자동 분기 |
+| **설치 인스톨러 패키징** | Windows Installer (`Setup.exe` / Inno Setup 등) | 미착수 | 최종 사용자용 단일 설치 마법사 패키징 및 자동 환경 구성 (추후 진행 예정) |
 | **통합 런처** | `elvis-launcher` (`elvis-launcher.exe`) | 완료 | 제품 메인 경로 동적 변경·영속 저장, 5대 서비스 설치 여부(`미설치` 배지) 판별, 일괄·개별 제어 및 시스템 트레이 연동 |
 | **로그·프로세스 뷰어** | `elvis-log-viewer` (`elvis-log-viewer.exe`) | 완료 | 5분할/3분할/2분할/단일/에러 분할 뷰, 하단 1줄 시스템 자원 바(`CPU`/`RAM`/`DISK`/`UPTIME`), OCPP 파이프 표준 로그 레벨 파싱 및 태그 강조 |
 | **OCPP 게이트웨이·동기화** | `elvis-connect-ws` (`:9080`), `elvis-connect-sync` (`:9081`) | 완료 | OCPP 1.6J 송수신·Kafka 파이프라인·MySQL 실시간 상태/세션/계측/TOU 과금 동기화, `evcs_ocpp_ws`/`evcs_ocpp_rest` 표준 파이프 로그·MDC(`charger`, `msgId`)·에러/Kafka 파일 분리 |

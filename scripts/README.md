@@ -38,7 +38,7 @@ Docker 없이 `binaries/` 폴더에 위치한 포터블 바이너리와 Gradle �
 | 스크립트 파일 | 설명 | 출력 경로 |
 | :--- | :--- | :--- |
 | **`build-desktop-exes.bat`** | 4대 데스크톱 앱 전체(`all`) 또는 개별(`log-viewer`, `launcher`, `control-ui`, `tester-ui`) 릴리스 빌드 및 자동 복사 | `D:\elvis-lite\*.exe` |
-| **`deploy-elvis-lite.bat`** (`deploy-elvis-lite.ps1`) | 표준 인스톨 디렉터리 구조(`config/`, `scripts/`, `binaries/`, `apps/`, `data/`, `logs/`, 4대 `.exe`) 일괄 세팅 (`-BuildJars` 옵션 지원) | `D:\elvis-lite\` (변경 가능) |
+| **`deploy-elvis-lite.bat`** (`deploy-elvis-lite.ps1`) | 로컬 배포 디렉터리 구조(`config/`, `scripts/`, `binaries/`, `apps/`, `data/`, `logs/`, 4대 `.exe`) 일괄 세팅 (`-BuildJars` 옵션 지원) | `D:\elvis-lite\` (변경 가능) |
 | **`copy-exe.mjs`** | 빌드 완료된 단일 실행파일(`.exe`)만 `D:\elvis-lite\`로 복사하는 공용 Node 유틸리티 | `D:\elvis-lite\*.exe` |
 | **`generate-app-icons.ps1`** | `icons/` 원본 기반 라운드 스퀘어 마스킹 + 멀티 해상도 `.ico`(16~256px) + `64x64` RGBA 변환 유틸리티 | 각 모듈 `icons/` |
 
