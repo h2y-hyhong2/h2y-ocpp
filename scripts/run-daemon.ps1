@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][string]$BatName,
     [Parameter(Mandatory=$true)][string]$ServiceName,
     [string]$ElvisHome = ""

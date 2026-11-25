@@ -43,13 +43,17 @@ if not defined JAVA_HOME (
 set "API_PORT=9082"
 set "MYSQL_PORT=13306"
 set "KAFKA_PORT=19092"
+set "LOG_DIR=%ELVIS_HOME%\logs"
 if exist "%ELVIS_HOME%\config\paths.env" (
     for /f "usebackq tokens=1,* delims==" %%A in ("%ELVIS_HOME%\config\paths.env") do (
         if /I "%%A"=="ELVIS_API_PORT" set "API_PORT=%%B"
         if /I "%%A"=="ELVIS_MYSQL_PORT" set "MYSQL_PORT=%%B"
         if /I "%%A"=="ELVIS_KAFKA_PORT" set "KAFKA_PORT=%%B"
+        if /I "%%A"=="ELVIS_LOG_DIR" set "LOG_DIR=%%B"
     )
 )
+set "LOG_DIR=!LOG_DIR:%%ELVIS_HOME%%=%ELVIS_HOME%!"
+set "ELVIS_LOG_DIR=!LOG_DIR:\=/!"
 set "ELVIS_API_PORT=%API_PORT%"
 set "KAFKA_BOOTSTRAP_SERVERS=localhost:%KAFKA_PORT%"
 

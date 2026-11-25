@@ -10,6 +10,16 @@
 
 ## 변경 이력
 
+### [2026-11-25] PowerShell UTF-8 BOM 통일, `.bat` CRLF 보정 및 개발·빌드 스크립트 정비
+- **과제/커밋**: `[3368]WBS-COMMON-OP-012` (스크립트·개발/빌드 명령 전체 점검 및 보정)
+- **변경 내용**:
+  - `deploy-elvis-lite.ps1`, `start-ui.ps1`, `generate-app-icons.ps1`, `run-daemon.ps1`, `check-process-status.ps1`: Windows PowerShell 5.1 한글 파싱 오류 방지를 위해 전체 `.ps1` 파일을 UTF-8 BOM + CRLF로 통일
+  - `start-all-middleware-background.bat`: `ELVIS_HOME` 동적 해석 및 `run-daemon.ps1` 위임 구조로 정비 (`%ELVIS_HOME%\logs` 미치환 버그 해결)
+  - `watch-backend-classes.bat`: LF 전용 개행을 Windows 표준 CRLF로 변환
+  - `start-all-tester.bat`, `start-elvis-tester-ui.bat`, `start-elvis-launcher.bat`: 중복 브라우저 탭 오픈 제거 및 `127.0.0.1` 주소 통일
+  - `deploy-elvis-lite.ps1`, `start-elvis-control-api.bat`: `-BuildJars` Gradle 호출에 `-x test --no-daemon` 추가, `start-elvis-control-api.bat`에 `ELVIS_LOG_DIR` 환경변수 전달 추가
+- **영향 범위**: `scripts/*.ps1`, `scripts/*.bat`, `.vscode/tasks.json`, `elvis-{control,tester}-ui/src-tauri/tauri.conf.json`
+
 ### [2026-11-25] `start-elvis-connect-ws.bat`·`start-elvis-connect-sync.bat` `ELVIS_LOG_DIR` 환경변수 연동
 - **과제/커밋**: `[3368]WBS-COMMON-OP-009` (WS/SYNC 로그 파일 분리 경로 연동)
 - **변경 내용**:

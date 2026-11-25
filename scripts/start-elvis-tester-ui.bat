@@ -6,7 +6,7 @@ set SCRIPT_DIR=%~dp0
 set UI_ROOT=%SCRIPT_DIR%..\elvis-tester-ui
 
 echo ========================================================
-echo  [ELVIS-TESTER-UI] 프론트엔드 콘솔 기동 (http://localhost:1422)
+echo  [ELVIS-TESTER-UI] 프론트엔드 콘솔 기동 (http://127.0.0.1:1422)
 echo ========================================================
 
 rem 기존 잔류 1422 포트 점유 프로세스 자동 정리

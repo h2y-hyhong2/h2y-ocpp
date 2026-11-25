@@ -31,7 +31,7 @@ title ELVIS Infrastructure Launcher
 
 if "%LAUNCHER_MODE%"=="2" (
     echo [INFO] 웹 브라우저에서 ELVIS Launcher를 엽니다...
-    start http://localhost:1420
+    start http://127.0.0.1:1420
     echo [INFO] Vite 런처 웹 서버 기동 중...
     call pnpm dev
 ) else (

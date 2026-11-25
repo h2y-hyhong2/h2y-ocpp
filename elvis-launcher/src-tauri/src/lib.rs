@@ -211,7 +211,7 @@ fn check_install_snapshot(root: &std::path::Path) -> InstallSnapshot {
     let has_daemon_ps1 = root.join("scripts").join("run-daemon.ps1").is_file();
     let has_daemon_vbs = root.join("scripts").join("run-daemon.vbs").is_file();
 
-    let mut push_daemon_missing = |missing: &mut Vec<String>| {
+    let push_daemon_missing = |missing: &mut Vec<String>| {
         if !has_daemon_ps1 {
             missing.push("scripts\\run-daemon.ps1".to_string());
         }
@@ -324,17 +324,6 @@ impl InstallSnapshot {
         (if self.ws { 1 } else { 0 })
             + (if self.sync { 1 } else { 0 })
             + (if self.api { 1 } else { 0 })
-    }
-
-    fn is_installed(&self, service: &str) -> bool {
-        match service {
-            "mysql" => self.mysql,
-            "kafka" => self.kafka,
-            "ws" => self.ws,
-            "sync" => self.sync,
-            "api" => self.api,
-            _ => true,
-        }
     }
 
     fn installed_json(&self) -> serde_json::Value {

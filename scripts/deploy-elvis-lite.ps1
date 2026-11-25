@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$TargetDir = "D:\elvis-lite",
     [switch]$SkipBinaries,
     [switch]$SkipJdk,
@@ -163,7 +163,7 @@ if ($BuildJars) {
     Write-Host "  - Gradle bootJar 실행 중..." -ForegroundColor Gray
     Push-Location $workspaceRoot
     try {
-        & $gradleBat :elvis-connect-ws:bootJar :elvis-connect-sync:bootJar :elvis-control-api:bootJar
+        & $gradleBat :elvis-connect-ws:bootJar :elvis-connect-sync:bootJar :elvis-control-api:bootJar -x test --no-daemon
         if ($LASTEXITCODE -ne 0) {
             throw "Gradle bootJar 빌드 실패 (exit=$LASTEXITCODE)"
         }

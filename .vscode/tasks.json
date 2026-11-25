@@ -2,16 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "🚀 [UI] 프로토타입 브라우저 실행",
+      "label": "[Launcher] Tauri 데스크톱 개발 모드 (pnpm tauri:dev)",
       "type": "shell",
-      "command": "start \"\" \"d:/project/lselink/lselink-work/2026/과제/[3368]2026-07-02-002-CSMS Lite 버전(POC)/prototype/index.html\"",
+      "command": "pnpm tauri:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/elvis-launcher"
+      },
       "problemMatcher": [],
-      "presentation": {
-        "reveal": "silent"
-      }
+      "isBackground": true
     },
     {
-      "label": "🌐 [UI] Vite 개발 서버 (pnpm dev)",
+      "label": "[Control UI] Vite 웹 개발 서버 (pnpm dev)",
       "type": "shell",
       "command": "pnpm dev",
       "options": {
@@ -21,9 +22,9 @@
       "isBackground": true
     },
     {
-      "label": "🖥️ [UI] Tauri 데스크톱 앱 (pnpm tauri dev)",
+      "label": "[Control UI] Tauri 데스크톱 개발 모드 (pnpm tauri:dev)",
       "type": "shell",
-      "command": "pnpm tauri dev",
+      "command": "pnpm tauri:dev",
       "options": {
         "cwd": "${workspaceFolder}/elvis-control-ui"
       },
@@ -31,7 +32,27 @@
       "isBackground": true
     },
     {
-      "label": "🛠️ [Infra] 미들웨어 기동 (Kafka & MySQL)",
+      "label": "[Tester UI] Tauri 데스크톱 개발 모드 (pnpm tauri:dev)",
+      "type": "shell",
+      "command": "pnpm tauri:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/elvis-tester-ui"
+      },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "[Log Viewer] Rust 개발 모드 실행 (cargo run)",
+      "type": "shell",
+      "command": "cargo run",
+      "options": {
+        "cwd": "${workspaceFolder}/elvis-log-viewer"
+      },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "[Infra] 미들웨어 기동 (Kafka & MySQL)",
       "type": "shell",
       "command": "cmd.exe /c scripts\\start-all-middleware.bat",
       "options": {
@@ -48,6 +69,15 @@
       },
       "problemMatcher": [],
       "isBackground": true
+    },
+    {
+      "label": "[Release] 데스크톱 4대 앱 일괄 빌드 및 D:\\elvis-lite 배포",
+      "type": "shell",
+      "command": "cmd.exe /c scripts\\build-desktop-exes.bat all",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
     }
   ]
 }

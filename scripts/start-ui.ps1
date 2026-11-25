@@ -1,4 +1,4 @@
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+﻿[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "ELVIS-CSMS 관제 UI 실행기"
 
 Write-Host "===============================================================================" -ForegroundColor Cyan

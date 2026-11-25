@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)][string]$SourcePath,
     [Parameter(Mandatory = $true)][string]$OutPngPath,
     [string]$OutIcoPath = "",
