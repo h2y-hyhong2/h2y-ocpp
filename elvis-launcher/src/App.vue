@@ -13,13 +13,22 @@
           class="w-6 h-6 rounded-md shadow-sm flex-shrink-0"
         />
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <h1 class="font-bold text-xs tracking-tight text-slate-900 flex items-center gap-1.5">
             <span class="font-mono tracking-wider font-semibold">ELVIS</span>
             <span class="text-slate-500 font-normal">Launcher</span>
           </h1>
           <!-- 전체 가동 상태 배지 -->
           <span
+            v-if="installedCount === 0 && runningCount === 0"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium border bg-amber-50 text-amber-700 border-amber-200"
+            :title="`제품 경로(${productRoot})에 설치된 서비스가 없습니다.`"
+          >
+            <span class="inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+            <span>미설치</span>
+          </span>
+          <span
+            v-else
             class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[12px] font-mono font-medium border"
             :class="runningCount > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
           >
@@ -27,34 +36,30 @@
               <span v-if="runningCount > 0" class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 launcher-live-ring"></span>
               <span class="relative inline-flex rounded-full h-1.5 w-1.5" :class="runningCount > 0 ? 'bg-emerald-500' : 'bg-slate-400'"></span>
             </span>
-            <span>{{ runningCount }}/{{ totalCount }} RUNNING</span>
+            <span>{{ runningCount }}/{{ installedCount > 0 ? installedCount : totalCount }} RUNNING</span>
+          </span>
+          <span
+            v-if="installedCount > 0 && uninstalledCount > 0"
+            class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium border bg-amber-50 text-amber-700 border-amber-200"
+            :title="`${uninstalledCount}개 서비스가 미설치 상태입니다.`"
+          >
+            미설치 {{ uninstalledCount }}
           </span>
         </div>
       </div>
 
       <!-- 상단 액션 툴바: 전체 로그 일괄 열기 + 프로세스 진단 + 상태 새로고침 -->
       <div class="flex items-center gap-1.5">
-        <div class="inline-flex items-center rounded-md bg-slate-100/90 p-0.5 border border-slate-200/80 shadow-sm">
-          <button
-            @click="openLogsBatch('all', 'all')"
-            :disabled="isOpeningLogs"
-            class="px-2 py-0.5 rounded text-[12px] font-medium text-slate-700 hover:text-slate-900 hover:bg-white transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
-            title="ELVIS 통합 로그 뷰어 열기 (5분할 / 개별 / 프로세스 전환)"
-          >
-            <svg v-if="isOpeningLogs" class="w-3 h-3 animate-spin text-sky-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-            <svg v-else class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            <span>로그</span>
-          </button>
-          <div class="w-px h-3 bg-slate-200 mx-0.5"></div>
-          <button
-            @click="openLogsBatch('all', 'error')"
-            :disabled="isOpeningLogs"
-            class="px-2 py-0.5 rounded text-[12px] font-medium text-rose-600 hover:text-rose-700 hover:bg-white transition-all cursor-pointer disabled:opacity-40"
-            title="ELVIS 통합 에러/예외 로그 뷰어 열기"
-          >
-            에러로그
-          </button>
-        </div>
+        <button
+          @click="openLogsBatch('all', 'all')"
+          :disabled="isOpeningLogs"
+          class="px-2 py-1 rounded-md text-[12px] font-medium bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-sm transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1"
+          title="ELVIS 통합 로그 뷰어 열기 (5분할 / 개별 / 프로세스 전환)"
+        >
+          <svg v-if="isOpeningLogs" class="w-3 h-3 animate-spin text-sky-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          <svg v-else class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <span>로그</span>
+        </button>
 
         <button
           @click="openProcessStatus('all')"
@@ -69,7 +74,7 @@
           @click="checkStatus"
           :disabled="isChecking"
           class="px-2 py-1 rounded-md bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all text-xs cursor-pointer border border-slate-200 shadow-sm flex items-center gap-1.5"
-          title="포트 점유 상태 새로고침"
+          title="포트 점유 및 설치 상태 새로고침"
         >
           <svg class="w-3 h-3" :class="{ 'animate-spin': isChecking }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           <span class="text-[13px] font-medium">새로고침</span>
@@ -78,7 +83,106 @@
     </header>
 
     <!-- 메인 컨텐츠 영역 (컴팩트 카드 레이아웃) -->
-    <main class="w-full max-w-[700px] mx-auto p-2 flex flex-col">
+    <main class="w-full max-w-[700px] mx-auto p-2 flex flex-col gap-2">
+      <!-- 제품 메인 경로 설정 바 -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-1.5 flex items-center gap-2 w-full">
+        <template v-if="!isEditingPath">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <svg class="w-3.5 h-3.5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+            </svg>
+            <span class="text-[12px] font-semibold text-slate-600 flex-shrink-0">제품 경로</span>
+            <button
+              type="button"
+              @click="startEditPath"
+              :disabled="isExecuting"
+              class="flex-1 w-full min-w-0 text-left font-mono text-[12px] font-medium text-slate-900 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 hover:border-slate-300 rounded-md px-2.5 py-0.5 truncate transition-colors cursor-pointer disabled:cursor-not-allowed"
+              :title="`${productRoot} (클릭하여 경로 변경)`"
+            >
+              {{ productRoot }}
+            </button>
+            <span
+              v-if="!productRootExists"
+              class="flex-shrink-0 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200"
+              title="지정된 경로 디렉터리가 존재하지 않습니다."
+            >
+              경로 없음
+            </span>
+            <span
+              v-else-if="installedCount === totalCount"
+              class="flex-shrink-0 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+            >
+              {{ installedCount }}/{{ totalCount }} 설치됨
+            </span>
+            <span
+              v-else
+              class="flex-shrink-0 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+            >
+              {{ installedCount === 0 ? '미설치' : `${installedCount}/${totalCount} 설치` }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button
+              v-if="!isDefaultProductRoot"
+              @click="resetDefaultProductRoot"
+              :disabled="isSavingPath || isExecuting"
+              class="px-2 py-0.5 rounded-md text-[12px] font-medium bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm transition-all cursor-pointer disabled:opacity-40"
+              :title="`기본 경로(${defaultProductRoot})로 복원`"
+            >
+              기본값
+            </button>
+            <button
+              @click="startEditPath"
+              :disabled="isExecuting"
+              class="px-2.5 py-0.5 rounded-md text-[12px] font-medium bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 shadow-sm transition-all cursor-pointer disabled:opacity-40"
+              title="제품 메인 경로 변경"
+            >
+              경로 변경
+            </button>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="flex items-center gap-1.5 w-full min-w-0">
+            <svg class="w-3.5 h-3.5 text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+            </svg>
+            <span class="text-[12px] font-semibold text-slate-600 flex-shrink-0">제품 경로</span>
+            <input
+              v-model="draftProductRoot"
+              type="text"
+              @keyup.enter="applyProductRoot"
+              @keyup.escape="cancelEditPath"
+              :placeholder="defaultProductRoot || 'D:\\elvis-lite'"
+              class="flex-1 w-full min-w-0 font-mono text-[12px] text-slate-900 bg-white border border-sky-300 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/30 rounded-md px-2.5 py-0.5"
+            />
+            <button
+              @click="browseProductRoot"
+              :disabled="isBrowsingPath || isSavingPath"
+              class="px-2 py-0.5 rounded-md text-[12px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm transition-all cursor-pointer disabled:opacity-40 flex-shrink-0"
+              title="폴더 탐색기에서 경로 선택"
+            >
+              {{ isBrowsingPath ? '열는중...' : '찾아보기' }}
+            </button>
+            <button
+              @click="applyProductRoot"
+              :disabled="isSavingPath || !draftProductRoot.trim()"
+              class="px-2.5 py-0.5 rounded-md text-[12px] font-semibold bg-sky-600 hover:bg-sky-700 text-white border border-sky-600 shadow-sm transition-all cursor-pointer disabled:opacity-40 flex-shrink-0"
+            >
+              적용
+            </button>
+            <button
+              @click="cancelEditPath"
+              :disabled="isSavingPath"
+              class="px-2 py-0.5 rounded-md text-[12px] font-medium bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm transition-all cursor-pointer disabled:opacity-40 flex-shrink-0"
+            >
+              취소
+            </button>
+          </div>
+        </template>
+      </section>
+
       <!-- 서비스 통합 리스트 카드 (5개 서비스) -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
         
@@ -88,10 +192,17 @@
             <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
             <span class="text-[13px] font-semibold uppercase tracking-wider text-slate-700">미들웨어</span>
             <span
+              v-if="infraInstalledCount === 0 && infraRunningCount === 0"
+              class="px-1.5 py-0.5 rounded-full text-[11px] font-medium border bg-amber-50 text-amber-700 border-amber-200"
+            >
+              미설치
+            </span>
+            <span
+              v-else
               class="px-1.5 py-0.5 rounded-full text-[11px] font-mono font-medium border"
               :class="infraRunningCount > 0 ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-500 border-slate-200'"
             >
-              {{ infraRunningCount }}/2
+              {{ infraRunningCount }}/{{ infraInstalledCount > 0 ? infraInstalledCount : 2 }}
             </span>
           </div>
 
@@ -99,9 +210,9 @@
           <div class="flex items-center gap-1.5">
             <button
               @click="startInfra"
-              :disabled="isExecuting || (infra.mysql && infra.kafka)"
+              :disabled="isExecuting || infraInstalledCount === 0 || allInstalledInfraRunning"
               class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[12px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              title="미들웨어(MySQL, Kafka) 시작"
+              title="설치된 미들웨어(MySQL, Kafka) 시작"
             >
               <svg v-if="pendingAction.infra === 'start'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
               <span>{{ pendingAction.infra === 'start' ? '기동중' : '시작' }}</span>
@@ -117,9 +228,9 @@
             </button>
             <button
               @click="restartInfra"
-              :disabled="isExecuting"
+              :disabled="isExecuting || infraInstalledCount === 0"
               class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[12px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              title="미들웨어(MySQL, Kafka)만 순차 재기동"
+              title="설치된 미들웨어(MySQL, Kafka)만 순차 재기동"
             >
               <svg v-if="pendingAction.infra === 'restart'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
               <span>{{ pendingAction.infra === 'restart' ? '재기동중' : '재기동' }}</span>
@@ -142,12 +253,12 @@
                 ></span>
                 <span
                   class="relative inline-flex rounded-full h-2 w-2"
-                  :class="pendingAction.mysql ? 'bg-amber-500' : (infra.mysql ? 'bg-emerald-500' : 'bg-slate-300')"
+                  :class="pendingAction.mysql ? 'bg-amber-500' : (infra.mysql ? 'bg-emerald-500' : (!installed.mysql ? 'border-2 border-amber-400 bg-amber-50' : 'bg-slate-300'))"
                 ></span>
               </span>
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900">MySQL 9.71</span>
+                  <span class="text-xs font-bold" :class="!installed.mysql && !infra.mysql ? 'text-slate-500' : 'text-slate-900'">MySQL 9.71</span>
                 </div>
                 <p class="text-[12.5px] text-slate-500 leading-tight">충전 자산, 세션, 단가, 트랜잭션 원장 보관</p>
               </div>
@@ -156,6 +267,14 @@
             <!-- 정돈된 액션 버튼군: [상태] + [포트] + [시작/종료] + [재기동] -->
             <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
               <span
+                v-if="!pendingAction.mysql && !infra.mysql && !installed.mysql"
+                class="min-w-[56px] text-center whitespace-nowrap text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                :title="missingTooltip('mysql')"
+              >
+                미설치
+              </span>
+              <span
+                v-else
                 class="min-w-[56px] text-right whitespace-nowrap text-[11px] font-mono font-semibold"
                 :class="pendingAction.mysql ? 'text-amber-600' : (infra.mysql ? 'text-emerald-600' : 'text-slate-400')"
               >
@@ -163,10 +282,11 @@
               </span>
               <span class="min-w-[82px] text-center text-[12px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.mysql }}</span>
 
-              <!-- 서비스 제어: 시작 / 종료 (항상 표시, 불가 상태 비활성화) -->
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 @click="control('start', 'mysql', true)"
-                :disabled="isExecuting || pendingAction.mysql !== null || infra.mysql"
+                :disabled="isExecuting || pendingAction.mysql !== null || infra.mysql || !installed.mysql"
+                :title="!installed.mysql ? missingTooltip('mysql') : 'MySQL 시작'"
                 class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 shadow-sm cursor-pointer transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.mysql === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -184,9 +304,9 @@
               <!-- 재기동 -->
               <button
                 @click="restartService('mysql')"
-                :disabled="isExecuting || pendingAction.mysql !== null"
-                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                title="MySQL 재기동"
+                :disabled="isExecuting || pendingAction.mysql !== null || !installed.mysql"
+                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                :title="!installed.mysql ? missingTooltip('mysql') : 'MySQL 재기동'"
               >
                 <svg v-if="pendingAction.mysql === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.mysql === 'restart' ? '재기동중' : '재기동' }}</span>
@@ -208,12 +328,12 @@
                 ></span>
                 <span
                   class="relative inline-flex rounded-full h-2 w-2"
-                  :class="pendingAction.kafka ? 'bg-amber-500' : (infra.kafka ? 'bg-emerald-500' : 'bg-slate-300')"
+                  :class="pendingAction.kafka ? 'bg-amber-500' : (infra.kafka ? 'bg-emerald-500' : (!installed.kafka ? 'border-2 border-amber-400 bg-amber-50' : 'bg-slate-300'))"
                 ></span>
               </span>
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900">Apache Kafka (KRaft)</span>
+                  <span class="text-xs font-bold" :class="!installed.kafka && !infra.kafka ? 'text-slate-500' : 'text-slate-900'">Apache Kafka (KRaft)</span>
                 </div>
                 <p class="text-[12.5px] text-slate-500 leading-tight">OCPP 이벤트 스트리밍 및 메시지 버퍼</p>
               </div>
@@ -222,6 +342,14 @@
             <!-- 정돈된 액션 버튼군: [상태] + [포트] + [시작/종료] + [재기동] -->
             <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
               <span
+                v-if="!pendingAction.kafka && !infra.kafka && !installed.kafka"
+                class="min-w-[56px] text-center whitespace-nowrap text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                :title="missingTooltip('kafka')"
+              >
+                미설치
+              </span>
+              <span
+                v-else
                 class="min-w-[56px] text-right whitespace-nowrap text-[11px] font-mono font-semibold"
                 :class="pendingAction.kafka ? 'text-amber-600' : (infra.kafka ? 'text-emerald-600' : 'text-slate-400')"
               >
@@ -229,10 +357,11 @@
               </span>
               <span class="min-w-[82px] text-center text-[12px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.kafka }}</span>
 
-              <!-- 서비스 제어: 시작 / 종료 (항상 표시, 불가 상태 비활성화) -->
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 @click="control('start', 'kafka', true)"
-                :disabled="isExecuting || pendingAction.kafka !== null || infra.kafka"
+                :disabled="isExecuting || pendingAction.kafka !== null || infra.kafka || !installed.kafka"
+                :title="!installed.kafka ? missingTooltip('kafka') : 'Kafka 시작'"
                 class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 shadow-sm cursor-pointer transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.kafka === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -250,9 +379,9 @@
               <!-- 재기동 -->
               <button
                 @click="restartService('kafka')"
-                :disabled="isExecuting || pendingAction.kafka !== null"
-                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                title="Kafka 재기동"
+                :disabled="isExecuting || pendingAction.kafka !== null || !installed.kafka"
+                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                :title="!installed.kafka ? missingTooltip('kafka') : 'Kafka 재기동'"
               >
                 <svg v-if="pendingAction.kafka === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.kafka === 'restart' ? '재기동중' : '재기동' }}</span>
@@ -267,10 +396,17 @@
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span class="text-[13px] font-semibold uppercase tracking-wider text-slate-700">코어 엔진</span>
             <span
+              v-if="coreInstalledCount === 0 && coreRunningCount === 0"
+              class="px-1.5 py-0.5 rounded-full text-[11px] font-medium border bg-amber-50 text-amber-700 border-amber-200"
+            >
+              미설치
+            </span>
+            <span
+              v-else
               class="px-1.5 py-0.5 rounded-full text-[11px] font-mono font-medium border"
               :class="coreRunningCount > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'"
             >
-              {{ coreRunningCount }}/3
+              {{ coreRunningCount }}/{{ coreInstalledCount > 0 ? coreInstalledCount : 3 }}
             </span>
           </div>
 
@@ -278,9 +414,9 @@
           <div class="flex items-center gap-1.5">
             <button
               @click="startServices"
-              :disabled="isExecuting || (infra.connectWs && infra.connectSync && infra.controlApi)"
+              :disabled="isExecuting || coreInstalledCount === 0 || allInstalledCoreRunning"
               class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[12px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/90 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              title="코어 엔진(WS, Sync, API) 순차 시작"
+              title="설치된 코어 엔진(WS, Sync, API) 순차 시작"
             >
               <svg v-if="pendingAction.services === 'start'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
               <span>{{ pendingAction.services === 'start' ? '기동중' : '시작' }}</span>
@@ -296,9 +432,9 @@
             </button>
             <button
               @click="restartServices"
-              :disabled="isExecuting"
+              :disabled="isExecuting || coreInstalledCount === 0"
               class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[12px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              title="미들웨어(MySQL, Kafka)는 유지하고 코어 엔진만 순차 재기동"
+              title="설치된 코어 엔진만 순차 재기동"
             >
               <svg v-if="pendingAction.services === 'restart'" class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
               <span>{{ pendingAction.services === 'restart' ? '재기동중' : '재기동' }}</span>
@@ -321,12 +457,12 @@
                 ></span>
                 <span
                   class="relative inline-flex rounded-full h-2 w-2"
-                  :class="pendingAction.ws ? 'bg-amber-500' : (infra.connectWs ? 'bg-emerald-500' : 'bg-slate-300')"
+                  :class="pendingAction.ws ? 'bg-amber-500' : (infra.connectWs ? 'bg-emerald-500' : (!installed.connectWs ? 'border-2 border-amber-400 bg-amber-50' : 'bg-slate-300'))"
                 ></span>
               </span>
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900">elvis-connect-ws</span>
+                  <span class="text-xs font-bold" :class="!installed.connectWs && !infra.connectWs ? 'text-slate-500' : 'text-slate-900'">elvis-connect-ws</span>
                 </div>
                 <p class="text-[12.5px] text-slate-500 leading-tight">충전기 단말 WebSocket 커넥션 수용 게이트웨이</p>
               </div>
@@ -335,6 +471,14 @@
             <!-- 정돈된 액션 버튼군: [상태] + [포트] + [시작/종료] + [재기동] -->
             <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
               <span
+                v-if="!pendingAction.ws && !infra.connectWs && !installed.connectWs"
+                class="min-w-[56px] text-center whitespace-nowrap text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                :title="missingTooltip('connectWs')"
+              >
+                미설치
+              </span>
+              <span
+                v-else
                 class="min-w-[56px] text-right whitespace-nowrap text-[11px] font-mono font-semibold"
                 :class="pendingAction.ws ? 'text-amber-600' : (infra.connectWs ? 'text-emerald-600' : 'text-slate-400')"
               >
@@ -342,10 +486,11 @@
               </span>
               <span class="min-w-[82px] text-center text-[12px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.ws }}</span>
 
-              <!-- 서비스 제어: 시작 / 종료 (항상 표시, 불가 상태 비활성화) -->
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 @click="control('start', 'ws', true)"
-                :disabled="isExecuting || pendingAction.ws !== null || infra.connectWs"
+                :disabled="isExecuting || pendingAction.ws !== null || infra.connectWs || !installed.connectWs"
+                :title="!installed.connectWs ? missingTooltip('connectWs') : 'WS 게이트웨이 시작'"
                 class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 shadow-sm cursor-pointer transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.ws === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -363,9 +508,9 @@
               <!-- 재기동 -->
               <button
                 @click="restartService('ws')"
-                :disabled="isExecuting || pendingAction.ws !== null"
-                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                title="WS 게이트웨이 재기동"
+                :disabled="isExecuting || pendingAction.ws !== null || !installed.connectWs"
+                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                :title="!installed.connectWs ? missingTooltip('connectWs') : 'WS 게이트웨이 재기동'"
               >
                 <svg v-if="pendingAction.ws === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.ws === 'restart' ? '재기동중' : '재기동' }}</span>
@@ -387,12 +532,12 @@
                 ></span>
                 <span
                   class="relative inline-flex rounded-full h-2 w-2"
-                  :class="pendingAction.sync ? 'bg-amber-500' : (infra.connectSync ? 'bg-emerald-500' : 'bg-slate-300')"
+                  :class="pendingAction.sync ? 'bg-amber-500' : (infra.connectSync ? 'bg-emerald-500' : (!installed.connectSync ? 'border-2 border-amber-400 bg-amber-50' : 'bg-slate-300'))"
                 ></span>
               </span>
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900">elvis-connect-sync</span>
+                  <span class="text-xs font-bold" :class="!installed.connectSync && !infra.connectSync ? 'text-slate-500' : 'text-slate-900'">elvis-connect-sync</span>
                 </div>
                 <p class="text-[12.5px] text-slate-500 leading-tight">Kafka 이벤트 컨슘, 상태 UPDATE 및 원장 DB 적재</p>
               </div>
@@ -401,6 +546,14 @@
             <!-- 정돈된 액션 버튼군: [상태] + [포트] + [시작/종료] + [재기동] -->
             <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
               <span
+                v-if="!pendingAction.sync && !infra.connectSync && !installed.connectSync"
+                class="min-w-[56px] text-center whitespace-nowrap text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                :title="missingTooltip('connectSync')"
+              >
+                미설치
+              </span>
+              <span
+                v-else
                 class="min-w-[56px] text-right whitespace-nowrap text-[11px] font-mono font-semibold"
                 :class="pendingAction.sync ? 'text-amber-600' : (infra.connectSync ? 'text-emerald-600' : 'text-slate-400')"
               >
@@ -408,10 +561,11 @@
               </span>
               <span class="min-w-[82px] text-center text-[12px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.sync }}</span>
 
-              <!-- 서비스 제어: 시작 / 종료 (항상 표시, 불가 상태 비활성화) -->
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 @click="control('start', 'sync', true)"
-                :disabled="isExecuting || pendingAction.sync !== null || infra.connectSync"
+                :disabled="isExecuting || pendingAction.sync !== null || infra.connectSync || !installed.connectSync"
+                :title="!installed.connectSync ? missingTooltip('connectSync') : 'Sync 엔진 시작'"
                 class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 shadow-sm cursor-pointer transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.sync === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -429,9 +583,9 @@
               <!-- 재기동 -->
               <button
                 @click="restartService('sync')"
-                :disabled="isExecuting || pendingAction.sync !== null"
-                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                title="Sync 엔진 재기동"
+                :disabled="isExecuting || pendingAction.sync !== null || !installed.connectSync"
+                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                :title="!installed.connectSync ? missingTooltip('connectSync') : 'Sync 엔진 재기동'"
               >
                 <svg v-if="pendingAction.sync === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.sync === 'restart' ? '재기동중' : '재기동' }}</span>
@@ -453,12 +607,12 @@
                 ></span>
                 <span
                   class="relative inline-flex rounded-full h-2 w-2"
-                  :class="pendingAction.api ? 'bg-amber-500' : (infra.controlApi ? 'bg-emerald-500' : 'bg-slate-300')"
+                  :class="pendingAction.api ? 'bg-amber-500' : (infra.controlApi ? 'bg-emerald-500' : (!installed.controlApi ? 'border-2 border-amber-400 bg-amber-50' : 'bg-slate-300'))"
                 ></span>
               </span>
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900">elvis-control-api</span>
+                  <span class="text-xs font-bold" :class="!installed.controlApi && !infra.controlApi ? 'text-slate-500' : 'text-slate-900'">elvis-control-api</span>
                 </div>
                 <p class="text-[12.5px] text-slate-500 leading-tight">관제 어드민 REST API 서버 & 실시간 웹소켓 푸시</p>
               </div>
@@ -467,6 +621,14 @@
             <!-- 정돈된 액션 버튼군: [상태] + [포트] + [시작/종료] + [재기동] -->
             <div class="flex items-center gap-1.5 flex-shrink-0 justify-end">
               <span
+                v-if="!pendingAction.api && !infra.controlApi && !installed.controlApi"
+                class="min-w-[56px] text-center whitespace-nowrap text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                :title="missingTooltip('controlApi')"
+              >
+                미설치
+              </span>
+              <span
+                v-else
                 class="min-w-[56px] text-right whitespace-nowrap text-[11px] font-mono font-semibold"
                 :class="pendingAction.api ? 'text-amber-600' : (infra.controlApi ? 'text-emerald-600' : 'text-slate-400')"
               >
@@ -474,10 +636,11 @@
               </span>
               <span class="min-w-[82px] text-center text-[12px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Port {{ ports.api }}</span>
 
-              <!-- 서비스 제어: 시작 / 종료 (항상 표시, 불가 상태 비활성화) -->
+              <!-- 서비스 제어: 시작 / 종료 -->
               <button
                 @click="control('start', 'api', true)"
-                :disabled="isExecuting || pendingAction.api !== null || infra.controlApi"
+                :disabled="isExecuting || pendingAction.api !== null || infra.controlApi || !installed.controlApi"
+                :title="!installed.controlApi ? missingTooltip('controlApi') : 'Control API 시작'"
                 class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 shadow-sm cursor-pointer transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 flex items-center justify-center gap-1"
               >
                 <svg v-if="pendingAction.api === 'start'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -495,9 +658,9 @@
               <!-- 재기동 -->
               <button
                 @click="restartService('api')"
-                :disabled="isExecuting || pendingAction.api !== null"
-                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                title="Control API 재기동"
+                :disabled="isExecuting || pendingAction.api !== null || !installed.controlApi"
+                class="min-w-[54px] px-2 py-0.5 rounded-md text-center text-[13px] font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                :title="!installed.controlApi ? missingTooltip('controlApi') : 'Control API 재기동'"
               >
                 <svg v-if="pendingAction.api === 'restart'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span>{{ pendingAction.api === 'restart' ? '재기동중' : '재기동' }}</span>
@@ -543,6 +706,8 @@ interface Toast {
   type: 'success' | 'error' | 'info'
 }
 
+type InstalledKey = 'mysql' | 'kafka' | 'connectWs' | 'connectSync' | 'controlApi'
+
 const isTauriRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
 const toasts = ref<Toast[]>([])
@@ -555,6 +720,20 @@ function addToast(title: string, message: string, type: 'success' | 'error' | 'i
   }, 3500)
 }
 
+// 메인 경로 상태 (개발환경: 워크스페이스 루트, Release: D:\elvis-lite — 백엔드 조회로 자동 동기화)
+const initialFallbackRoot = (import.meta as any).env?.DEV ? '' : 'D:\\elvis-lite'
+const defaultProductRoot = ref(initialFallbackRoot)
+const productRoot = ref(initialFallbackRoot)
+const productRootExists = ref(true)
+const isEditingPath = ref(false)
+const draftProductRoot = ref(initialFallbackRoot)
+const isSavingPath = ref(false)
+const isBrowsingPath = ref(false)
+
+const isDefaultProductRoot = computed(() => {
+  return productRoot.value.trim().toLowerCase() === defaultProductRoot.value.trim().toLowerCase()
+})
+
 // 핵심 서비스 점유 상태
 const infra = reactive({
   mysql: false,
@@ -562,6 +741,24 @@ const infra = reactive({
   connectWs: false,
   connectSync: false,
   controlApi: false
+})
+
+// 핵심 서비스 설치 여부 (선택된 제품 메인 경로 기준)
+const installed = reactive<Record<InstalledKey, boolean>>({
+  mysql: true,
+  kafka: true,
+  connectWs: true,
+  connectSync: true,
+  controlApi: true
+})
+
+// 미설치 서비스별 누락 파일 목록 (툴팁 안내용)
+const missingFiles = reactive<Record<InstalledKey, string[]>>({
+  mysql: [],
+  kafka: [],
+  connectWs: [],
+  connectSync: [],
+  controlApi: []
 })
 
 const ports = reactive({
@@ -590,6 +787,40 @@ const pendingAction = reactive<Record<string, string | null>>({
 
 const totalCount = computed(() => 5)
 
+const installedCount = computed(() => {
+  return [
+    installed.mysql,
+    installed.kafka,
+    installed.connectWs,
+    installed.connectSync,
+    installed.controlApi
+  ].filter(Boolean).length
+})
+
+const uninstalledCount = computed(() => totalCount.value - installedCount.value)
+
+const infraInstalledCount = computed(() => {
+  return [installed.mysql, installed.kafka].filter(Boolean).length
+})
+
+const coreInstalledCount = computed(() => {
+  return [installed.connectWs, installed.connectSync, installed.controlApi].filter(Boolean).length
+})
+
+const allInstalledInfraRunning = computed(() => {
+  if (infraInstalledCount.value === 0) return true
+  return (!installed.mysql || infra.mysql) && (!installed.kafka || infra.kafka)
+})
+
+const allInstalledCoreRunning = computed(() => {
+  if (coreInstalledCount.value === 0) return true
+  return (
+    (!installed.connectWs || infra.connectWs) &&
+    (!installed.connectSync || infra.connectSync) &&
+    (!installed.controlApi || infra.controlApi)
+  )
+})
+
 // 가동 중인 전체 서비스 수 계산 (총 5개 기준)
 const runningCount = computed(() => {
   return [
@@ -611,12 +842,140 @@ const coreRunningCount = computed(() => {
   return [infra.connectWs, infra.connectSync, infra.controlApi].filter(Boolean).length
 })
 
+function missingTooltip(key: InstalledKey): string {
+  const list = missingFiles[key]
+  if (!list || list.length === 0) {
+    return `미설치 (제품 경로: ${productRoot.value})`
+  }
+  return `미설치 - 누락 항목:\n${list.map(item => `• ${productRoot.value}\\${item}`).join('\n')}`
+}
+
+function isServiceInstalled(service: string): boolean {
+  if (service === 'mysql') return installed.mysql
+  if (service === 'kafka') return installed.kafka
+  if (service === 'ws') return installed.connectWs
+  if (service === 'sync') return installed.connectSync
+  if (service === 'api') return installed.controlApi
+  return true
+}
+
+function applyInstallPayload(data: any) {
+  if (typeof data?.productRoot === 'string' && data.productRoot) {
+    productRoot.value = data.productRoot
+    if (!isEditingPath.value) {
+      draftProductRoot.value = data.productRoot
+    }
+  }
+  if (typeof data?.defaultRoot === 'string' && data.defaultRoot) {
+    defaultProductRoot.value = data.defaultRoot
+  }
+  if (typeof data?.productRootExists === 'boolean') {
+    productRootExists.value = data.productRootExists
+  } else if (typeof data?.exists === 'boolean') {
+    productRootExists.value = data.exists
+  }
+  if (data?.installed) {
+    installed.mysql = !!data.installed.mysql
+    installed.kafka = !!data.installed.kafka
+    installed.connectWs = !!data.installed.connectWs
+    installed.connectSync = !!data.installed.connectSync
+    installed.controlApi = !!data.installed.controlApi
+  }
+  if (data?.missing) {
+    missingFiles.mysql = Array.isArray(data.missing.mysql) ? data.missing.mysql : []
+    missingFiles.kafka = Array.isArray(data.missing.kafka) ? data.missing.kafka : []
+    missingFiles.connectWs = Array.isArray(data.missing.connectWs) ? data.missing.connectWs : []
+    missingFiles.connectSync = Array.isArray(data.missing.connectSync) ? data.missing.connectSync : []
+    missingFiles.controlApi = Array.isArray(data.missing.controlApi) ? data.missing.controlApi : []
+  }
+}
+
+function startEditPath() {
+  draftProductRoot.value = productRoot.value
+  isEditingPath.value = true
+}
+
+function cancelEditPath() {
+  draftProductRoot.value = productRoot.value
+  isEditingPath.value = false
+}
+
+async function browseProductRoot() {
+  if (isBrowsingPath.value) return
+  isBrowsingPath.value = true
+  try {
+    let selected: string | null = null
+    if (isTauriRuntime()) {
+      selected = await invoke<string | null>('browse_product_root')
+    } else {
+      const res = await fetch('/api/infra/product-root/browse', { method: 'POST' })
+      const data = await res.json()
+      selected = data?.path || null
+    }
+    if (selected) {
+      draftProductRoot.value = selected
+    }
+  } catch (err: any) {
+    addToast('폴더 선택 실패', err?.message || String(err), 'error')
+  } finally {
+    isBrowsingPath.value = false
+  }
+}
+
+async function saveAndApplyProductRoot(targetPath: string) {
+  if (isSavingPath.value) return
+  isSavingPath.value = true
+  try {
+    let data: any
+    if (isTauriRuntime()) {
+      data = await invoke<any>('set_product_root', { path: targetPath })
+    } else {
+      const res = await fetch('/api/infra/product-root', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: targetPath })
+      })
+      data = await res.json()
+      if (!data?.success) {
+        throw new Error(data?.message || '경로 저장 실패')
+      }
+    }
+    isEditingPath.value = false
+    applyInstallPayload(data)
+    await checkStatus()
+    const instCnt = installedCount.value
+    addToast(
+      '제품 경로 변경됨',
+      `${productRoot.value} (설치 ${instCnt}/${totalCount.value}${instCnt < totalCount.value ? `, 미설치 ${totalCount.value - instCnt}` : ''})`,
+      instCnt > 0 ? 'success' : 'info'
+    )
+  } catch (err: any) {
+    addToast('경로 변경 실패', err?.message || String(err), 'error')
+  } finally {
+    isSavingPath.value = false
+  }
+}
+
+async function applyProductRoot() {
+  const nextPath = draftProductRoot.value.trim()
+  if (!nextPath) return
+  await saveAndApplyProductRoot(nextPath)
+}
+
+async function resetDefaultProductRoot() {
+  await saveAndApplyProductRoot(defaultProductRoot.value)
+}
+
 let statusPollingTimer: any = null
 
 async function startServiceCmd(service: string, isBackground = true): Promise<{ success: boolean; message: string }> {
   if (isTauriRuntime()) {
-    const msg = await invoke<string>('start_middleware_detached', { service })
-    return { success: true, message: msg }
+    try {
+      const msg = await invoke<string>('start_middleware_detached', { service })
+      return { success: true, message: msg }
+    } catch (err: any) {
+      return { success: false, message: typeof err === 'string' ? err : (err?.message || String(err)) }
+    }
   }
   const res = await fetch(`/api/infra/start?service=${encodeURIComponent(service)}&background=${isBackground}`, { method: 'POST' })
   return await res.json()
@@ -624,8 +983,12 @@ async function startServiceCmd(service: string, isBackground = true): Promise<{ 
 
 async function stopServiceCmd(service: string): Promise<{ success: boolean; message: string }> {
   if (isTauriRuntime()) {
-    const msg = await invoke<string>('stop_middleware_detached', { service })
-    return { success: true, message: msg }
+    try {
+      const msg = await invoke<string>('stop_middleware_detached', { service })
+      return { success: true, message: msg }
+    } catch (err: any) {
+      return { success: false, message: typeof err === 'string' ? err : (err?.message || String(err)) }
+    }
   }
   const res = await fetch(`/api/infra/stop?service=${encodeURIComponent(service)}`, { method: 'POST' })
   return await res.json()
@@ -701,6 +1064,9 @@ async function checkStatus() {
     const data = isTauriRuntime()
       ? await invoke<any>('check_middleware_status')
       : await (await fetch('/api/infra/status')).json()
+
+    applyInstallPayload(data)
+
     infra.mysql = !!data.mysql
     infra.kafka = !!data.kafka
     infra.controlApi = !!data.controlApi
@@ -739,6 +1105,12 @@ async function checkStatus() {
 
 // 2. 서비스 단독 제어 (완전히 기동/종료될 때까지 계속 진행중 표시 유지)
 async function control(action: 'start' | 'stop', service: string, isBackground = true) {
+  if (action === 'start' && !isServiceInstalled(service)) {
+    addToast('미설치 서비스', `${service.toUpperCase()} 제품이 설치되어 있지 않습니다. (${productRoot.value})`, 'error')
+    clearTauriTrayPending()
+    return
+  }
+
   isExecuting.value = true
   pendingAction[service] = action
   const targetState = action === 'start'
@@ -769,19 +1141,23 @@ async function control(action: 'start' | 'stop', service: string, isBackground =
   }
 }
 
-// 3. 인프라만 시작 (MySQL & Kafka가 둘 다 완전히 기동될 때까지 대기)
+// 3. 인프라만 시작 (설치된 미들웨어가 모두 기동될 때까지 대기)
 async function startInfra() {
+  if (infraInstalledCount.value === 0) {
+    addToast('미설치', `설치된 미들웨어가 없습니다. (${productRoot.value})`, 'error')
+    return
+  }
   isExecuting.value = true
   pendingAction.infra = 'start'
-  if (!infra.mysql) pendingAction.mysql = 'start'
-  if (!infra.kafka) pendingAction.kafka = 'start'
+  if (installed.mysql && !infra.mysql) pendingAction.mysql = 'start'
+  if (installed.kafka && !infra.kafka) pendingAction.kafka = 'start'
   try {
     const data = await startServiceCmd('all-infra', true)
     if (data.success) {
-      addToast('인프라 기동 요청', 'MySQL 및 Kafka가 완전히 뜰 때까지 대기합니다.', 'info')
-      const ok = await waitForCondition(() => infra.mysql && infra.kafka, 45000, 800)
+      addToast('인프라 기동 요청', '설치된 미들웨어가 완전히 뜰 때까지 대기합니다.', 'info')
+      const ok = await waitForCondition(() => allInstalledInfraRunning.value, 45000, 800)
       if (ok) {
-        addToast('인프라 기동 완료', 'MySQL 및 Kafka가 모두 정상 가동되었습니다.', 'success')
+        addToast('인프라 기동 완료', '설치된 미들웨어가 모두 정상 가동되었습니다.', 'success')
       }
     } else {
       addToast('기동 실패', data.message, 'error')
@@ -798,7 +1174,7 @@ async function startInfra() {
   }
 }
 
-// 3-1. 인프라만 중지 (MySQL & Kafka가 둘 다 완전히 종료될 때까지 대기)
+// 3-1. 인프라만 중지
 async function stopInfra() {
   isExecuting.value = true
   pendingAction.infra = 'stop'
@@ -827,19 +1203,24 @@ async function stopInfra() {
   }
 }
 
-// 3-2. 인프라만 재기동 (완전히 재가동될 때까지 대기)
+// 3-2. 인프라만 재기동
 async function restartInfra() {
+  if (infraInstalledCount.value === 0) {
+    addToast('미설치', `설치된 미들웨어가 없습니다. (${productRoot.value})`, 'error')
+    clearTauriTrayPending()
+    return
+  }
   isExecuting.value = true
   pendingAction.infra = 'restart'
-  pendingAction.mysql = 'restart'
-  pendingAction.kafka = 'restart'
+  if (installed.mysql) pendingAction.mysql = 'restart'
+  if (installed.kafka) pendingAction.kafka = 'restart'
   try {
     const data = await restartGroupCmd('all-infra')
     if (data.success) {
       addToast('인프라 재기동', '기존 인프라 정리 후 재기동 중입니다...', 'info')
-      const ok = await waitForCondition(() => infra.mysql && infra.kafka, 50000, 800)
+      const ok = await waitForCondition(() => allInstalledInfraRunning.value, 50000, 800)
       if (ok) {
-        addToast('인프라 재기동 완료', 'MySQL 및 Kafka가 정상 재기동되었습니다.', 'success')
+        addToast('인프라 재기동 완료', '설치된 미들웨어가 정상 재기동되었습니다.', 'success')
       }
     } else {
       addToast('재기동 오류', data.message, 'error')
@@ -858,6 +1239,10 @@ async function restartInfra() {
 
 // 3-3. 개별 단일 서비스 재기동 (MySQL, Kafka, WS, Sync, API)
 async function restartService(service: string) {
+  if (!isServiceInstalled(service)) {
+    addToast('미설치 서비스', `${service.toUpperCase()} 제품이 설치되어 있지 않습니다. (${productRoot.value})`, 'error')
+    return
+  }
   isExecuting.value = true
   pendingAction[service] = 'restart'
   const serviceNames: Record<string, string> = {
@@ -872,18 +1257,15 @@ async function restartService(service: string) {
   try {
     const isCurrentlyRunning = getServiceStatus(service)
 
-    // 만약 서비스가 현재 꺼져 있다면 바로 단독 기동 처리
     if (!isCurrentlyRunning) {
       addToast(`${svcName} 기동`, `${svcName} 서비스가 현재 중지 상태이므로 즉시 기동합니다.`, 'info')
       await control('start', service, true)
       return
     }
 
-    // 서비스가 켜져 있는 경우 안전 재기동 API 호출
     addToast(`${svcName} 재기동`, `${svcName} 서비스 종료 후 재기동 중입니다...`, 'info')
     const data = await restartServiceCmd(service, true)
     if (data.success) {
-      // 프로세스가 가동되어 포트가 열릴 때까지 대기 (최대 45초)
       const ok = await waitForCondition(() => getServiceStatus(service), 45000, 700)
       if (ok) {
         addToast(`${svcName} 재기동 완료`, `${svcName} 서비스가 정상적으로 재기동되었습니다.`, 'success')
@@ -903,20 +1285,24 @@ async function restartService(service: string) {
   }
 }
 
-// 4. 코어 서비스만 시작 (WS, Sync, API 3대가 모두 완전히 기동될 때까지 대기)
+// 4. 코어 서비스만 시작 (설치된 코어 엔진만 대기)
 async function startServices() {
+  if (coreInstalledCount.value === 0) {
+    addToast('미설치', `설치된 코어 엔진이 없습니다. (${productRoot.value})`, 'error')
+    return
+  }
   isExecuting.value = true
   pendingAction.services = 'start'
-  if (!infra.connectWs) pendingAction.ws = 'start'
-  if (!infra.connectSync) pendingAction.sync = 'start'
-  if (!infra.controlApi) pendingAction.api = 'start'
+  if (installed.connectWs && !infra.connectWs) pendingAction.ws = 'start'
+  if (installed.connectSync && !infra.connectSync) pendingAction.sync = 'start'
+  if (installed.controlApi && !infra.controlApi) pendingAction.api = 'start'
   try {
     const data = await startServiceCmd('all-services', true)
     if (data.success) {
-      addToast('코어 엔진 기동', 'WS -> Sync -> API 순차 기동 중입니다...', 'info')
-      const ok = await waitForCondition(() => infra.connectWs && infra.connectSync && infra.controlApi, 60000, 1000)
+      addToast('코어 엔진 기동', '설치된 코어 엔진을 순차 기동 중입니다...', 'info')
+      const ok = await waitForCondition(() => allInstalledCoreRunning.value, 60000, 1000)
       if (ok) {
-        addToast('코어 엔진 기동 완료', '3대 코어 엔진이 모두 정상 기동되었습니다.', 'success')
+        addToast('코어 엔진 기동 완료', '설치된 코어 엔진이 모두 정상 기동되었습니다.', 'success')
       }
     } else {
       addToast('기동 실패', data.message, 'error')
@@ -934,7 +1320,7 @@ async function startServices() {
   }
 }
 
-// 4-1. 코어 서비스만 중지 (WS, Sync, API 3대가 모두 완전히 종료될 때까지 대기)
+// 4-1. 코어 서비스만 중지
 async function stopServices() {
   isExecuting.value = true
   pendingAction.services = 'stop'
@@ -944,10 +1330,10 @@ async function stopServices() {
   try {
     const data = await stopServiceCmd('all-services')
     if (data.success) {
-      addToast('코어 엔진 중지', '3대 코어 엔진 중지 중입니다...', 'info')
+      addToast('코어 엔진 중지', '코어 엔진 중지 중입니다...', 'info')
       const ok = await waitForCondition(() => !infra.connectWs && !infra.connectSync && !infra.controlApi, 15000, 500)
       if (ok) {
-        addToast('코어 엔진 중지 완료', '3대 코어 엔진이 모두 완전히 중지되었습니다.', 'success')
+        addToast('코어 엔진 중지 완료', '코어 엔진이 모두 완전히 중지되었습니다.', 'success')
       }
     } else {
       addToast('중지 실패', data.message, 'error')
@@ -965,20 +1351,25 @@ async function stopServices() {
   }
 }
 
-// 4-2. 코어 서비스만 재기동 (WS, Sync, API 3대가 모두 완전히 재가동될 때까지 대기)
+// 4-2. 코어 서비스만 재기동
 async function restartServices() {
+  if (coreInstalledCount.value === 0) {
+    addToast('미설치', `설치된 코어 엔진이 없습니다. (${productRoot.value})`, 'error')
+    clearTauriTrayPending()
+    return
+  }
   isExecuting.value = true
   pendingAction.services = 'restart'
-  pendingAction.ws = 'restart'
-  pendingAction.sync = 'restart'
-  pendingAction.api = 'restart'
+  if (installed.connectWs) pendingAction.ws = 'restart'
+  if (installed.connectSync) pendingAction.sync = 'restart'
+  if (installed.controlApi) pendingAction.api = 'restart'
   try {
     const data = await restartGroupCmd('all-services')
     if (data.success) {
-      addToast('엔진 재기동', '백엔드 엔진(WS, Sync, API) 순차 재기동 중입니다...', 'info')
-      const ok = await waitForCondition(() => infra.connectWs && infra.connectSync && infra.controlApi, 60000, 1000)
+      addToast('엔진 재기동', '설치된 백엔드 엔진을 순차 재기동 중입니다...', 'info')
+      const ok = await waitForCondition(() => allInstalledCoreRunning.value, 60000, 1000)
       if (ok) {
-        addToast('엔진 재기동 완료', '백엔드 엔진이 모두 정상 재기동되었습니다.', 'success')
+        addToast('엔진 재기동 완료', '설치된 백엔드 엔진이 모두 정상 재기동되었습니다.', 'success')
       }
     } else {
       addToast('재기동 오류', data.message, 'error')
@@ -996,27 +1387,34 @@ async function restartServices() {
   }
 }
 
-// 5. 전체 기동 (인프라 + 코어 서비스 일괄 순차 부팅: 5대 모두 뜰 때까지 대기)
+// 5. 전체 기동 (설치된 서비스만 순차 부팅)
 async function startAll(isBackground = true) {
+  if (installedCount.value === 0) {
+    addToast('미설치', `설치된 서비스가 없습니다. (${productRoot.value})`, 'error')
+    clearTauriTrayPending()
+    return
+  }
   isExecuting.value = true
   pendingAction.all = 'start'
-  if (!infra.mysql) pendingAction.mysql = 'start'
-  if (!infra.kafka) pendingAction.kafka = 'start'
-  if (!infra.connectWs) pendingAction.ws = 'start'
-  if (!infra.connectSync) pendingAction.sync = 'start'
-  if (!infra.controlApi) pendingAction.api = 'start'
+  if (installed.mysql && !infra.mysql) pendingAction.mysql = 'start'
+  if (installed.kafka && !infra.kafka) pendingAction.kafka = 'start'
+  if (installed.connectWs && !infra.connectWs) pendingAction.ws = 'start'
+  if (installed.connectSync && !infra.connectSync) pendingAction.sync = 'start'
+  if (installed.controlApi && !infra.controlApi) pendingAction.api = 'start'
   try {
     const data = await startServiceCmd('all', isBackground)
     if (data.success) {
-      addToast('전체 기동', '5대 서비스가 순차 기동 중입니다...', 'info')
+      addToast('전체 기동', `설치된 ${installedCount.value}개 서비스가 순차 기동 중입니다...`, 'info')
       const ok = await waitForCondition(
-        () => infra.mysql && infra.kafka && infra.connectWs && infra.connectSync && infra.controlApi,
+        () => allInstalledInfraRunning.value && allInstalledCoreRunning.value,
         75000,
         1000
       )
       if (ok) {
-        addToast('전체 기동 완료', '모든 5대 서비스가 정상 기동되었습니다!', 'success')
+        addToast('전체 기동 완료', '설치된 모든 서비스가 정상 기동되었습니다.', 'success')
       }
+    } else {
+      addToast('기동 실패', data.message, 'error')
     }
   } catch (err: any) {
     addToast('기동 실패', err.message || String(err), 'error')
@@ -1033,7 +1431,7 @@ async function startAll(isBackground = true) {
   }
 }
 
-// 6. 전체 중지 (5대 모두 꺼질 때까지 대기)
+// 6. 전체 중지
 async function stopAll() {
   isExecuting.value = true
   pendingAction.all = 'stop'
@@ -1070,27 +1468,34 @@ async function stopAll() {
   }
 }
 
-// 7. 전체 백그라운드 전환 재기동 (5대 모두 다시 뜰 때까지 대기)
+// 7. 전체 백그라운드 전환 재기동
 async function restartBackground() {
+  if (installedCount.value === 0) {
+    addToast('미설치', `설치된 서비스가 없습니다. (${productRoot.value})`, 'error')
+    clearTauriTrayPending()
+    return
+  }
   isExecuting.value = true
   pendingAction.all = 'restart'
-  pendingAction.mysql = 'restart'
-  pendingAction.kafka = 'restart'
-  pendingAction.ws = 'restart'
-  pendingAction.sync = 'restart'
-  pendingAction.api = 'restart'
+  if (installed.mysql) pendingAction.mysql = 'restart'
+  if (installed.kafka) pendingAction.kafka = 'restart'
+  if (installed.connectWs) pendingAction.ws = 'restart'
+  if (installed.connectSync) pendingAction.sync = 'restart'
+  if (installed.controlApi) pendingAction.api = 'restart'
   try {
     const data = await restartGroupCmd('all')
     if (data.success) {
-      addToast('전체 재기동', '기존 프로세스 정리 후 전체 서비스가 순차 재기동됩니다...', 'info')
+      addToast('전체 재기동', '기존 프로세스 정리 후 설치된 서비스를 순차 재기동합니다...', 'info')
       const ok = await waitForCondition(
-        () => infra.mysql && infra.kafka && infra.connectWs && infra.connectSync && infra.controlApi,
+        () => allInstalledInfraRunning.value && allInstalledCoreRunning.value,
         80000,
         1000
       )
       if (ok) {
-        addToast('전체 재기동 완료', '모든 5대 서비스가 성공적으로 재기동되었습니다.', 'success')
+        addToast('전체 재기동 완료', '설치된 모든 서비스가 성공적으로 재기동되었습니다.', 'success')
       }
+    } else {
+      addToast('재기동 오류', data.message, 'error')
     }
   } catch (err: any) {
     addToast('재기동 오류', err.message || String(err), 'error')
@@ -1111,13 +1516,11 @@ async function restartBackground() {
 async function openProcessStatus(target: string = 'all') {
   const targetLabel = target === 'infra' ? '미들웨어' : target === 'core' ? '코어 엔진' : '전체'
   try {
-    // 1) Tauri 데스크톱 환경: Rust 커맨드로 elvis-log-viewer 프로세스 진단 모드(또는 폴백 터미널) 기동
     const msg = await invoke<string>('open_process_status_window', { target })
     addToast('프로세스 진단', msg || `[${targetLabel}] 프로세스 및 포트 진단 뷰어를 열었습니다.`, 'info')
     return
   } catch (_) {}
 
-  // 2) 브라우저 / fallback 환경: Vite 백엔드 API로 기동
   try {
     const res = await fetch(`/api/infra/open-process-monitor?target=${encodeURIComponent(target)}`, { method: 'POST' })
     const data = await res.json()
@@ -1131,15 +1534,13 @@ async function openProcessStatus(target: string = 'all') {
   }
 }
 
-// 9. 독립 실시간 콘솔 터미널 창 띄우기 (PowerShell 실시간 스트리밍: 서비스별 단일 창 보장, 에러 모드 지원)
+// 9. 독립 실시간 콘솔 터미널 창 띄우기
 async function openSingleLogWindow(targetService: string, logType: 'all' | 'error'): Promise<{ ok: boolean; message: string }> {
   try {
-    // 1) Tauri 데스크톱 환경: Rust 커맨드로 PowerShell 콘솔 창 실행
     const msg = await invoke<string>('open_log_window', { service: targetService, logType, wordWrap: false })
     return { ok: true, message: msg }
   } catch (_) {}
 
-  // 2) 브라우저 / fallback 환경: Vite 백엔드 API로 PowerShell 콘솔 창 실행
   try {
     const res = await fetch(`/api/infra/logs/open-terminal?service=${targetService}&type=${logType}&wrap=0`, { method: 'POST' })
     const data = await res.json()
@@ -1149,23 +1550,6 @@ async function openSingleLogWindow(targetService: string, logType: 'all' | 'erro
   }
 }
 
-async function openLogWindow(svc?: string, logType: 'all' | 'error' = 'all') {
-  const targetService = svc || 'mysql'
-  const isError = logType === 'error'
-  const modeTitle = isError ? '에러 콘솔' : '로그 콘솔'
-
-  const result = await openSingleLogWindow(targetService, logType)
-  if (result.ok) {
-    addToast(modeTitle, result.message, isError ? 'error' : 'info')
-  } else {
-    addToast('터미널 기동 실패', result.message, 'error')
-  }
-}
-
-// 9-1. 로그 콘솔 일괄 열기 (Windows Terminal 화면 분할 우선, 미설치 시 개별 창 순차 폴백)
-// - all (5분할): 1:WS, 3:SYNC, 2+4:API, 5:MYSQL, 6:KAFKA
-// - core (3분할): 1:WS, 3:SYNC, 2+4:API
-// - infra (2분할): 5:MYSQL, 6:KAFKA
 async function openGroupLogWindow(group: 'all' | 'infra' | 'core', logType: 'all' | 'error'): Promise<{ ok: boolean; message: string }> {
   if (isTauriRuntime()) {
     try {
@@ -1199,14 +1583,12 @@ async function openLogsBatch(group: 'all' | 'infra' | 'core', logType: 'all' | '
   const modeLabel = logType === 'error' ? '에러 로그' : '실시간 로그'
 
   try {
-    // 1) Windows Terminal(wt.exe) 단일 창 분할 배치 우선 시도
     const splitRes = await openGroupLogWindow(group, logType)
     if (splitRes.ok) {
       addToast(`${groupLabel} ${modeLabel}`, splitRes.message, logType === 'error' ? 'error' : 'info')
       return
     }
 
-    // 2) wt.exe 미설치/실패 시 개별 PowerShell 창 순차 열기 폴백
     let successCount = 0
     const failedServices: string[] = []
 
@@ -1249,7 +1631,6 @@ function executeTrayCommand(action: string, service?: string) {
   const now = Date.now()
   const key = `${action}_${service || ''}`
 
-  // 1초 내에 동일한 트레이 명령이 중복 전달되면 무시 (단일 실행 보장)
   if (now - lastTrayCommandTime < 1000 && lastTrayCommandKey === key) {
     console.log('[Tray-Command-Debounced-Skip]', key)
     return
@@ -1284,7 +1665,6 @@ function executeTrayCommand(action: string, service?: string) {
   }
 }
 
-// 전역 window 바인딩 (Tauri window.eval 직접 호출 대응)
 if (typeof window !== 'undefined') {
   ;(window as any).__triggerTrayCommand = executeTrayCommand
 }

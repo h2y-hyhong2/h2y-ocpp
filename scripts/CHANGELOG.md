@@ -10,6 +10,21 @@
 
 ## 변경 이력
 
+### [2026-11-25] `start-elvis-connect-ws.bat`·`start-elvis-connect-sync.bat` `ELVIS_LOG_DIR` 환경변수 연동
+- **과제/커밋**: `[3368]WBS-COMMON-OP-009` (WS/SYNC 로그 파일 분리 경로 연동)
+- **변경 내용**:
+  - `start-elvis-connect-ws.bat`, `start-elvis-connect-sync.bat`: `config/paths.env`의 `ELVIS_LOG_DIR`(미설정 시 `%ELVIS_HOME%\logs`)을 읽어 슬래시(`/`) 정규화 후 JVM 환경변수로 전달하여 Logback `FILE`/`ERROR_FILE`/`KAFKA_FILE` 경로가 제품 루트와 자동 동기화되도록 개선
+- **영향 범위**: `scripts/start-elvis-connect-ws.bat`, `scripts/start-elvis-connect-sync.bat`
+
+### [2026-11-25] `ELVIS_HOME` 기반 기동 스크립트 동적 경로화 및 `D:\elvis-lite` 표준 인스톨 배포 스크립트 추가
+- **과제/커밋**: `[3368]WBS-COMMON-OP-008` (표준 인스톨 파일 구조 세팅 및 경로 동적화)
+- **변경 내용**:
+  - `run-daemon.ps1`, `run-daemon.vbs`: `-ElvisHome` 인자 및 WMI 하위 프로세스 `ELVIS_HOME` 환경변수 주입 지원
+  - `start-mysql.bat`, `init-mysql.bat`, `load-mysql-schema.bat`, `start-kafka-kraft.bat`, `create-kafka-topics.bat`: `ELVIS_HOME` 기준 상대 경로로 `binaries\`, `config\`, `data\`, `logs\` 및 내장 `binaries\jdk` 최우선 탐색 적용, MySQL(`--basedir`/`--datadir`/`--log-error`) 및 Kafka 런타임 설정(`kafka-server.runtime.properties`) 동적 반영으로 경로 이동 시 즉시 호환
+  - `start-elvis-connect-ws.bat`, `start-elvis-connect-sync.bat`, `start-elvis-control-api.bat`: `apps\elvis-*.jar` 독립 실행 JAR 최우선 기동(`config\*\application.yml` 외부 설정 및 `paths.env` 포트 주입) + 워크스페이스 직접 실행 시 Gradle `bootRun` 폴백 지원
+  - `deploy-elvis-lite.ps1`, `deploy-elvis-lite.bat`: 워크스페이스에서 대상 제품 메인 경로(기본 `D:\elvis-lite`)로 `config/`, `scripts/`, `binaries/(mysql, kafka, jdk)`, `apps/(JAR)`, `data/`, `logs/`, 4대 `.exe` 표준 인스톨 구조를 일괄 세팅하는 배포 스크립트 추가
+- **영향 범위**: `scripts/run-daemon.ps1`, `scripts/run-daemon.vbs`, `scripts/start-*.bat`, `scripts/init-mysql.bat`, `scripts/load-mysql-schema.bat`, `scripts/create-kafka-topics.bat`, `scripts/deploy-elvis-lite.ps1`, `scripts/deploy-elvis-lite.bat`
+
 ### [2026-11-24] 4대 데스크톱 앱 `D:\elvis-lite` 실행파일 배포 통합 및 제품 아이콘 변환 유틸리티 추가
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
 - **변경 내용**:

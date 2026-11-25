@@ -76,6 +76,162 @@ function checkPort(port: number): Promise<boolean> {
   })
 }
 
+// 개발 환경(Vite Dev Server)에서는 워크스페이스 루트를 기본 경로로 사용
+const DEFAULT_PRODUCT_ROOT = path.resolve(__dirname, '..')
+
+function normalizeProductRoot(raw: string): string {
+  const cleaned = (raw || '').trim().replace(/^"+|"+$/g, '').replace(/\//g, '\\')
+  if (!cleaned) return DEFAULT_PRODUCT_ROOT
+  if (/^[A-Za-z]:\\?$/.test(cleaned)) {
+    return `${cleaned.slice(0, 2)}\\`
+  }
+  const trimmed = cleaned.replace(/\\+$/, '')
+  return trimmed || DEFAULT_PRODUCT_ROOT
+}
+
+function getSettingsFilePath(): string {
+  const appData = process.env.APPDATA
+  if (appData && appData.trim()) {
+    return path.join(appData.trim(), 'com.lselink.elvis.launcher', 'settings-dev.json')
+  }
+  return path.resolve(__dirname, 'settings-dev.json')
+}
+
+function loadProductRoot(): string {
+  const settingsPath = getSettingsFilePath()
+  try {
+    if (fs.existsSync(settingsPath)) {
+      const parsed = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+      if (parsed && typeof parsed.productRoot === 'string' && parsed.productRoot.trim()) {
+        return normalizeProductRoot(parsed.productRoot)
+      }
+    }
+  } catch (_) {}
+  if (process.env.ELVIS_HOME && process.env.ELVIS_HOME.trim()) {
+    return normalizeProductRoot(process.env.ELVIS_HOME)
+  }
+  return DEFAULT_PRODUCT_ROOT
+}
+
+function saveProductRoot(raw: string): string {
+  const normalized = normalizeProductRoot(raw)
+  const settingsPath = getSettingsFilePath()
+  const dir = path.dirname(settingsPath)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+  fs.writeFileSync(settingsPath, JSON.stringify({ productRoot: normalized }, null, 2), 'utf-8')
+  return normalized
+}
+
+function hasBackendJar(productRoot: string, moduleName: string): boolean {
+  const appsDir = path.join(productRoot, 'apps')
+  const exact = path.join(appsDir, `${moduleName}.jar`)
+  if (fs.existsSync(exact) && fs.statSync(exact).isFile()) return true
+  if (!fs.existsSync(appsDir)) return false
+  try {
+    const entries = fs.readdirSync(appsDir)
+    const prefix = `${moduleName}-`.toLowerCase()
+    return entries.some((name) => {
+      const lower = name.toLowerCase()
+      return lower.startsWith(prefix) && lower.endsWith('.jar') && !lower.endsWith('-plain.jar')
+    })
+  } catch (_) {
+    return false
+  }
+}
+
+function hasBackendRuntime(productRoot: string, moduleName: string): boolean {
+  if (hasBackendJar(productRoot, moduleName)) return true
+  // 개발 환경(Vite Dev): 워크스페이스 Gradle 모듈 bootRun 폴백 지원
+  return (
+    fs.existsSync(path.join(productRoot, 'build.gradle')) &&
+    fs.existsSync(path.join(productRoot, moduleName, 'build.gradle'))
+  )
+}
+
+function findLogViewerExe(productRoot: string): string | undefined {
+  const candidates = [
+    path.join(productRoot, 'elvis-log-viewer', 'target', 'debug', 'elvis-log-viewer.exe'),
+    path.join(productRoot, 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
+    path.join(productRoot, 'elvis-log-viewer.exe')
+  ]
+  return candidates.find((p) => fs.existsSync(p))
+}
+
+function checkInstallSnapshot(productRoot: string) {
+  const rootExists = fs.existsSync(productRoot) && fs.statSync(productRoot).isDirectory()
+  const hasDaemonPs1 = fs.existsSync(path.join(productRoot, 'scripts', 'run-daemon.ps1'))
+  const hasDaemonVbs = fs.existsSync(path.join(productRoot, 'scripts', 'run-daemon.vbs'))
+  const pushDaemon = (arr: string[]) => {
+    if (!hasDaemonPs1) arr.push('scripts\\run-daemon.ps1')
+    if (!hasDaemonVbs) arr.push('scripts\\run-daemon.vbs')
+  }
+
+  const missingMysql: string[] = []
+  if (!fs.existsSync(path.join(productRoot, 'binaries', 'mysql-9.7.1-winx64', 'bin', 'mysqld.exe'))) {
+    missingMysql.push('binaries\\mysql-9.7.1-winx64\\bin\\mysqld.exe')
+  }
+  if (!fs.existsSync(path.join(productRoot, 'scripts', 'start-mysql.bat'))) {
+    missingMysql.push('scripts\\start-mysql.bat')
+  }
+  pushDaemon(missingMysql)
+
+  const missingKafka: string[] = []
+  if (!fs.existsSync(path.join(productRoot, 'binaries', 'kafka_2.13-4.3.1', 'bin', 'windows', 'kafka-server-start.bat'))) {
+    missingKafka.push('binaries\\kafka_2.13-4.3.1\\bin\\windows\\kafka-server-start.bat')
+  }
+  if (!fs.existsSync(path.join(productRoot, 'scripts', 'start-kafka-kraft.bat'))) {
+    missingKafka.push('scripts\\start-kafka-kraft.bat')
+  }
+  pushDaemon(missingKafka)
+
+  const missingWs: string[] = []
+  if (!hasBackendRuntime(productRoot, 'elvis-connect-ws')) {
+    missingWs.push('apps\\elvis-connect-ws.jar')
+  }
+  if (!fs.existsSync(path.join(productRoot, 'scripts', 'start-elvis-connect-ws.bat'))) {
+    missingWs.push('scripts\\start-elvis-connect-ws.bat')
+  }
+  pushDaemon(missingWs)
+
+  const missingSync: string[] = []
+  if (!hasBackendRuntime(productRoot, 'elvis-connect-sync')) {
+    missingSync.push('apps\\elvis-connect-sync.jar')
+  }
+  if (!fs.existsSync(path.join(productRoot, 'scripts', 'start-elvis-connect-sync.bat'))) {
+    missingSync.push('scripts\\start-elvis-connect-sync.bat')
+  }
+  pushDaemon(missingSync)
+
+  const missingApi: string[] = []
+  if (!hasBackendRuntime(productRoot, 'elvis-control-api')) {
+    missingApi.push('apps\\elvis-control-api.jar')
+  }
+  if (!fs.existsSync(path.join(productRoot, 'scripts', 'start-elvis-control-api.bat'))) {
+    missingApi.push('scripts\\start-elvis-control-api.bat')
+  }
+  pushDaemon(missingApi)
+
+  return {
+    rootExists,
+    installed: {
+      mysql: missingMysql.length === 0,
+      kafka: missingKafka.length === 0,
+      connectWs: missingWs.length === 0,
+      connectSync: missingSync.length === 0,
+      controlApi: missingApi.length === 0
+    },
+    missing: {
+      mysql: missingMysql,
+      kafka: missingKafka,
+      connectWs: missingWs,
+      connectSync: missingSync,
+      controlApi: missingApi
+    }
+  }
+}
+
 // 로컬 미들웨어 제어 및 실시간 콘솔 로깅 플러그인
 function infraLauncherPlugin(): Plugin {
   return {
@@ -91,16 +247,17 @@ function infraLauncherPlugin(): Plugin {
 
         res.setHeader('Content-Type', 'application/json; charset=utf-8')
 
-        const rootDir = path.resolve(__dirname, '..')
-        const scriptsDir = path.resolve(__dirname, '../scripts')
-        const configDir = path.resolve(__dirname, '../config')
-        const envPath = path.resolve(configDir, 'paths.env')
+        const rootDir = loadProductRoot()
+        const scriptsDir = path.join(rootDir, 'scripts')
+        const configDir = path.join(rootDir, 'config')
+        const envPath = path.join(configDir, 'paths.env')
 
-        // paths.env 파서
+        // paths.env 파서 (선택된 제품 메인 경로 기준)
         const readEnv = () => {
           const env = {
-            dataDir: 'D:\\elvis-lite\\data',
-            logDir: 'D:\\elvis-lite\\logs',
+            productRoot: rootDir,
+            dataDir: path.join(rootDir, 'data'),
+            logDir: path.join(rootDir, 'logs'),
             mysqlPort: 13306,
             kafkaPort: 19092,
             apiPort: 9082,
@@ -113,15 +270,19 @@ function infraLauncherPlugin(): Plugin {
             for (const line of lines) {
               const trimmed = line.trim()
               if (!trimmed || trimmed.startsWith('#')) continue
-              const [key, val] = trimmed.split('=')
-              if (key === 'ELVIS_DATA_DIR' && val) env.dataDir = val.trim()
-              if (key === 'ELVIS_LOG_DIR' && val) env.logDir = val.trim()
-              if (key === 'ELVIS_MYSQL_PORT' && val) env.mysqlPort = parseInt(val.trim(), 10) || env.mysqlPort
-              if (key === 'ELVIS_KAFKA_PORT' && val) env.kafkaPort = parseInt(val.trim(), 10) || env.kafkaPort
-              if (key === 'ELVIS_API_PORT' && val) env.apiPort = parseInt(val.trim(), 10) || env.apiPort
-              if (key === 'ELVIS_WS_PORT' && val) env.wsPort = parseInt(val.trim(), 10) || env.wsPort
-              if (key === 'ELVIS_SYNC_PORT' && val) env.syncPort = parseInt(val.trim(), 10) || env.syncPort
-              if (key === 'ELVIS_TESTER_PORT' && val) env.testerPort = parseInt(val.trim(), 10) || env.testerPort
+              const eqIdx = trimmed.indexOf('=')
+              if (eqIdx <= 0) continue
+              const key = trimmed.slice(0, eqIdx).trim()
+              const val = trimmed.slice(eqIdx + 1).trim()
+              if (!val) continue
+              if (key === 'ELVIS_DATA_DIR') env.dataDir = val.replace(/%ELVIS_HOME%/gi, rootDir)
+              if (key === 'ELVIS_LOG_DIR') env.logDir = val.replace(/%ELVIS_HOME%/gi, rootDir)
+              if (key === 'ELVIS_MYSQL_PORT') env.mysqlPort = parseInt(val, 10) || env.mysqlPort
+              if (key === 'ELVIS_KAFKA_PORT') env.kafkaPort = parseInt(val, 10) || env.kafkaPort
+              if (key === 'ELVIS_API_PORT') env.apiPort = parseInt(val, 10) || env.apiPort
+              if (key === 'ELVIS_WS_PORT') env.wsPort = parseInt(val, 10) || env.wsPort
+              if (key === 'ELVIS_SYNC_PORT') env.syncPort = parseInt(val, 10) || env.syncPort
+              if (key === 'ELVIS_TESTER_PORT') env.testerPort = parseInt(val, 10) || env.testerPort
             }
           }
           return env
@@ -131,22 +292,21 @@ function infraLauncherPlugin(): Plugin {
         const runServiceProcess = (serviceName: string, batFileName: string, winTitle: string, isBackground = true) => {
           const batPath = path.resolve(scriptsDir, batFileName)
           const currentEnv = readEnv()
-          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const logDir = currentEnv.logDir || path.join(rootDir, 'logs')
           if (!fs.existsSync(logDir)) {
             try { fs.mkdirSync(logDir, { recursive: true }) } catch (_) {}
           }
 
           if (isBackground) {
-            console.log(`[ELVIS-Launcher] WMI 기반 완전 독립 백그라운드 데몬 기동 -> service: ${serviceName}, bat: ${batFileName}`)
-            // run-daemon.ps1 (WMI Win32_Process.Create)를 호출하여 부모 콘솔 및 런처 프로세스 트리와 100% 분리된 독립 OS 데몬으로 기동
+            console.log(`[ELVIS-Launcher] WMI 기반 완전 독립 백그라운드 데몬 기동 -> service: ${serviceName}, bat: ${batFileName}, home: ${rootDir}`)
             const daemonScript = path.resolve(scriptsDir, 'run-daemon.ps1')
             const safeDaemon = escapePsSingleQuoted(daemonScript)
             const safeBat = escapePsSingleQuoted(batFileName)
             const safeSvc = escapePsSingleQuoted(serviceName)
-            execFile('powershell', ['-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', safeDaemon, '-BatName', safeBat, '-ServiceName', safeSvc], {
+            execFile('powershell', ['-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', safeDaemon, '-BatName', safeBat, '-ServiceName', safeSvc, '-ElvisHome', rootDir], {
               cwd: scriptsDir,
               windowsHide: true,
-              env: { ...process.env, NO_PAUSE: '1' }
+              env: { ...process.env, NO_PAUSE: '1', ELVIS_HOME: rootDir }
             })
           } else {
             const safeTitle = sanitizeCmdTitle(winTitle)
@@ -154,14 +314,69 @@ function infraLauncherPlugin(): Plugin {
             console.log(`[ELVIS-Launcher] 콘솔 창 기동 -> service: ${serviceName}, bat: ${safeBatPath}`)
             exec(`cmd /c start "${safeTitle}" cmd /c "call "${safeBatPath}""`, {
               cwd: scriptsDir,
-              env: { ...process.env, NO_PAUSE: '1' }
+              env: { ...process.env, NO_PAUSE: '1', ELVIS_HOME: rootDir }
             })
           }
+        }
+
+        // 0. 제품 메인 경로 조회 / 변경 / 폴더 선택
+        if (pathname === '/api/infra/product-root' && req.method === 'GET') {
+          const snap = checkInstallSnapshot(rootDir)
+          res.end(JSON.stringify({
+            productRoot: rootDir,
+            defaultRoot: DEFAULT_PRODUCT_ROOT,
+            exists: snap.rootExists,
+            installed: snap.installed,
+            missing: snap.missing
+          }))
+          return
+        }
+
+        if (pathname === '/api/infra/product-root' && req.method === 'POST') {
+          let body = ''
+          req.on('data', chunk => { body += chunk })
+          req.on('end', () => {
+            try {
+              const parsed = JSON.parse(body || '{}')
+              const saved = saveProductRoot(parsed.path || DEFAULT_PRODUCT_ROOT)
+              const snap = checkInstallSnapshot(saved)
+              res.end(JSON.stringify({
+                success: true,
+                productRoot: saved,
+                defaultRoot: DEFAULT_PRODUCT_ROOT,
+                exists: snap.rootExists,
+                installed: snap.installed,
+                missing: snap.missing
+              }))
+            } catch (err: any) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ success: false, message: '제품 경로 저장 실패: ' + err.message }))
+            }
+          })
+          return
+        }
+
+        if (pathname === '/api/infra/product-root/browse' && req.method === 'POST') {
+          const initPath = escapePsSingleQuoted(rootDir)
+          const psScript = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Add-Type -AssemblyName System.Windows.Forms; $dlg = New-Object System.Windows.Forms.FolderBrowserDialog; $dlg.Description = 'ELVIS Lite 제품 메인 경로를 선택하세요 (예: D:\\elvis-lite)'; $dlg.ShowNewFolderButton = $true; if (Test-Path -LiteralPath '${initPath}') { $dlg.SelectedPath = '${initPath}' }; $owner = New-Object System.Windows.Forms.Form; $owner.TopMost = $true; $owner.StartPosition = 'CenterScreen'; $owner.Width = 1; $owner.Height = 1; $owner.Opacity = 0; $owner.Show(); $owner.Activate(); $res = $dlg.ShowDialog($owner); $owner.Dispose(); if ($res -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($dlg.SelectedPath) }`
+          try {
+            const { stdout } = await execFileAsync('powershell', ['-NoProfile', '-STA', '-WindowStyle', 'Hidden', '-EncodedCommand', encodePsBase64(psScript)])
+            const selected = (stdout || '').trim()
+            res.end(JSON.stringify({
+              success: true,
+              path: selected ? normalizeProductRoot(selected) : null
+            }))
+          } catch (err: any) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ success: false, message: '폴더 선택 창 호출 실패: ' + err.message }))
+          }
+          return
         }
 
         // 1. 미들웨어 및 전체 서비스 헬스체크 (GET /api/infra/status)
         if (pathname === '/api/infra/status') {
           const currentEnv = readEnv()
+          const snap = checkInstallSnapshot(rootDir)
           const [isKafka, isMysql, isControlApi, isConnectWs, isConnectSync] = await Promise.all([
             checkPort(currentEnv.kafkaPort),
             checkPort(currentEnv.mysqlPort),
@@ -171,11 +386,16 @@ function infraLauncherPlugin(): Plugin {
           ])
 
           res.end(JSON.stringify({
+            productRoot: rootDir,
+            defaultRoot: DEFAULT_PRODUCT_ROOT,
+            productRootExists: snap.rootExists,
             kafka: isKafka,
             mysql: isMysql,
             controlApi: isControlApi,
             connectWs: isConnectWs,
             connectSync: isConnectSync,
+            installed: snap.installed,
+            missing: snap.missing,
             ports: {
               mysql: currentEnv.mysqlPort,
               kafka: currentEnv.kafkaPort,
@@ -342,61 +562,108 @@ function infraLauncherPlugin(): Plugin {
         if (pathname === '/api/infra/start') {
           const service = url.searchParams.get('service')
           const isBackground = url.searchParams.get('background') !== 'false'
+          const snap = checkInstallSnapshot(rootDir)
+          const inst = snap.installed
 
           if (service === 'kafka') {
+            if (!inst.kafka) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `Apache Kafka가 설치되어 있지 않습니다. (경로: ${rootDir})` }))
+              return
+            }
             runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', isBackground)
           } else if (service === 'mysql') {
+            if (!inst.mysql) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `MySQL 9.71이 설치되어 있지 않습니다. (경로: ${rootDir})` }))
+              return
+            }
             runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', isBackground)
           } else if (service === 'ws') {
+            if (!inst.connectWs) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `elvis-connect-ws가 설치되어 있지 않습니다. (경로: ${rootDir})` }))
+              return
+            }
             runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', isBackground)
           } else if (service === 'sync') {
+            if (!inst.connectSync) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `elvis-connect-sync가 설치되어 있지 않습니다. (경로: ${rootDir})` }))
+              return
+            }
             runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
           } else if (service === 'api') {
+            if (!inst.controlApi) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `elvis-control-api가 설치되어 있지 않습니다. (경로: ${rootDir})` }))
+              return
+            }
             runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
           } else if (service === 'tester') {
             runServiceProcess('tester', 'start-all-tester.bat', 'ELVIS - Tester Harness', isBackground)
           } else if (service === 'all-infra') {
-            // 인프라 전체 기동: Kafka -> MySQL
-            if (isBackground) {
-              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
+            if (!inst.kafka && !inst.mysql) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `설치된 미들웨어가 없습니다. (경로: ${rootDir})` }))
+              return
+            }
+            if (inst.kafka) {
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', isBackground)
+            }
+            if (inst.mysql) {
               setTimeout(() => {
-                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', true)
-              }, 2500)
-            } else {
-              runServiceProcess('all', 'start-all-middleware.bat', 'ELVIS - Middleware', false)
+                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', isBackground)
+              }, inst.kafka ? 2500 : 0)
             }
           } else if (service === 'all-services') {
-            // 코어 서비스 전체 기동: WS -> Sync -> Control API
-            runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', isBackground)
-            setTimeout(() => {
-              runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
+            if (!inst.connectWs && !inst.connectSync && !inst.controlApi) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `설치된 코어 엔진이 없습니다. (경로: ${rootDir})` }))
+              return
+            }
+            if (inst.connectWs) {
+              runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', isBackground)
+            }
+            if (inst.connectSync) {
+              setTimeout(() => {
+                runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
+              }, inst.connectWs ? 2500 : 0)
+            }
+            if (inst.controlApi) {
+              const delay = (inst.connectWs ? 2500 : 0) + (inst.connectSync ? 2500 : 0)
               setTimeout(() => {
                 runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground)
-              }, 2500)
-            }, 2500)
+              }, delay)
+            }
           } else if (service === 'all') {
-            // 전체 기동: 인프라 기동 후 코어 백엔드 순차 부팅
-            if (isBackground) {
-              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', true)
+            const anyInstalled = inst.kafka || inst.mysql || inst.connectWs || inst.connectSync || inst.controlApi
+            if (!anyInstalled) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ success: false, message: `설치된 서비스가 없습니다. (경로: ${rootDir})` }))
+              return
+            }
+            let delay = 0
+            if (inst.kafka) {
+              runServiceProcess('kafka', 'start-kafka-kraft.bat', 'ELVIS - Apache Kafka KRaft', isBackground)
+              delay += 2500
+            }
+            if (inst.mysql) {
+              const d = delay
+              setTimeout(() => runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', isBackground), d)
+              delay += 3500
+            }
+            if (inst.connectWs || inst.connectSync) {
+              const d = delay
               setTimeout(() => {
-                runServiceProcess('mysql', 'start-mysql.bat', 'ELVIS - MySQL 9.71', true)
-                setTimeout(() => {
-                  runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', true)
-                  runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', true)
-                  setTimeout(() => {
-                    runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', true)
-                  }, 2500)
-                }, 4000)
-              }, 2500)
-            } else {
-              runServiceProcess('all', 'start-all-middleware.bat', 'ELVIS - Middleware', false)
-              setTimeout(() => {
-                runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', false)
-                runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', false)
-                setTimeout(() => {
-                  runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', false)
-                }, 2500)
-              }, 3000)
+                if (inst.connectWs) runServiceProcess('ws', 'start-elvis-connect-ws.bat', 'ELVIS - Connect WS Gateway', isBackground)
+                if (inst.connectSync) runServiceProcess('sync', 'start-elvis-connect-sync.bat', 'ELVIS - Connect Sync Engine', isBackground)
+              }, d)
+              delay += 2500
+            }
+            if (inst.controlApi) {
+              const d = delay
+              setTimeout(() => runServiceProcess('api', 'start-elvis-control-api.bat', 'ELVIS - Control API Server', isBackground), d)
             }
           } else if (service === 'topics') {
             runServiceProcess('topics', 'create-kafka-topics.bat', 'ELVIS - Topics', isBackground)
@@ -622,15 +889,10 @@ function infraLauncherPlugin(): Plugin {
           }
 
           // 0) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 프로세스 진단 모드 우선 실행
-          const viewerCandidates = [
-            'D:\\elvis-lite\\elvis-log-viewer.exe',
-            path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
-            path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'debug', 'elvis-log-viewer.exe')
-          ]
-          const viewerExe = viewerCandidates.find((p) => fs.existsSync(p))
+          const viewerExe = findLogViewerExe(rootDir)
           if (viewerExe) {
             const currentEnv = readEnv()
-            const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+            const logDir = currentEnv.logDir || path.join(rootDir, 'logs')
             const portsArg = `${currentEnv.mysqlPort},${currentEnv.kafkaPort},${currentEnv.wsPort},${currentEnv.syncPort},${currentEnv.apiPort}`
             const scopeArg = (target === 'infra' || target === 'core') ? target : 'all'
             try {
@@ -672,7 +934,7 @@ function infraLauncherPlugin(): Plugin {
         // 10. 콘솔 로그 조회 (GET /api/infra/logs?service=mysql|kafka|ws|sync|api|tester&tail=250&type=all|error)
         if (pathname === '/api/infra/logs' && req.method === 'GET') {
           const currentEnv = readEnv()
-          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const logDir = currentEnv.logDir || path.join(rootDir, 'logs')
           const service = url.searchParams.get('service') || 'mysql'
           if (!ALLOWED_LOG_SERVICES.has(service)) {
             res.statusCode = 400
@@ -753,7 +1015,7 @@ function infraLauncherPlugin(): Plugin {
         // 11. 콘솔 로그 비우기 (POST /api/infra/logs/clear?service=mysql|kafka)
         if (pathname === '/api/infra/logs/clear' && req.method === 'POST') {
           const currentEnv = readEnv()
-          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const logDir = currentEnv.logDir || path.join(rootDir, 'logs')
           const service = url.searchParams.get('service') || 'mysql'
           if (!ALLOWED_LOG_SERVICES.has(service)) {
             res.statusCode = 400
@@ -781,7 +1043,7 @@ function infraLauncherPlugin(): Plugin {
         // 11-1. 실시간 콘솔 터미널 창 기동 (POST /api/infra/logs/open-terminal?service=mysql&type=all|error&wrap=0|1)
         if (pathname === '/api/infra/logs/open-terminal') {
           const currentEnv = readEnv()
-          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const logDir = currentEnv.logDir || path.join(rootDir, 'logs')
           const service = url.searchParams.get('service') || 'mysql'
           if (!ALLOWED_LOG_SERVICES.has(service)) {
             res.statusCode = 400
@@ -812,12 +1074,7 @@ function infraLauncherPlugin(): Plugin {
 
           // 0) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 우선 실행 (5대 서비스 단일 프로세스 모드)
           if (['mysql', 'kafka', 'ws', 'sync', 'api'].includes(service)) {
-            const viewerCandidates = [
-              'D:\\elvis-lite\\elvis-log-viewer.exe',
-              path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
-              path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'debug', 'elvis-log-viewer.exe')
-            ]
-            const viewerExe = viewerCandidates.find((p) => fs.existsSync(p))
+            const viewerExe = findLogViewerExe(rootDir)
             if (viewerExe) {
               const portsArg = `${currentEnv.mysqlPort},${currentEnv.kafkaPort},${currentEnv.wsPort},${currentEnv.syncPort},${currentEnv.apiPort}`
               const viewerArgs = [
@@ -896,7 +1153,7 @@ function infraLauncherPlugin(): Plugin {
         // - infra (2분할): 5:MYSQL, 6:KAFKA
         if (pathname === '/api/infra/logs/open-group') {
           const currentEnv = readEnv()
-          const logDir = currentEnv.logDir || 'D:\\elvis-lite\\logs'
+          const logDir = currentEnv.logDir || path.join(rootDir, 'logs')
           const group = url.searchParams.get('group') || 'all'
           if (!['all', 'infra', 'core'].includes(group)) {
             res.statusCode = 400
@@ -909,12 +1166,7 @@ function infraLauncherPlugin(): Plugin {
           const wrapLabel = isWordWrap ? '줄바꿈 ON' : '줄바꿈 OFF'
 
           // 1) 독립 Rust 네이티브 GUI 모듈(elvis-log-viewer.exe) 우선 실행
-          const viewerCandidates = [
-            'D:\\elvis-lite\\elvis-log-viewer.exe',
-            path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'release', 'elvis-log-viewer.exe'),
-            path.resolve(__dirname, '..', 'elvis-log-viewer', 'target', 'debug', 'elvis-log-viewer.exe')
-          ]
-          const viewerExe = viewerCandidates.find((p) => fs.existsSync(p))
+          const viewerExe = findLogViewerExe(rootDir)
           if (viewerExe) {
             const portsArg = `${currentEnv.mysqlPort},${currentEnv.kafkaPort},${currentEnv.wsPort},${currentEnv.syncPort},${currentEnv.apiPort}`
             const viewerArgs = [

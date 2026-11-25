@@ -2,24 +2,37 @@
 setlocal
 chcp 65001 > nul
 
-set SCRIPT_DIR=%~dp0
-set MYSQL_HOME=%SCRIPT_DIR%..\binaries\mysql-9.7.1-winx64
-set DATA_DIR=D:\elvis-lite\data\mysql
+set "SCRIPT_DIR=%~dp0"
+if not defined ELVIS_HOME (
+    for %%I in ("%SCRIPT_DIR%..") do set "ELVIS_HOME=%%~fI"
+)
+if "%ELVIS_HOME:~-1%"=="\" set "ELVIS_HOME=%ELVIS_HOME:~0,-1%"
+
+set "MYSQL_HOME=%ELVIS_HOME%\binaries\mysql-9.7.1-winx64"
+set "DATA_DIR=%ELVIS_HOME%\data\mysql"
 
 rem paths.env 설정 파일이 존재하면 동적 경로 반영
-if exist "%SCRIPT_DIR%..\config\paths.env" (
-    for /f "usebackq tokens=1,2 delims==" %%A in ("%SCRIPT_DIR%..\config\paths.env") do (
-        if "%%A"=="ELVIS_DATA_DIR" set DATA_DIR=%%B\mysql
+if exist "%ELVIS_HOME%\config\paths.env" (
+    for /f "usebackq tokens=1,* delims==" %%A in ("%ELVIS_HOME%\config\paths.env") do (
+        if /I "%%A"=="ELVIS_DATA_DIR" set "DATA_DIR=%%B\mysql"
     )
 )
 
+call set "DATA_DIR=%DATA_DIR%"
 if "%DATA_DIR:~-1%"=="\" set "DATA_DIR=%DATA_DIR:~0,-1%"
 
 echo ========================================================
 echo  [ELVIS-CSMS] MySQL 9.71 데이터 디렉토리 초기화
+echo  ELVIS_HOME: %ELVIS_HOME%
 echo  MYSQL_HOME: %MYSQL_HOME%
 echo  DATA_DIR:   %DATA_DIR%
 echo ========================================================
+
+if not exist "%MYSQL_HOME%\bin\mysqld.exe" (
+    echo [ERROR] MySQL 바이너리를 찾을 수 없습니다: %MYSQL_HOME%\bin\mysqld.exe
+    if not "%NO_PAUSE%"=="1" pause
+    exit /b 1
+)
 
 if exist "%DATA_DIR%\mysql" (
     echo [INFO] 이미 초기화된 data 디렉토리가 존재합니다: %DATA_DIR%

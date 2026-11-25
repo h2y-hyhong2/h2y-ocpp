@@ -10,6 +10,27 @@
 
 ## 변경 이력
 
+### [2026-11-25] 개발 환경(Dev/Debug) vs Release 빌드 경로 자동 분기 적용
+- **과제/커밋**: `[3368]WBS-COMMON-OP-010` (개발·릴리스 경로 분리)
+- **변경 내용**:
+  - `src-tauri/src/lib.rs`: `#[cfg(debug_assertions)]` / `#[cfg(not(debug_assertions))]` 컴파일 타임 분기 도입 — 개발 빌드에서는 워크스페이스 루트(`CARGO_MANIFEST_DIR` 조부모)와 `settings-dev.json`, Gradle `bootRun` 모듈 인식, `elvis-log-viewer/target/{debug,release}` 우선 탐색을 적용하고, Release 빌드에서만 제품 경로(`D:\elvis-lite`)와 `settings.json`, `apps\elvis-*.jar` 필수 판정을 따르도록 분리
+  - `vite.config.ts`: Vite 개발 서버(`npm run dev`)의 기본 경로를 워크스페이스 루트(`path.resolve(__dirname, '..')`), 설정 파일을 `settings-dev.json`으로 변경하고, Gradle 모듈 설치 인식 및 `elvis-log-viewer/target/*`·워크스페이스 `logs/` 폴백 적용
+  - `src/App.vue`: 초기 경로 및 입력 placeholder를 개발/릴리스 동적 `defaultProductRoot`에 연동
+- **영향 범위**: `elvis-launcher/src-tauri/src/lib.rs`, `elvis-launcher/vite.config.ts`, `elvis-launcher/src/App.vue`
+
+### [2026-11-25] 제품 메인 경로(`D:\elvis-lite`) 동적 변경 및 서비스별 `미설치` 상태 판별·표시 기능 구현
+- **과제/커밋**: `[3368]WBS-COMMON-OP-008` (제품 인스톨 경로 관리 및 미설치 표시)
+- **변경 내용**:
+  - `src-tauri/src/lib.rs`, `vite.config.ts`:
+    - 제품 메인 경로 기본값을 `D:\elvis-lite`로 고정하고 `%APPDATA%\com.lselink.elvis.launcher\settings.json`에 사용자 변경 경로 영속 저장(`get_product_root`, `set_product_root`, `browse_product_root` 커맨드 및 `/api/infra/product-root*` API 추가)
+    - 컴파일 시점 개발 워크스페이스 폴백을 제거하고 선택된 제품 경로 기준으로 5대 서비스 설치 여부(`binaries\mysql-9.7.1-winx64`, `binaries\kafka_2.13-4.3.1`, `apps\elvis-*.jar`, `scripts\*.bat`·`run-daemon`)를 정밀 판별해 `installed`/`missing` 정보 반환
+    - 미설치 서비스 기동 차단 및 그룹 일괄 제어 시 설치된 서비스만 순차 실행, 시스템 트레이 메뉴에도 `[미설치]` 표시 및 비활성화 동기화, `elvis-log-viewer.exe`를 제품 경로 우선 탐색(미설치 시 기존 콘솔 폴백 유지)
+  - `src/App.vue`, `src-tauri/tauri.conf.json`:
+    - 상단 툴바의 `에러로그` 버튼을 제거하고 `로그` 단독 버튼으로 간결화
+    - 라이트 테마 기준 상단 `제품 경로` 설정 바(가로 꽉 채움 경로 표시/입력창·설치 요약 배지·`경로 변경`·폴더 `찾아보기`·`기본값` 복원) 추가 및 기본 창 높이 조정(`432 -> 484`, 최소 `452`)
+    - 미설치 서비스 행에 `미설치` 배지(누락 파일 툴팁 포함) 표시 및 시작/재기동 버튼 비활성화, 그룹 헤더 및 상단 `RUNNING` 배지에 설치 수 반영
+- **영향 범위**: `elvis-launcher/src-tauri/src/lib.rs`, `elvis-launcher/vite.config.ts`, `elvis-launcher/src/App.vue`, `elvis-launcher/src-tauri/tauri.conf.json`
+
 ### [2026-11-24] 전용 제품 아이콘 적용 및 `D:\elvis-lite\elvis-launcher.exe` 실행파일 배포 구성
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
 - **변경 내용**:

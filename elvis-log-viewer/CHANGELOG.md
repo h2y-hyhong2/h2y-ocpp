@@ -11,6 +11,25 @@
 
 ## 변경 이력
 
+### [2026-11-25] 개발 환경(Debug) vs Release 빌드 로그·설정 경로 자동 분기 적용
+- **과제/커밋**: `[3368]WBS-COMMON-OP-010` (개발·릴리스 경로 분리)
+- **변경 내용**:
+  - `src/main.rs`: `find_workspace_root`·`default_log_dir`에 `#[cfg(debug_assertions)]` / `#[cfg(not(debug_assertions))]` 분기 적용 — 개발 환경에서는 워크스페이스 루트(`CARGO_MANIFEST_DIR` 부모) 및 `{workspace}\logs`를, Release 빌드에서는 실행파일 위치·`D:\elvis-lite` 및 `D:\elvis-lite\logs`를 따르도록 분리 (Release 빌드에서 개발 워크스페이스 `paths.env` 참조 제거)
+  - `expand_elvis_home`: `config/paths.env`의 `ELVIS_LOG_DIR=%ELVIS_HOME%\logs` 동적 치환 지원 추가
+- **영향 범위**: `elvis-log-viewer/src/main.rs`
+
+### [2026-11-25] OCPP 파이프 구분 표준 로그 레벨 파싱 및 태그 하이라이트 지원
+- **과제/커밋**: `[3368]WBS-COMMON-OP-009` (WS/SYNC 로그 방식 표준화 연계)
+- **변경 내용**:
+  - `src/main.rs`: `detect_log_level`에 파이프 구분 헤더(`timestamp | LEVEL | APP | ...`) 파싱 우선 순위를 추가해 본문 JSON 내 `"errorCode":"NoError"` 등에 의한 `ERROR` 오탐 방지, `classify_line_colors`에 `[RECEIVE]`/`[SEND]`/`[REQ]`/`[RES]` 강조 색상 추가
+- **영향 범위**: `elvis-log-viewer/src/main.rs`
+
+### [2026-11-25] 공통 시스템 자원 현황 바 하단 1줄 메트릭 필 레이아웃 전환
+- **과제/커밋**: `[3368]WBS-COMMON-OP-008` (로그 뷰어 레이아웃 개선)
+- **변경 내용**:
+  - `src/main.rs`: `render_system_resource_bar`를 `TopBottomPanel::bottom("sys_resource_bar")` 1줄 메트릭 필(`render_metric_pill`: `CPU`, `RAM`, 드라이브별 `DISK` 미니 게이지 바 + 우측 `UPTIME`) 구조로 전환해 전 모드(5분할·3분할·2분할·단일·프로세스) 공통으로 하단에 고정 배치
+- **영향 범위**: `elvis-log-viewer/src/main.rs`, `elvis-log-viewer/README.md`
+
 ### [2026-11-24] 전용 제품 아이콘 추가 (`exe` 리소스 임베딩 및 창·작업표시줄 아이콘) 및 `D:\elvis-lite` 배포 통일
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
 - **변경 내용**:

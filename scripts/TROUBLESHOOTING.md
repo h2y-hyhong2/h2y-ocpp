@@ -72,3 +72,21 @@
   1. `scripts/build-desktop-exes.bat`, `elvis-log-viewer/build-release.bat`을 CRLF(`\r\n`, UTF-8 무BOM) 개행으로 통일.
   2. `scripts/copy-exe.mjs`에서 `if (!fs.existsSync(destDir))` 검사 후 디렉토리를 생성하고 배포 경로를 `D:\elvis-lite`로 일원화.
 - **관련 파일**: `scripts/build-desktop-exes.bat`, `scripts/copy-exe.mjs`, `elvis-log-viewer/build-release.bat`
+
+---
+
+### ISSUE-05: 런처에서 서비스 기동 무응답 (`Win32_Process.Create code 21`) 및 MySQL `my.ini` UTF-8 BOM 파싱 실패
+- **발생 일시**: `2026-11-25`
+- **증상 / 에러 메시지**:
+  ```text
+  D:\elvis-lite\scripts\run-daemon.ps1 : FAILED: mysql failed to start with code 21
+  mysqld: [ERROR] Found option without preceding group in config file D:\elvis-lite\config\mysql\my.ini at line 1.
+  mysqld: [ERROR] Fatal error in defaults handling. Program aborted!
+  ```
+- **근본 원인**:
+  1. `scripts/run-daemon.ps1`이 UTF-8(무BOM) + LF(`\n`)로 저장되면서 Windows PowerShell 5.1이 한글 주석을 CP949로 오독했고, 주석 끝 한글 바이트와 개행(`\n`)이 2바이트 문자로 합쳐져 바로 다음 줄(`$wscriptExe = ...`, `CommandLine = [string]$cmdLine`)이 주석으로 먹혀 `Win32_Process.Create` 호출 시 `CommandLine` 누락(`ReturnValue = 21`)이 발생함.
+  2. `scripts/deploy-elvis-lite.ps1` 및 `scripts/start-kafka-kraft.bat`에서 PowerShell 5.1 `Set-Content -Encoding UTF8`이 파일 선두에 UTF-8 BOM(`EF BB BF`)을 삽입해 MySQL(`my.ini`)이 1행 `[mysqld]` 섹션을 인식하지 못하고 즉시 종료됨.
+- **해결 방법**:
+  1. `scripts/run-daemon.ps1`, `scripts/deploy-elvis-lite.ps1`을 UTF-8(BOM 포함) + CRLF로 저장하고, `run-daemon.ps1` / `run-daemon.vbs` 주석을 순수 ASCII로 정리.
+  2. `scripts/deploy-elvis-lite.ps1`과 `scripts/start-kafka-kraft.bat`에서 설정 파일(`paths.env`, `my.ini`, `server.properties`, `kafka-server.runtime.properties`) 기록 시 `[System.Text.UTF8Encoding]::new($false)`(UTF-8 무BOM)을 명시 적용.
+- **관련 파일**: `scripts/run-daemon.ps1`, `scripts/run-daemon.vbs`, `scripts/deploy-elvis-lite.ps1`, `scripts/start-kafka-kraft.bat`

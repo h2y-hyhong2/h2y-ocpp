@@ -1062,15 +1062,15 @@ impl LogGuiApp {
 
     fn render_system_resource_bar(&self, ctx: &egui::Context) {
         let sys = &self.sys_resources;
-        egui::TopBottomPanel::top("sys_resource_bar")
+        egui::TopBottomPanel::bottom("sys_resource_bar")
             .frame(
                 egui::Frame::NONE
-                    .fill(egui::Color32::from_rgb(248, 250, 252))
-                    .inner_margin(egui::Margin::symmetric(10, 4))
+                    .fill(egui::Color32::from_rgb(255, 255, 255))
                     .stroke(egui::Stroke::new(
                         1.0_f32,
-                        egui::Color32::from_rgb(226, 232, 240),
-                    )),
+                        egui::Color32::from_rgb(203, 213, 225),
+                    ))
+                    .inner_margin(egui::Margin::symmetric(12, 5)),
             )
             .show(ctx, |ui| {
                 if !sys.loaded {
@@ -1082,205 +1082,92 @@ impl LogGuiApp {
                     return;
                 }
 
-                let avail_w = ui.available_width().max(520.0);
-                let row_h = 15.0_f32;
-                let label_w = 30.0_f32;
-                let pct_w = 42.0_f32;
-                let meta_w = 84.0_f32;
-                let disk_cnt = sys.disks.len().max(1);
-                let right_w =
-                    ((disk_cnt as f32) * 102.0).clamp(176.0, (avail_w * 0.36).max(176.0));
-                let bar_w = (avail_w - 202.0 - right_w).max(100.0);
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = 8.0;
 
-                let (cpu_fg, _, _) = resource_level_colors(sys.cpu_pct);
-                let (ram_fg, _, _) = resource_level_colors(sys.mem_pct);
+                    // 1) CPU 현황
+                    let cpu_col =
+                        usage_color(sys.cpu_pct, 60.0, 85.0, egui::Color32::from_rgb(2, 132, 199));
+                    let cpu_tip = format!(
+                        "시스템 전체 CPU 사용률: {:.1}% (논리 프로세서 {}코어)",
+                        sys.cpu_pct, sys.cpu_cores
+                    );
+                    render_metric_pill(
+                        ui,
+                        "CPU",
+                        sys.cpu_pct,
+                        &format!("{:4.1}%", sys.cpu_pct),
+                        cpu_col,
+                        56.0,
+                        &cpu_tip,
+                    );
 
-                ui.vertical(|ui| {
-                    ui.spacing_mut().item_spacing.y = 3.0;
+                    // 2) RAM 현황
+                    let ram_col =
+                        usage_color(sys.mem_pct, 70.0, 85.0, egui::Color32::from_rgb(37, 99, 235));
+                    let ram_val = if sys.mem_total_gb > 0.0 {
+                        format!(
+                            "{:.1}/{:.1} GB ({:.0}%)",
+                            sys.mem_used_gb, sys.mem_total_gb, sys.mem_pct
+                        )
+                    } else {
+                        "-".to_string()
+                    };
+                    let ram_tip = format!(
+                        "시스템 메모리: {:.2} / {:.2} GB (여유 {:.2} GB)",
+                        sys.mem_used_gb, sys.mem_total_gb, sys.mem_free_gb
+                    );
+                    render_metric_pill(
+                        ui,
+                        "RAM",
+                        sys.mem_pct,
+                        &ram_val,
+                        ram_col,
+                        56.0,
+                        &ram_tip,
+                    );
 
-                    // 1행: CPU 가로 막대 + 우측 DISK 배지
-                    ui.horizontal(|ui| {
-                        ui.spacing_mut().item_spacing.x = 6.0;
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(label_w, row_h),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| {
-                                ui.label(
-                                    egui::RichText::new("CPU")
-                                        .monospace()
-                                        .strong()
-                                        .size(11.0)
-                                        .color(egui::Color32::from_rgb(30, 41, 59)),
-                                );
-                            },
+                    // 3) DISK 현황 (드라이브별)
+                    for disk in &sys.disks {
+                        let disk_col = usage_color(
+                            disk.used_pct,
+                            75.0,
+                            90.0,
+                            egui::Color32::from_rgb(15, 118, 110),
                         );
-
-                        draw_resource_bar(ui, sys.cpu_pct, bar_w, 7.0, cpu_fg).on_hover_text(
-                            format!(
-                                "전체 CPU 사용률 {:.1}% (논리 프로세서 {}코어)",
-                                sys.cpu_pct, sys.cpu_cores
-                            ),
+                        let label = format!("DISK {}", disk.drive);
+                        let val = format!(
+                            "{:.0}/{:.0} GB ({:.0}%)",
+                            disk.used_gb, disk.total_gb, disk.used_pct
                         );
-
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(pct_w, row_h),
-                            egui::Layout::right_to_left(egui::Align::Center),
-                            |ui| {
-                                ui.label(
-                                    egui::RichText::new(format!("{:.1}%", sys.cpu_pct))
-                                        .monospace()
-                                        .strong()
-                                        .size(11.0)
-                                        .color(cpu_fg),
-                                );
-                            },
+                        let tip = format!(
+                            "드라이브 {}: 사용 {:.1} GB / 전체 {:.1} GB (여유 {:.1} GB, {:.1}%)",
+                            disk.drive, disk.used_gb, disk.total_gb, disk.free_gb, disk.used_pct
                         );
-
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(meta_w, row_h),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| {
-                                ui.label(
-                                    egui::RichText::new(format!("{}C", sys.cpu_cores))
-                                        .monospace()
-                                        .size(10.5)
-                                        .color(egui::Color32::from_rgb(100, 116, 139)),
-                                );
-                            },
+                        render_metric_pill(
+                            ui,
+                            &label,
+                            disk.used_pct,
+                            &val,
+                            disk_col,
+                            46.0,
+                            &tip,
                         );
+                    }
 
-                        ui.separator();
-
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(right_w, row_h),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| {
-                                ui.spacing_mut().item_spacing.x = 5.0;
-                                for disk in &sys.disks {
-                                    let (d_fg, d_bg, d_border) =
-                                        resource_level_colors(disk.used_pct);
-                                    let resp = egui::Frame::NONE
-                                        .fill(d_bg)
-                                        .stroke(egui::Stroke::new(1.0_f32, d_border))
-                                        .corner_radius(egui::CornerRadius::same(4))
-                                        .inner_margin(egui::Margin::symmetric(5, 0))
-                                        .show(ui, |ui| {
-                                            ui.horizontal(|ui| {
-                                                ui.spacing_mut().item_spacing.x = 3.0;
-                                                ui.label(
-                                                    egui::RichText::new(&disk.drive)
-                                                        .monospace()
-                                                        .strong()
-                                                        .size(10.5)
-                                                        .color(egui::Color32::from_rgb(
-                                                            51, 65, 85,
-                                                        )),
-                                                );
-                                                ui.label(
-                                                    egui::RichText::new(format!(
-                                                        "{:.0}%",
-                                                        disk.used_pct
-                                                    ))
-                                                    .monospace()
-                                                    .strong()
-                                                    .size(10.5)
-                                                    .color(d_fg),
-                                                );
-                                                ui.label(
-                                                    egui::RichText::new(format!(
-                                                        "({:.0}G)",
-                                                        disk.free_gb
-                                                    ))
-                                                    .monospace()
-                                                    .size(10.0)
-                                                    .color(egui::Color32::from_rgb(
-                                                        100, 116, 139,
-                                                    )),
-                                                );
-                                            });
-                                        });
-                                    resp.response.on_hover_text(format!(
-                                        "{} 드라이브 사용 {:.1} / {:.1} GB (여유 {:.1} GB)",
-                                        disk.drive, disk.used_gb, disk.total_gb, disk.free_gb
-                                    ));
-                                }
-                            },
-                        );
-                    });
-
-                    // 2행: RAM 가로 막대 + 우측 UPTIME
-                    ui.horizontal(|ui| {
-                        ui.spacing_mut().item_spacing.x = 6.0;
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(label_w, row_h),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| {
-                                ui.label(
-                                    egui::RichText::new("RAM")
-                                        .monospace()
-                                        .strong()
-                                        .size(11.0)
-                                        .color(egui::Color32::from_rgb(30, 41, 59)),
-                                );
-                            },
-                        );
-
-                        draw_resource_bar(ui, sys.mem_pct, bar_w, 7.0, ram_fg).on_hover_text(
-                            format!(
-                                "물리 메모리 사용 {:.1} / {:.1} GB (여유 {:.1} GB)",
-                                sys.mem_used_gb, sys.mem_total_gb, sys.mem_free_gb
-                            ),
-                        );
-
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(pct_w, row_h),
-                            egui::Layout::right_to_left(egui::Align::Center),
-                            |ui| {
-                                ui.label(
-                                    egui::RichText::new(format!("{:.1}%", sys.mem_pct))
-                                        .monospace()
-                                        .strong()
-                                        .size(11.0)
-                                        .color(ram_fg),
-                                );
-                            },
-                        );
-
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(meta_w, row_h),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| {
-                                ui.label(
-                                    egui::RichText::new(format!(
-                                        "{:.1}/{:.1}G",
-                                        sys.mem_used_gb, sys.mem_total_gb
-                                    ))
-                                    .monospace()
-                                    .size(10.5)
-                                    .color(egui::Color32::from_rgb(100, 116, 139)),
-                                )
-                                .on_hover_text(format!("여유 메모리 {:.1} GB", sys.mem_free_gb));
-                            },
-                        );
-
-                        ui.separator();
-
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(right_w, row_h),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| {
-                                ui.label(
-                                    egui::RichText::new(format!(
-                                        "UPTIME {}",
-                                        format_uptime(sys.uptime_secs)
-                                    ))
-                                    .monospace()
-                                    .size(10.5)
-                                    .color(egui::Color32::from_rgb(100, 116, 139)),
-                                )
-                                .on_hover_text("호스트 OS 연속 가동시간");
-                            },
-                        );
+                    // 우측: 코어 수 및 OS 연속 가동시간
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.label(
+                            egui::RichText::new(format!(
+                                "UPTIME {} · {}C",
+                                format_uptime(sys.uptime_secs),
+                                sys.cpu_cores
+                            ))
+                            .monospace()
+                            .size(11.0)
+                            .color(egui::Color32::from_rgb(100, 116, 139)),
+                        )
+                        .on_hover_text("호스트 OS 연속 가동시간 및 논리 프로세서 수");
                     });
                 });
             });
@@ -2362,7 +2249,7 @@ impl eframe::App for LogGuiApp {
                 });
             });
 
-        // 1-2. 전체 모드 공통 상단 컴팩트 시스템 자원 바 (CPU / RAM 개별 막대 + DISK / UPTIME)
+        // 1-2. 전체 모드 공통 하단 컴팩트 시스템 자원 바 (CentralPanel보다 먼저 배치해야 하단 영역 확보)
         self.render_system_resource_bar(ctx);
 
         // 2. 메인 5분할 / 3분할 / 2분할 / 단일 / 프로세스 진단 영역
@@ -2659,44 +2546,100 @@ fn handle_h_splitter(
     );
 }
 
+const RELEASE_PRODUCT_ROOT: &str = r"D:\elvis-lite";
+
+fn expand_elvis_home(raw: &str, root: &std::path::Path) -> PathBuf {
+    let root_str = root.to_string_lossy();
+    let expanded = raw
+        .replace("%ELVIS_HOME%", &root_str)
+        .replace("%elvis_home%", &root_str);
+    PathBuf::from(expanded)
+}
+
 fn find_workspace_root() -> Option<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
-    if let Ok(ws) = std::env::var("ELVIS_WORKSPACE_DIR") {
-        let p = PathBuf::from(ws);
+    if let Ok(home) = std::env::var("ELVIS_HOME") {
+        let p = PathBuf::from(home.trim());
         if p.exists() {
             roots.push(p);
         }
     }
-    if let Ok(exe) = std::env::current_exe() {
-        let mut cur = exe.parent().map(|p| p.to_path_buf());
-        for _ in 0..6 {
-            if let Some(dir) = cur {
-                roots.push(dir.clone());
-                cur = dir.parent().map(|p| p.to_path_buf());
+    if let Ok(ws) = std::env::var("ELVIS_WORKSPACE_DIR") {
+        let p = PathBuf::from(ws.trim());
+        if p.exists() {
+            roots.push(p);
+        }
+    }
+
+    // 개발 환경(debug): 워크스페이스 루트(CARGO_MANIFEST_DIR 부모) 최우선 탐색
+    #[cfg(debug_assertions)]
+    {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        if let Some(ws_root) = manifest_dir.parent() {
+            roots.push(ws_root.to_path_buf());
+        }
+        if let Ok(cwd) = std::env::current_dir() {
+            let mut cur = Some(cwd);
+            for _ in 0..4 {
+                if let Some(dir) = cur {
+                    roots.push(dir.clone());
+                    cur = dir.parent().map(|p| p.to_path_buf());
+                }
+            }
+        }
+        if let Ok(exe) = std::env::current_exe() {
+            let mut cur = exe.parent().map(|p| p.to_path_buf());
+            for _ in 0..6 {
+                if let Some(dir) = cur {
+                    roots.push(dir.clone());
+                    cur = dir.parent().map(|p| p.to_path_buf());
+                }
             }
         }
     }
-    if let Ok(cwd) = std::env::current_dir() {
-        let mut cur = Some(cwd);
-        for _ in 0..4 {
-            if let Some(dir) = cur {
-                roots.push(dir.clone());
-                cur = dir.parent().map(|p| p.to_path_buf());
+
+    // Release 빌드: 실행 파일 위치 및 제품 메인 경로(D:\elvis-lite) 우선 탐색 (개발 워크스페이스 미참조)
+    #[cfg(not(debug_assertions))]
+    {
+        if let Ok(exe) = std::env::current_exe() {
+            let mut cur = exe.parent().map(|p| p.to_path_buf());
+            for _ in 0..4 {
+                if let Some(dir) = cur {
+                    roots.push(dir.clone());
+                    cur = dir.parent().map(|p| p.to_path_buf());
+                }
+            }
+        }
+        roots.push(PathBuf::from(RELEASE_PRODUCT_ROOT));
+        if let Ok(cwd) = std::env::current_dir() {
+            let mut cur = Some(cwd);
+            for _ in 0..3 {
+                if let Some(dir) = cur {
+                    roots.push(dir.clone());
+                    cur = dir.parent().map(|p| p.to_path_buf());
+                }
             }
         }
     }
-    // D:\elvis-log-viewer.exe 단독 실행 시에도 빌드 시점 워크스페이스(config/paths.env, 로컬 폰트) 자동 탐색
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    if let Some(ws_root) = manifest_dir.parent() {
-        roots.push(ws_root.to_path_buf());
-    }
+
     roots
         .into_iter()
         .find(|d| d.join("config").join("paths.env").exists())
 }
 
+fn default_log_dir() -> PathBuf {
+    #[cfg(debug_assertions)]
+    {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        if let Some(ws_root) = manifest_dir.parent() {
+            return ws_root.join("logs");
+        }
+    }
+    PathBuf::from(RELEASE_PRODUCT_ROOT).join("logs")
+}
+
 fn load_defaults_from_paths_env() -> (PathBuf, [u16; 5]) {
-    let mut log_dir = PathBuf::from(r"D:\elvis-lite\logs");
+    let mut log_dir = default_log_dir();
     let mut ports = [13306u16, 19092, 9080, 9081, 9082];
 
     if let Some(root) = find_workspace_root() {
@@ -2711,7 +2654,9 @@ fn load_defaults_from_paths_env() -> (PathBuf, [u16; 5]) {
                     let key = k.trim();
                     let val = v.trim();
                     match key {
-                        "ELVIS_LOG_DIR" if !val.is_empty() => log_dir = PathBuf::from(val),
+                        "ELVIS_LOG_DIR" if !val.is_empty() => {
+                            log_dir = expand_elvis_home(val, &root);
+                        }
                         "ELVIS_MYSQL_PORT" => {
                             if let Ok(p) = val.parse() {
                                 ports[0] = p;
@@ -2845,6 +2790,22 @@ enum LogLevel {
 fn detect_log_level(line: &str) -> LogLevel {
     let trimmed = line.trim_start();
 
+    // 0) OCPP 파이프 구분 표준 포맷: "2026-11-25 13:45:00.123 | INFO  | OCPP-WS   | ..."
+    //    (두 번째 컬럼만 검사해 본문 JSON의 "errorCode":"NoError" 오탐 원천 차단)
+    if let Some(first_pipe) = trimmed.find('|') {
+        let rest = &trimmed[first_pipe + 1..];
+        if let Some(second_pipe) = rest.find('|') {
+            let level_tok = rest[..second_pipe].trim();
+            match level_tok {
+                "ERROR" | "FATAL" => return LogLevel::Error,
+                "WARN" | "WARNING" => return LogLevel::Warn,
+                "INFO" => return LogLevel::Info,
+                "DEBUG" | "TRACE" => return LogLevel::Debug,
+                _ => {}
+            }
+        }
+    }
+
     // 1) Spring Boot 표준 포맷: "2026-11-20T...  INFO 12345 --- ..."
     //    (" --- " 이전 헤더 영역만 검사해 본문 JSON의 "NoError" / "0 transport error" 오탐 원천 차단)
     if let Some(dash_pos) = trimmed.find(" --- ") {
@@ -2933,6 +2894,10 @@ fn classify_line_colors(line: &str) -> (egui::Color32, Option<egui::Color32>, bo
         LogLevel::Info => {
             let lower = line.to_lowercase();
             if lower.contains("[ocpp]")
+                || lower.contains("[receive]")
+                || lower.contains("[send]")
+                || lower.contains("[req]")
+                || lower.contains("[res]")
                 || lower.contains("[ws-recv]")
                 || lower.contains("[ws-send]")
                 || lower.contains("[sync-recv]")
@@ -3214,46 +3179,77 @@ foreach ($p in $pids) {{
     }
 }
 
-fn resource_level_colors(pct: f32) -> (egui::Color32, egui::Color32, egui::Color32) {
-    if pct >= 85.0 {
-        (
-            egui::Color32::from_rgb(225, 29, 72),   // rose-600
-            egui::Color32::from_rgb(255, 241, 242), // rose-50
-            egui::Color32::from_rgb(254, 205, 211), // rose-200
-        )
-    } else if pct >= 70.0 {
-        (
-            egui::Color32::from_rgb(217, 119, 6),   // amber-600
-            egui::Color32::from_rgb(255, 251, 235), // amber-50
-            egui::Color32::from_rgb(253, 230, 138), // amber-200
-        )
-    } else {
-        (
-            egui::Color32::from_rgb(4, 120, 87),    // emerald-700
-            egui::Color32::from_rgb(248, 250, 252), // slate-50
-            egui::Color32::from_rgb(226, 232, 240), // slate-200
-        )
-    }
+fn render_metric_pill(
+    ui: &mut egui::Ui,
+    label: &str,
+    percent: f32,
+    value_text: &str,
+    accent: egui::Color32,
+    bar_width: f32,
+    tooltip: &str,
+) {
+    let resp = egui::Frame::NONE
+        .fill(egui::Color32::from_rgb(248, 250, 252))
+        .stroke(egui::Stroke::new(
+            1.0_f32,
+            egui::Color32::from_rgb(226, 232, 240),
+        ))
+        .corner_radius(egui::CornerRadius::same(5))
+        .inner_margin(egui::Margin::symmetric(7, 2))
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 5.0;
+                ui.label(
+                    egui::RichText::new(label)
+                        .strong()
+                        .size(11.0)
+                        .color(egui::Color32::from_rgb(71, 85, 105)),
+                );
+
+                // 미니 게이지 바
+                let (rect, _) =
+                    ui.allocate_exact_size(egui::vec2(bar_width, 8.0), egui::Sense::hover());
+                let painter = ui.painter();
+                painter.rect_filled(
+                    rect,
+                    egui::CornerRadius::same(3),
+                    egui::Color32::from_rgb(226, 232, 240),
+                );
+                let frac = (percent / 100.0).clamp(0.0, 1.0);
+                if frac > 0.0 {
+                    let fill_rect = egui::Rect::from_min_size(
+                        rect.min,
+                        egui::vec2((rect.width() * frac).max(2.0), rect.height()),
+                    );
+                    painter.rect_filled(fill_rect, egui::CornerRadius::same(3), accent);
+                }
+
+                ui.label(
+                    egui::RichText::new(value_text)
+                        .monospace()
+                        .size(11.0)
+                        .color(accent),
+                );
+            });
+        })
+        .response;
+
+    resp.on_hover_text(tooltip);
 }
 
-fn draw_resource_bar(
-    ui: &mut egui::Ui,
-    pct: f32,
-    width: f32,
-    height: f32,
-    color: egui::Color32,
-) -> egui::Response {
-    let (rect, resp) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
-    let radius = egui::CornerRadius::same((height * 0.5).round() as u8);
-    ui.painter()
-        .rect_filled(rect, radius, egui::Color32::from_rgb(226, 232, 240));
-    let frac = (pct / 100.0).clamp(0.0, 1.0);
-    if frac > 0.0 {
-        let fill_w = (rect.width() * frac).max(height * 0.6).min(rect.width());
-        let fill_rect = egui::Rect::from_min_size(rect.min, egui::vec2(fill_w, rect.height()));
-        ui.painter().rect_filled(fill_rect, radius, color);
+fn usage_color(
+    percent: f32,
+    warn_threshold: f32,
+    crit_threshold: f32,
+    normal: egui::Color32,
+) -> egui::Color32 {
+    if percent >= crit_threshold {
+        egui::Color32::from_rgb(220, 38, 38) // red-600
+    } else if percent >= warn_threshold {
+        egui::Color32::from_rgb(217, 119, 6) // amber-600
+    } else {
+        normal
     }
-    resp
 }
 
 fn format_uptime(secs: u64) -> String {
