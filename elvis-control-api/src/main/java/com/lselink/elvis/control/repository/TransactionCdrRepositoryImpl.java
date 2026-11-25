@@ -2,7 +2,9 @@ package com.lselink.elvis.control.repository;
 
 import com.lselink.elvis.control.dto.CdrSearchCondition;
 import com.lselink.elvis.control.dto.CdrSummaryDto;
+import com.lselink.elvis.control.entity.ChargeDetailRecordEntity;
 import com.lselink.elvis.control.entity.TransactionCdrEntity;
+import com.lselink.elvis.control.entity.TransactionSessionEntity;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
@@ -23,12 +25,17 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.lselink.elvis.control.entity.QChargeDetailRecordEntity.chargeDetailRecordEntity;
 import static com.lselink.elvis.control.entity.QChargerEntity.chargerEntity;
 import static com.lselink.elvis.control.entity.QStationEntity.stationEntity;
-import static com.lselink.elvis.control.entity.QTransactionCdrEntity.transactionCdrEntity;
+import static com.lselink.elvis.control.entity.QTransactionSessionEntity.transactionSessionEntity;
 
 /**
  * 충전 거래 이력(CDR) QueryDSL 커스텀 리포지토리 구현체
+ * <p>
+ * elvis-connect-sync가 실제 영속화하는 {@code transaction_session}과
+ * {@code charge_detail_record}를 LEFT OUTER JOIN하여 진행중 세션과 정산 완료 과금 원장을 통합 조회합니다.
+ * </p>
  */
 @Repository
 public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCustom {
@@ -43,9 +50,14 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
     public Page<TransactionCdrEntity> searchCdr(CdrSearchCondition condition, Pageable pageable) {
         BooleanExpression[] predicates = buildPredicates(condition);
 
-        List<TransactionCdrEntity> content = queryFactory
-                .selectFrom(transactionCdrEntity)
-                .leftJoin(chargerEntity).on(transactionCdrEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
+        List<Tuple> tuples = queryFactory
+                .select(transactionSessionEntity, chargeDetailRecordEntity)
+                .from(transactionSessionEntity)
+                .leftJoin(chargeDetailRecordEntity).on(
+                        chargeDetailRecordEntity.chargeBoxId.eq(transactionSessionEntity.chargeBoxId)
+                                .and(chargeDetailRecordEntity.transactionId.eq(transactionSessionEntity.transactionId))
+                )
+                .leftJoin(chargerEntity).on(transactionSessionEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
                 .leftJoin(stationEntity).on(chargerEntity.stId.eq(stationEntity.stId))
                 .where(predicates)
                 .orderBy(resolveOrderSpecifiers(pageable.getSort()))
@@ -53,10 +65,23 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        List<TransactionCdrEntity> content = new ArrayList<>(tuples.size());
+        for (Tuple tuple : tuples) {
+            TransactionSessionEntity session = tuple.get(transactionSessionEntity);
+            ChargeDetailRecordEntity cdr = tuple.get(chargeDetailRecordEntity);
+            if (session != null) {
+                content.add(toMergedCdrEntity(session, cdr));
+            }
+        }
+
         JPAQuery<Long> countQuery = queryFactory
-                .select(transactionCdrEntity.count())
-                .from(transactionCdrEntity)
-                .leftJoin(chargerEntity).on(transactionCdrEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
+                .select(transactionSessionEntity.count())
+                .from(transactionSessionEntity)
+                .leftJoin(chargeDetailRecordEntity).on(
+                        chargeDetailRecordEntity.chargeBoxId.eq(transactionSessionEntity.chargeBoxId)
+                                .and(chargeDetailRecordEntity.transactionId.eq(transactionSessionEntity.transactionId))
+                )
+                .leftJoin(chargerEntity).on(transactionSessionEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
                 .leftJoin(stationEntity).on(chargerEntity.stId.eq(stationEntity.stId))
                 .where(predicates);
 
@@ -72,12 +97,23 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
 
         Tuple agg = queryFactory
                 .select(
-                        transactionCdrEntity.count(),
-                        transactionCdrEntity.totalKwh.sum().coalesce(BigDecimal.ZERO),
-                        transactionCdrEntity.totalAmount.sum().coalesce(BigDecimal.ZERO)
+                        transactionSessionEntity.count(),
+                        chargeDetailRecordEntity.totalEnergyKwh
+                                .coalesce(transactionSessionEntity.totalEnergyKwh)
+                                .coalesce(BigDecimal.ZERO)
+                                .sum()
+                                .coalesce(BigDecimal.ZERO),
+                        chargeDetailRecordEntity.totalAmount
+                                .coalesce(BigDecimal.ZERO)
+                                .sum()
+                                .coalesce(BigDecimal.ZERO)
                 )
-                .from(transactionCdrEntity)
-                .leftJoin(chargerEntity).on(transactionCdrEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
+                .from(transactionSessionEntity)
+                .leftJoin(chargeDetailRecordEntity).on(
+                        chargeDetailRecordEntity.chargeBoxId.eq(transactionSessionEntity.chargeBoxId)
+                                .and(chargeDetailRecordEntity.transactionId.eq(transactionSessionEntity.transactionId))
+                )
+                .leftJoin(chargerEntity).on(transactionSessionEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
                 .leftJoin(stationEntity).on(chargerEntity.stId.eq(stationEntity.stId))
                 .where(predicates)
                 .fetchOne();
@@ -101,17 +137,21 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
                         Expressions.numberTemplate(
                                 Double.class,
                                 "timestampdiff(SECOND, {0}, {1})",
-                                transactionCdrEntity.startTime,
-                                transactionCdrEntity.stopTime
+                                transactionSessionEntity.startTime,
+                                transactionSessionEntity.stopTime
                         ).avg()
                 )
-                .from(transactionCdrEntity)
-                .leftJoin(chargerEntity).on(transactionCdrEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
+                .from(transactionSessionEntity)
+                .leftJoin(chargeDetailRecordEntity).on(
+                        chargeDetailRecordEntity.chargeBoxId.eq(transactionSessionEntity.chargeBoxId)
+                                .and(chargeDetailRecordEntity.transactionId.eq(transactionSessionEntity.transactionId))
+                )
+                .leftJoin(chargerEntity).on(transactionSessionEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
                 .leftJoin(stationEntity).on(chargerEntity.stId.eq(stationEntity.stId))
                 .where(predicates)
                 .where(
-                        transactionCdrEntity.stopTime.isNotNull(),
-                        transactionCdrEntity.stopTime.goe(transactionCdrEntity.startTime)
+                        transactionSessionEntity.stopTime.isNotNull(),
+                        transactionSessionEntity.stopTime.goe(transactionSessionEntity.startTime)
                 )
                 .fetchOne();
 
@@ -132,13 +172,83 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
     public List<TransactionCdrEntity> findAllByCondition(CdrSearchCondition condition) {
         BooleanExpression[] predicates = buildPredicates(condition);
 
-        return queryFactory
-                .selectFrom(transactionCdrEntity)
-                .leftJoin(chargerEntity).on(transactionCdrEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
+        List<Tuple> tuples = queryFactory
+                .select(transactionSessionEntity, chargeDetailRecordEntity)
+                .from(transactionSessionEntity)
+                .leftJoin(chargeDetailRecordEntity).on(
+                        chargeDetailRecordEntity.chargeBoxId.eq(transactionSessionEntity.chargeBoxId)
+                                .and(chargeDetailRecordEntity.transactionId.eq(transactionSessionEntity.transactionId))
+                )
+                .leftJoin(chargerEntity).on(transactionSessionEntity.chargeBoxId.eq(chargerEntity.chargeBoxId))
                 .leftJoin(stationEntity).on(chargerEntity.stId.eq(stationEntity.stId))
                 .where(predicates)
-                .orderBy(transactionCdrEntity.startTime.desc())
+                .orderBy(transactionSessionEntity.startTime.desc(), transactionSessionEntity.transactionId.desc())
                 .fetch();
+
+        List<TransactionCdrEntity> result = new ArrayList<>(tuples.size());
+        for (Tuple tuple : tuples) {
+            TransactionSessionEntity session = tuple.get(transactionSessionEntity);
+            ChargeDetailRecordEntity cdr = tuple.get(chargeDetailRecordEntity);
+            if (session != null) {
+                result.add(toMergedCdrEntity(session, cdr));
+            }
+        }
+        return result;
+    }
+
+    private TransactionCdrEntity toMergedCdrEntity(TransactionSessionEntity session, ChargeDetailRecordEntity cdr) {
+        TransactionCdrEntity row = new TransactionCdrEntity();
+        row.setTransactionId(session.getTransactionId());
+        row.setChargeBoxId(session.getChargeBoxId());
+        row.setConnectorId(session.getConnectorId());
+        row.setUserTag(session.getIdTag());
+        row.setStartTime(session.getStartTime());
+        row.setStopTime(cdr != null && cdr.getStopTime() != null ? cdr.getStopTime() : session.getStopTime());
+        row.setMeterStartWh(cdr != null && cdr.getStartMeterWh() != null ? cdr.getStartMeterWh() : session.getMeterStart());
+        row.setMeterStopWh(cdr != null && cdr.getStopMeterWh() != null ? cdr.getStopMeterWh() : session.getMeterStop());
+
+        BigDecimal kwh = cdr != null && cdr.getTotalEnergyKwh() != null
+                ? cdr.getTotalEnergyKwh()
+                : (session.getTotalEnergyKwh() != null ? session.getTotalEnergyKwh() : BigDecimal.ZERO);
+        BigDecimal totalAmount = cdr != null && cdr.getTotalAmount() != null
+                ? cdr.getTotalAmount()
+                : BigDecimal.ZERO;
+
+        BigDecimal unitPrice = BigDecimal.ZERO;
+        if (cdr != null && kwh.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal baseFee = cdr.getEnergyFee() != null && cdr.getEnergyFee().compareTo(BigDecimal.ZERO) > 0
+                    ? cdr.getEnergyFee()
+                    : totalAmount;
+            unitPrice = baseFee.divide(kwh, 1, RoundingMode.HALF_UP);
+        }
+
+        row.setTotalKwh(kwh.setScale(2, RoundingMode.HALF_UP));
+        row.setUnitPrice(unitPrice);
+        row.setTotalAmount(totalAmount.setScale(0, RoundingMode.HALF_UP));
+        row.setPaymentStatus(resolvePaymentStatus(session, cdr));
+        row.setStopReason(session.getStopReason());
+        row.setRegDt(cdr != null && cdr.getRegDt() != null ? cdr.getRegDt() : session.getRegDt());
+        return row;
+    }
+
+    private String resolvePaymentStatus(TransactionSessionEntity session, ChargeDetailRecordEntity cdr) {
+        if (cdr != null && StringUtils.hasText(cdr.getPaymentStatus())) {
+            return cdr.getPaymentStatus().trim();
+        }
+        if (StringUtils.hasText(session.getStatus())) {
+            String st = session.getStatus().trim().toUpperCase();
+            if ("CHARGING".equals(st) || "STARTING".equals(st)) {
+                return "CHARGING";
+            }
+            if ("ABORTED".equals(st)) {
+                return "ABORTED";
+            }
+            if ("STOPPED".equals(st) || "COMPLETED".equals(st)) {
+                return "PENDING";
+            }
+            return st;
+        }
+        return session.getStopTime() == null ? "CHARGING" : "PENDING";
     }
 
     private BooleanExpression[] buildPredicates(CdrSearchCondition condition) {
@@ -159,7 +269,7 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
         if (!StringUtils.hasText(chargeBoxId) || "ALL".equalsIgnoreCase(chargeBoxId.trim())) {
             return null;
         }
-        return transactionCdrEntity.chargeBoxId.eq(chargeBoxId.trim());
+        return transactionSessionEntity.chargeBoxId.eq(chargeBoxId.trim());
     }
 
     private BooleanExpression eqStationId(String stId) {
@@ -173,25 +283,34 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
         if (!StringUtils.hasText(userTag)) {
             return null;
         }
-        return transactionCdrEntity.userTag.containsIgnoreCase(userTag.trim());
+        return transactionSessionEntity.idTag.containsIgnoreCase(userTag.trim());
     }
 
     private BooleanExpression eqPaymentStatus(String paymentStatus) {
         if (!StringUtils.hasText(paymentStatus) || "ALL".equalsIgnoreCase(paymentStatus.trim())) {
             return null;
         }
-        return transactionCdrEntity.paymentStatus.eq(paymentStatus.trim());
+        String trimmed = paymentStatus.trim().toUpperCase();
+        if ("CHARGING".equals(trimmed)) {
+            return chargeDetailRecordEntity.id.isNull()
+                    .and(transactionSessionEntity.status.equalsIgnoreCase("CHARGING"));
+        }
+        if ("ABORTED".equals(trimmed)) {
+            return chargeDetailRecordEntity.id.isNull()
+                    .and(transactionSessionEntity.status.equalsIgnoreCase("ABORTED"));
+        }
+        return chargeDetailRecordEntity.paymentStatus.equalsIgnoreCase(trimmed);
     }
 
     private BooleanExpression betweenStartTime(LocalDateTime startDate, LocalDateTime endDate) {
         if (startDate != null && endDate != null) {
-            return transactionCdrEntity.startTime.between(startDate, endDate);
+            return transactionSessionEntity.startTime.between(startDate, endDate);
         }
         if (startDate != null) {
-            return transactionCdrEntity.startTime.goe(startDate);
+            return transactionSessionEntity.startTime.goe(startDate);
         }
         if (endDate != null) {
-            return transactionCdrEntity.startTime.loe(endDate);
+            return transactionSessionEntity.startTime.loe(endDate);
         }
         return null;
     }
@@ -201,38 +320,48 @@ public class TransactionCdrRepositoryImpl implements TransactionCdrRepositoryCus
             return null;
         }
         String trimmed = keyword.trim();
-        return transactionCdrEntity.chargeBoxId.containsIgnoreCase(trimmed)
-                .or(transactionCdrEntity.userTag.containsIgnoreCase(trimmed))
-                .or(transactionCdrEntity.stopReason.containsIgnoreCase(trimmed))
+        BooleanExpression expr = transactionSessionEntity.chargeBoxId.containsIgnoreCase(trimmed)
+                .or(transactionSessionEntity.idTag.containsIgnoreCase(trimmed))
+                .or(transactionSessionEntity.stopReason.containsIgnoreCase(trimmed))
                 .or(stationEntity.name.containsIgnoreCase(trimmed))
-                .or(chargerEntity.stId.containsIgnoreCase(trimmed));
+                .or(chargerEntity.stId.containsIgnoreCase(trimmed))
+                .or(chargeDetailRecordEntity.cdrNo.containsIgnoreCase(trimmed));
+        try {
+            Long parsedTxId = Long.parseLong(trimmed.replace("#", ""));
+            expr = expr.or(transactionSessionEntity.transactionId.eq(parsedTxId));
+        } catch (NumberFormatException ignored) {
+        }
+        return expr;
     }
 
     private OrderSpecifier<?>[] resolveOrderSpecifiers(Sort sort) {
         if (sort == null || sort.isUnsorted()) {
-            return new OrderSpecifier<?>[]{transactionCdrEntity.startTime.desc()};
+            return new OrderSpecifier<?>[]{
+                    transactionSessionEntity.startTime.desc(),
+                    transactionSessionEntity.transactionId.desc()
+            };
         }
 
         List<OrderSpecifier<?>> orders = new ArrayList<>();
         for (Sort.Order sortOrder : sort) {
             Order direction = sortOrder.isAscending() ? Order.ASC : Order.DESC;
             switch (sortOrder.getProperty()) {
-                case "transactionId" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.transactionId));
-                case "chargeBoxId" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.chargeBoxId));
-                case "connectorId" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.connectorId));
-                case "userTag" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.userTag));
-                case "startTime" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.startTime));
-                case "stopTime" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.stopTime));
-                case "totalKwh", "kwh" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.totalKwh));
-                case "unitPrice" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.unitPrice));
-                case "totalAmount" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.totalAmount));
-                case "paymentStatus" -> orders.add(new OrderSpecifier<>(direction, transactionCdrEntity.paymentStatus));
+                case "transactionId" -> orders.add(new OrderSpecifier<>(direction, transactionSessionEntity.transactionId));
+                case "chargeBoxId" -> orders.add(new OrderSpecifier<>(direction, transactionSessionEntity.chargeBoxId));
+                case "connectorId" -> orders.add(new OrderSpecifier<>(direction, transactionSessionEntity.connectorId));
+                case "userTag" -> orders.add(new OrderSpecifier<>(direction, transactionSessionEntity.idTag));
+                case "startTime" -> orders.add(new OrderSpecifier<>(direction, transactionSessionEntity.startTime));
+                case "stopTime" -> orders.add(new OrderSpecifier<>(direction, transactionSessionEntity.stopTime));
+                case "totalKwh", "kwh" -> orders.add(new OrderSpecifier<>(direction, chargeDetailRecordEntity.totalEnergyKwh));
+                case "totalAmount" -> orders.add(new OrderSpecifier<>(direction, chargeDetailRecordEntity.totalAmount));
+                case "paymentStatus" -> orders.add(new OrderSpecifier<>(direction, chargeDetailRecordEntity.paymentStatus));
                 default -> { }
             }
         }
 
         if (orders.isEmpty()) {
-            orders.add(transactionCdrEntity.startTime.desc());
+            orders.add(transactionSessionEntity.startTime.desc());
+            orders.add(transactionSessionEntity.transactionId.desc());
         }
         return orders.toArray(new OrderSpecifier<?>[0]);
     }

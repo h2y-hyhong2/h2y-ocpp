@@ -261,10 +261,6 @@ export const useCsmsStore = defineStore('csms', {
     // 테마 설정 (라이트 기본)
     currentTheme: 'light' as ThemeType,
 
-    // 반응형 드로어 상태
-    isSidebarOpen: false,
-    isControlDrawerOpen: false,
-
     // 법인 및 충전소 데이터 (순수 DB 동기화 대상)
     corps: [] as CorpItem[],
     stations: [] as StationItem[],
@@ -301,14 +297,6 @@ export const useCsmsStore = defineStore('csms', {
   actions: {
     setTheme(theme: string) {
       this.currentTheme = theme as ThemeType
-    },
-
-    toggleSidebar(isOpen?: boolean) {
-      this.isSidebarOpen = isOpen !== undefined ? isOpen : !this.isSidebarOpen
-    },
-
-    toggleControlDrawer(isOpen?: boolean) {
-      this.isControlDrawerOpen = isOpen !== undefined ? isOpen : !this.isControlDrawerOpen
     },
 
     setCorpFilter(corpId: string) {

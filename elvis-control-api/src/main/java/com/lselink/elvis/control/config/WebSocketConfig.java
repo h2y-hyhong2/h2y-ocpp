@@ -51,7 +51,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         "http://localhost:*",
                         "http://127.0.0.1:*",
                         "tauri://localhost",
-                        "https://tauri.localhost"
+                        "http://tauri.localhost",
+                        "http://tauri.localhost:*",
+                        "https://tauri.localhost",
+                        "https://tauri.localhost:*"
                 );
 
         // SockJS Fallback 지원 엔드포인트 (프록시/방화벽 통과용)
@@ -60,7 +63,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         "http://localhost:*",
                         "http://127.0.0.1:*",
                         "tauri://localhost",
-                        "https://tauri.localhost"
+                        "http://tauri.localhost",
+                        "http://tauri.localhost:*",
+                        "https://tauri.localhost",
+                        "https://tauri.localhost:*"
                 )
                 .withSockJS();
     }

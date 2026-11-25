@@ -42,3 +42,17 @@ INSERT INTO connector_status
 VALUES
 ('00000001', 1, '연결안됨', 0.00, 0.00, 0.00, 0, 25, NULL, NULL, 0.00, 0, NOW()),
 ('00000001', 2, '연결안됨', 0.00, 0.00, 0.00, 0, 25, NULL, NULL, 0.00, 0, NOW());
+
+-- 5. 기본 테스트 회원 RFID 카드 기준정보 등록 (가상 충전기 테스터 프리셋 4종)
+INSERT INTO rfid_card
+(id_tag, member_id, member_name, parent_id_tag, card_status, expiry_date, balance, max_concurrent_tx, is_deleted)
+VALUES
+('CARD-CORP-9901', 1001, '법인회원 (LS E-Link)', 'CORP_001', 'NORMAL', '2030-12-31 23:59:59', 1000000.00, 10, 0),
+('CARD-USER-1001', 1002, '일반회원 (홍길동)', NULL, 'NORMAL', '2030-12-31 23:59:59', 500000.00, 5, 0),
+('CREDIT-IC-01',   1003, '현장 비회원 (IC결제)', NULL, 'NORMAL', '2030-12-31 23:59:59', 1000000.00, 10, 0),
+('ROAM-ME-7701',   1004, '환경부 로밍회원', 'ME_ROAM', 'NORMAL', '2030-12-31 23:59:59', 1000000.00, 10, 0)
+ON DUPLICATE KEY UPDATE
+card_status = VALUES(card_status),
+expiry_date = VALUES(expiry_date),
+max_concurrent_tx = VALUES(max_concurrent_tx),
+is_deleted = 0;

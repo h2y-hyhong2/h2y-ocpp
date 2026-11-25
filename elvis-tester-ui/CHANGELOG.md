@@ -10,6 +10,13 @@
 
 ## 변경 이력
 
+### [2026-11-25] `elvis-control-api` JWT 인증 연동(`testerAuthFetch`) 추가
+- **과제/커밋**: `[3368]WBS-COMMON-OP-008` (`elvis-tester-ui.exe` 프로덕션 서버 연동 점검)
+- **변경 내용**:
+  - `src/utils/testerApiAuth.ts`: `elvis-control-api(:9082)` 호출 시 읽기 전용 시드 계정(`viewer`)으로 JWT 토큰을 자동 발급·캐시하고 401 시 1회 자동 갱신하는 `testerAuthFetch` 추가
+  - `src/composables/useVirtualCharger.ts`, `src/components/TaskVerificationSuite.vue`: MySQL 충전기 목록 동기화(`/api/v1/chargers`) 및 API 검증 스위트(`S26-API-0020-TE`)에서 `testerAuthFetch`를 사용하도록 수정하여 401 인증 실패 해소
+- **영향 범위**: `elvis-tester-ui/src/utils/testerApiAuth.ts`, `useVirtualCharger.ts`, `TaskVerificationSuite.vue`
+
 ### [2026-11-24] 전용 제품 아이콘 적용 및 `D:\elvis-lite\elvis-tester-ui.exe` 실행파일 배포 구성
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
 - **변경 내용**:

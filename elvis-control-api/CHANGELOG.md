@@ -10,6 +10,14 @@
 
 ## 변경 이력
 
+### [2026-11-25] 과금 원장(CDR) 조회를 `transaction_session` + `charge_detail_record` 실데이터 통합 조회로 전환 및 Tauri 2.0 CORS 허용
+- **과제/커밋**: `[3368]WBS-COMMON-OP-008` (과금 원장 실조회 연동 및 `elvis-control-ui.exe` 프로덕션 API 연동)
+- **변경 내용**:
+  - `TransactionSessionEntity.java`, `ChargeDetailRecordEntity.java`, `TransactionCdrRepositoryImpl.java`: 기존 빈 테이블(`transaction_cdr`) 대신 `elvis-connect-sync`가 실제 영속화하는 `transaction_session`과 `charge_detail_record`를 QueryDSL `LEFT OUTER JOIN`으로 통합 조회해 진행 중 세션·TOU 정산 완료 원장·4대 KPI 요약을 실시간 반환
+  - `SecurityConfig.java`, `WebSocketConfig.java`: Tauri 2.0 Windows WebView2 기본 Origin(`http://tauri.localhost`, `http://tauri.localhost:*`, `https://tauri.localhost:*`)을 CORS 및 `/ws-push` STOMP 엔드포인트 허용 패턴에 추가
+  - `config/mysql/02_seed_data.sql`: 가상 충전기 테스터 기본 프리셋 RFID 카드 4종(`CARD-CORP-9901`, `CARD-USER-1001`, `CREDIT-IC-01`, `ROAM-ME-7701`) 시드 등록 추가
+- **영향 범위**: `elvis-control-api` CDR 조회 전체(`/api/v1/cdr/**`), CORS/WebSocket 보안 설정, `config/mysql/02_seed_data.sql`
+
 ### [2026-11-19] REST API 요청/응답 공통 로깅 필터(`RestApiLoggingFilter`) 추가 및 로그 텍스트 표준화
 - **과제/커밋**: `[3368]WBS-COMMON-OP-006` (관제 REST API 요청 로깅 정비 및 로그 이모지 제거)
 - **변경 내용**:

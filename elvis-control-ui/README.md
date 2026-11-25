@@ -9,9 +9,9 @@
 ## 주요 특징
 
 - **초경량 데스크톱 네이티브 앱**: WebView2 + Rust 기반으로 메모리 사용량 최소화 및 초고속 기동 속도 제공
-- **고성능 대시보드 시각화**:
-  - `Pure Tailwind & Pinia`: 충전기 실시간 상태 그리드, 계측치 모니터링 및 원격 제어(시작/종료/리셋/잠금해제)
-  - `Billing & CDR`: MySQL OLTP 과금 원장 조회, 기간 필터링 및 CSV 내보내기
+- **핵심 2화면 관제 구성 (라이트 테마 기본)**:
+  - `충전기 목록` (`/`): 충전소 전환, 상태 세그먼트 필터, 5열 충전기·커넥터 카드 매트릭스, 우측 상세·원격제어 드로어 및 하단 롤링 피드
+  - `과금 원장` (`/billing`): MySQL OLTP 충전 세션·과금 원장 실시간 조회, 결제 상태 필터, 기간·키워드 검색, 우측 상세 드로어 및 CSV 내보내기
 - **라이트 테마 기본(Light Theme Default)**: 장시간 관제 모니터링에 적합한 깔끔한 밝은 뉴트럴 톤(`#f8fafc`) 기본 UI 및 멀티 테마(`light`, `cyber`, `emerald`, `purple`, `amber`) 전환 지원
 - **로컬 오프라인 폰트 내장**: `Pretendard` 및 `Inconsolata` 로컬 폰트 탑재로 폐쇄망 환경에서도 외부 CDN 없이 동작
 
@@ -62,15 +62,13 @@ Windows 네이티브 앱 창을 띄워 실시간 핫리로드 개발을 진행�
 pnpm tauri:dev
 ```
 
-### 4. 앱 아이콘 일괄 생성 (SVG 기반)
-```powershell
-pnpm tauri icon ./public/ELVIS-LITE-ICON.svg
-```
+### 4. 앱 아이콘 적용 기준
+- 공식 제품 아이콘([public/elvis_lite_control_light.svg](./public/elvis_lite_control_light.svg), 루트 `icons/elvis_lite_control_light.svg`) 기반 멀티 해상도 아이콘(`src-tauri/icons/`)이 적용되어 있습니다.
 
 ### 5. 독립 실행 배포 파일 빌드 (.exe)
 ```powershell
-pnpm tauri:build
-# -> src-tauri/target/release/ELVIS-CSMS-ControlCenter.exe 생성
+pnpm tauri:build:exe
+# -> D:\elvis-lite\elvis-control-ui.exe 배포 완료
 ```
 
 ---

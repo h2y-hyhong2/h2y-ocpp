@@ -83,7 +83,10 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
                 "tauri://localhost",
+                "http://tauri.localhost",
+                "http://tauri.localhost:*",
                 "https://tauri.localhost",
+                "https://tauri.localhost:*",
                 "http://localhost:*",
                 "http://127.0.0.1:*"
         ));

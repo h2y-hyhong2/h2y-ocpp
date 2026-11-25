@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { TESTER_API_BASE_URL, testerAuthFetch } from '../utils/testerApiAuth'
 
 const props = defineProps<{
   chargerId?: string
@@ -783,10 +784,10 @@ async function runSingleTask(task: WbsTaskVerifyItem) {
 
   // [S26-API-0020-TE] 자산 및 실시간 상태 API 실제 백엔드 호출 검증
   if (task.id === 'S26-API-0020-TE') {
-    const apiBase = 'http://localhost:9082/api/v1/chargers'
+    const apiBase = `${TESTER_API_BASE_URL}/api/v1/chargers`
     try {
-      const chargerRes = await fetch(`${apiBase}/${targetId}`, { headers: { Accept: 'application/json' } }).catch(() => null)
-      const summaryRes = await fetch(`${apiBase}/summary`, { headers: { Accept: 'application/json' } }).catch(() => null)
+      const chargerRes = await testerAuthFetch(`${apiBase}/${targetId}`, { headers: { Accept: 'application/json' } }).catch(() => null)
+      const summaryRes = await testerAuthFetch(`${apiBase}/summary`, { headers: { Accept: 'application/json' } }).catch(() => null)
       const elapsed = Math.round(performance.now() - startTime)
       const chargerOk = Boolean(chargerRes?.ok)
       const summaryOk = Boolean(summaryRes?.ok)

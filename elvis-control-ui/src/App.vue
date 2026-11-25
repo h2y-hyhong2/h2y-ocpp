@@ -9,16 +9,6 @@
       
       <!-- Left: 로고 및 타이틀 & 관제 메뉴 네비게이션 -->
       <div class="flex items-center gap-3 flex-shrink-0">
-        <!-- 모바일/태블릿용 사이드바 토글 버튼 (충전기 관제 화면, 1024px 미만에서 노출) -->
-        <button
-          v-if="route.name === 'Chargers'"
-          @click="store.toggleSidebar()"
-          class="lg:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-hidden flex items-center justify-center flex-shrink-0 border border-slate-200 cursor-pointer"
-          title="충전소 목록 토글"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
-
         <!-- ELVIS Lite Control 공식 제품 아이콘 & 타이틀 -->
         <router-link to="/" class="flex items-center gap-2 group cursor-pointer">
           <img
@@ -60,18 +50,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
             <span>충전기 목록</span>
-          </router-link>
-
-          <router-link
-            to="/chargers"
-            active-class="bg-sky-50 text-sky-700 font-bold border-sky-200/90 shadow-2xs"
-            class="px-2.5 py-1 rounded-lg border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all flex items-center gap-1.5 cursor-pointer"
-            title="실시간 충전기 통합 관제"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span>충전기 관제</span>
           </router-link>
 
           <router-link
@@ -119,17 +97,6 @@
 
       <!-- Right: 지표 & 컨트롤 -->
       <div class="flex items-center gap-2 text-xs font-semibold flex-shrink-0">
-        <!-- 소형 창 전용 [단말 제어반 열기] 버튼 (충전기 관제 화면, 1280px 미만에서 노출) -->
-        <button
-          v-if="route.name === 'Chargers'"
-          @click="store.toggleControlDrawer(true)"
-          class="xl:hidden flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-bold text-xs shadow-2xs transition-all whitespace-nowrap cursor-pointer"
-          title="단말 계측치 및 제어반 열기"
-        >
-          <svg class="w-3.5 h-3.5 text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          <span>제어반</span>
-        </button>
-
         <!-- 테마 셀렉터 (라이트 기본) -->
         <div class="hidden md:flex items-center gap-1">
           <select
@@ -188,19 +155,6 @@
     <main class="flex-1 overflow-hidden bg-[var(--bg-base)] relative" :class="route.path === '/login' ? 'p-0' : 'p-2 md:p-3'">
       <router-view />
     </main>
-
-    <!-- 반응형 모바일/태블릿용 백드롭 -->
-    <div
-      v-if="store.isSidebarOpen"
-      @click="store.toggleSidebar(false)"
-      class="fixed inset-0 bg-slate-900/40 z-40 lg:hidden"
-    ></div>
-
-    <div
-      v-if="store.isControlDrawerOpen"
-      @click="store.toggleControlDrawer(false)"
-      class="fixed inset-0 bg-slate-900/40 z-40 xl:hidden"
-    ></div>
 
     <!-- 글로벌 토스트 알림 컨테이너 -->
     <div class="fixed bottom-5 right-5 flex flex-col gap-2 z-50 pointer-events-none">
@@ -289,19 +243,6 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-function handleResize() {
-  if (window.innerWidth >= 1280) store.toggleControlDrawer(false)
-  if (window.innerWidth >= 1024) store.toggleSidebar(false)
-}
-
-watch(
-  () => route.path,
-  () => {
-    store.toggleSidebar(false)
-    store.toggleControlDrawer(false)
-  }
-)
-
 watch(
   () => authStore.isAuthenticated,
   (isAuth) => {
@@ -330,14 +271,12 @@ onMounted(() => {
   }, 3000)
 
   window.addEventListener('keydown', handleKeydown)
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   if (syncTimer) clearInterval(syncTimer)
   window.removeEventListener('keydown', handleKeydown)
-  window.removeEventListener('resize', handleResize)
 })
 </script>
 

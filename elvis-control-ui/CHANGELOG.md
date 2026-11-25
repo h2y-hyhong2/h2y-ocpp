@@ -11,6 +11,22 @@
 
 ## 변경 이력
 
+### [2026-11-25] `과금 원장` 화면 디자인을 `충전기 목록` 기준으로 통일
+- **과제/커밋**: `[3368]WBS-COMMON-OP-011` (관제 UI 디자인 일관성 개선)
+- **변경 내용**:
+  - `src/views/BillingCdrView.vue`: 레거시 `.glass-card`/시안 배지(`PAGE-CDR-01`)/별도 KPI 카드 박스를 제거하고 `SimpleDashboardView`(충전기 목록)와 동일한 3단 구조(상단 1줄 컨트롤 바 + 풀-하이트 화이트 원장 테이블 + 하단 고정 상태 바)로 모던·심플하게 재구성
+  - 상단 컨트롤 바에 타이틀 필·인라인 집계 요약(`kWh | 원 | 평균 분`)·컴팩트 기간 선택·세그먼트 상태 필터 칩(`전체`/`완료`/`대기`/`충전중`/`중단`)·검색·새로고침·`CSV` 버튼을 배치하고, 행 클릭 시 열리는 우측 슬라이드 상세 드로어 추가
+- **영향 범위**: `elvis-control-ui/src/views/BillingCdrView.vue`
+
+### [2026-11-25] 관제 화면을 `충전기 목록` · `과금 원장` 2개 화면으로 단순화 및 `충전기 관제` 제거
+- **과제/커밋**: `[3368]WBS-COMMON-OP-008` (관제 UI 화면 정리)
+- **변경 내용**:
+  - `src/views/ChargersView.vue` 삭제 및 `src/router/index.ts`에서 `/chargers`, `/simple` 라우트 제거 (`/` 충전기 목록, `/billing` 과금 원장, `/login` 로그인만 유지)
+  - `src/App.vue`: GNB 메뉴를 `충전기 목록` · `과금 원장` 2개로 정리하고 `ChargersView` 전용 모바일 사이드바/제어반 토글 버튼 및 백드롭 제거
+  - `src/stores/csmsStore.ts`: 미사용 드로어 상태(`isSidebarOpen`, `isControlDrawerOpen`) 및 토글 액션 제거
+  - `src/views/BillingCdrView.vue`: 세로 스크롤(`h-full overflow-y-auto`), 수동 `새로고침` 및 5초 자동 갱신, 검색/기간 필터 백엔드 통합 연동, 평균 단가 동적 산출 및 `PAID`/`PENDING`/`CHARGING`/`ABORTED` 결제 상태 배지 반영
+- **영향 범위**: `elvis-control-ui/src/App.vue`, `src/router/index.ts`, `src/stores/csmsStore.ts`, `src/views/BillingCdrView.vue`, `src/views/ChargersView.vue`(삭제)
+
 ### [2026-11-24] 전용 제품 아이콘 적용 및 `D:\elvis-lite\elvis-control-ui.exe` 실행파일 배포 구성
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (4대 데스크톱 제품 아이콘 적용 및 `D:\elvis-lite` 실행파일 배포)
 - **변경 내용**:

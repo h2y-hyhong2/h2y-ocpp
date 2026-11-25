@@ -1,12 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ChargersView from '@/views/ChargersView.vue'
 import SimpleDashboardView from '@/views/SimpleDashboardView.vue'
 import BillingCdrView from '@/views/BillingCdrView.vue'
 import LoginView from '@/views/LoginView.vue'
 import { useAuthStore, isJwtExpired } from '@/stores/authStore'
 
 /**
- * CSMS Lite 관제 라우터 테이블
+ * CSMS Lite 관제 라우터 테이블 (충전기 목록 / 과금 원장 2개 화면)
  */
 const routes = [
   {
@@ -22,20 +21,10 @@ const routes = [
     meta: { title: '충전기 목록', requiresAuth: true }
   },
   {
-    path: '/chargers',
-    name: 'Chargers',
-    component: ChargersView,
-    meta: { title: '실시간 충전기 통합 관제', requiresAuth: true }
-  },
-  {
-    path: '/simple',
-    redirect: '/'
-  },
-  {
     path: '/billing',
     name: 'BillingCdr',
     component: BillingCdrView,
-    meta: { title: '충전 세션 & 과금 원장', requiresAuth: true }
+    meta: { title: '과금 원장', requiresAuth: true }
   },
   {
     path: '/:pathMatch(.*)*',

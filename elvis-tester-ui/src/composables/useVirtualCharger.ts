@@ -1,4 +1,5 @@
 import { ref, reactive, computed } from 'vue'
+import { TESTER_API_BASE_URL, testerAuthFetch } from '../utils/testerApiAuth'
 import {
   MESSAGE_TYPE,
   type OcppLogEntry,
@@ -8,7 +9,7 @@ import {
 } from '../types/ocpp'
 
 const STORAGE_KEY = 'elvis_tester_chargers_mysql_v1'
-const API_BASE_URL = 'http://127.0.0.1:9082'
+const API_BASE_URL = TESTER_API_BASE_URL
 
 // ─────────────────────────────────────────────────────────────
 // MySQL DB 실시간 연동 및 동기화 상태
@@ -156,7 +157,7 @@ async function fetchChargersFromMysql(): Promise<boolean> {
   isMysqlSyncing.value = true
   mysqlError.value = null
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/chargers`)
+    const resp = await testerAuthFetch(`${API_BASE_URL}/api/v1/chargers`)
     if (!resp.ok) {
       throw new Error(`HTTP ${resp.status}: ${resp.statusText}`)
     }
