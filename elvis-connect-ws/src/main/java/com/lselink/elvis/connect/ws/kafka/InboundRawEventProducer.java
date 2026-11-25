@@ -1,6 +1,7 @@
 package com.lselink.elvis.connect.ws.kafka;
 
 import com.lselink.elvis.connect.ws.dto.OcppRawEventEnvelope;
+import com.lselink.elvis.connect.ws.util.LogFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,31 +46,39 @@ public class InboundRawEventProducer {
      */
     public CompletableFuture<SendResult<String, OcppRawEventEnvelope>> sendRawEvent(OcppRawEventEnvelope envelope) {
         String partitionKey = envelope.getChargeBoxId();
+        String msgId = LogFormatUtils.extractMsgId(envelope.getRawPayload());
+        if (msgId == null || msgId.isBlank()) {
+            msgId = envelope.getSessionId();
+        }
+        final String capturedMsgId = msgId;
 
         CompletableFuture<SendResult<String, OcppRawEventEnvelope>> future =
                 kafkaTemplate.send(inboundTopic, partitionKey, envelope);
 
         future.whenComplete((result, ex) -> {
-            if (ex != null) {
-                int failures = consecutiveFailures.incrementAndGet();
-                log.error("[InboundProducer] Kafka 발행 실패 (연속 {}회): chargeBoxId={}, topic={}, error={}",
-                        failures, partitionKey, inboundTopic, ex.getMessage(), ex);
+            try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(partitionKey, capturedMsgId)) {
+                if (ex != null) {
+                    int failures = consecutiveFailures.incrementAndGet();
+                    log.error("[Kafka] SEND FAIL  | topic={} key={} failures={} error={}",
+                            inboundTopic, partitionKey, failures, ex.getMessage(), ex);
 
-                if (failures >= FAILURE_THRESHOLD) {
-                    circuitOpenedAt.set(Instant.now());
-                    if (kafkaHealthy.compareAndSet(true, false)) {
-                        log.error("[InboundProducer] Kafka Broker 장애 감지! Failover 서킷 오픈 ({}초 후 Half-Open 재시도) - 단말 소켓 차단 및 로컬 버퍼링 유도",
-                                CIRCUIT_OPEN_DURATION.toSeconds());
+                    if (failures >= FAILURE_THRESHOLD) {
+                        circuitOpenedAt.set(Instant.now());
+                        if (kafkaHealthy.compareAndSet(true, false)) {
+                            log.error("[Kafka] CIRCUIT OPEN | consecutiveFailures={} retryAfter={}s",
+                                    failures, CIRCUIT_OPEN_DURATION.toSeconds());
+                        }
                     }
+                } else {
+                    consecutiveFailures.set(0);
+                    circuitOpenedAt.set(null);
+                    if (kafkaHealthy.compareAndSet(false, true)) {
+                        log.info("[Kafka] CIRCUIT CLOSED | broker recovered");
+                    }
+                    var meta = result.getRecordMetadata();
+                    log.info("[Kafka] SEND       | topic={} key={} partition={} offset={} eventType={}",
+                            inboundTopic, partitionKey, meta.partition(), meta.offset(), envelope.getEventType());
                 }
-            } else {
-                consecutiveFailures.set(0);
-                circuitOpenedAt.set(null);
-                if (kafkaHealthy.compareAndSet(false, true)) {
-                    log.info("[InboundProducer] Kafka Broker 정상 복구 감지 - 서비스 정상화");
-                }
-                log.debug("[InboundProducer] Kafka 발행 성공: chargeBoxId={}, offset={}",
-                        partitionKey, result.getRecordMetadata().offset());
             }
         });
 
@@ -89,8 +98,10 @@ public class InboundRawEventProducer {
                 .rawPayload(null)
                 .receivedAt(Instant.now())
                 .build();
-        log.info("[InboundProducer] 단말 연결 종료(DISCONNECTED) 이벤트 발행: chargeBoxId={}, sessionId={}",
-                chargeBoxId, sessionId);
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, sessionId)) {
+            log.info("[Kafka] SEND       | topic={} key={} eventType=DISCONNECTED sessionId={}",
+                    inboundTopic, chargeBoxId, sessionId);
+        }
         return sendRawEvent(envelope);
     }
 

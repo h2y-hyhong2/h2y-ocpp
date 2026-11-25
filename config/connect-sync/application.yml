@@ -94,4 +94,14 @@ management:
 logging:
   level:
     root: INFO
-    com.lselink.elvis.connect.sync: DEBUG
+    com.lselink.elvis.connect.sync: INFO
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    org.springframework.data.redis: WARN
+    io.lettuce: WARN
+  file:
+    name: ${ELVIS_LOG_DIR:logs}/ocpp-sync.log
+  error-file:
+    name: ${ELVIS_LOG_DIR:logs}/sync-err.log
+  kafka-file:
+    name: ${ELVIS_LOG_DIR:logs}/sync-kafka.log

@@ -5,6 +5,7 @@ import com.lselink.elvis.connect.ws.dto.OcppRawEventEnvelope;
 import com.lselink.elvis.connect.ws.kafka.InboundRawEventProducer;
 import com.lselink.elvis.connect.ws.metrics.GatewayMetrics;
 import com.lselink.elvis.connect.ws.session.LocalSessionStore;
+import com.lselink.elvis.connect.ws.util.LogFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -52,18 +53,20 @@ public class OcppWebSocketHandler extends TextWebSocketHandler implements SubPro
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String chargeBoxId = getChargeBoxId(session);
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, session.getId())) {
+            // Kafka Broker 장애 Failover 시 신규 연결 차단 및 단말 로컬 버퍼링 유도 (REQ-003, REQ-009)
+            if (!inboundProducer.isKafkaHealthy()) {
+                log.warn("[WebSocket][OCPP1.6] Client rejected (Kafka Broker Failover) - charger: {}, ip: {}",
+                        chargeBoxId, session.getRemoteAddress());
+                session.close(CloseStatus.SERVICE_RESTARTED.withReason("Kafka Broker Failover - Buffer Locally"));
+                return;
+            }
 
-        // Kafka Broker 장애 Failover 시 신규 연결 차단 및 단말 로컬 버퍼링 유도 (REQ-003, REQ-009)
-        if (!inboundProducer.isKafkaHealthy()) {
-            log.warn("[WS-Handler] Kafka Broker 장애 상태로 인한 연결 거절: chargeBoxId={}", chargeBoxId);
-            session.close(CloseStatus.SERVICE_RESTARTED.withReason("Kafka Broker Failover - Buffer Locally"));
-            return;
+            log.info("[WebSocket][OCPP1.6] Client connected - charger: {}, sessionId: {}, ip: {}",
+                    chargeBoxId, session.getId(), session.getRemoteAddress());
+
+            sessionStore.registerSession(chargeBoxId, session);
         }
-
-        log.info("[WS-Handler] 소켓 연결 수립: chargeBoxId={}, sessionId={}, remoteAddress={}",
-                chargeBoxId, session.getId(), session.getRemoteAddress());
-
-        sessionStore.registerSession(chargeBoxId, session);
     }
 
     @Override
@@ -71,54 +74,63 @@ public class OcppWebSocketHandler extends TextWebSocketHandler implements SubPro
         long startNanos = System.nanoTime();
         String chargeBoxId = getChargeBoxId(session);
         String payload = message.getPayload();
+        String incomingMsgId = LogFormatUtils.extractMsgId(payload);
 
-        // 수신 패킷에 따른 세션 마지막 활동 시각 갱신
-        sessionStore.touchSession(chargeBoxId);
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, incomingMsgId)) {
+            // 수신 패킷에 따른 세션 마지막 활동 시각 갱신
+            sessionStore.touchSession(chargeBoxId);
 
-        // 실시간 인바운드 TPS 모니터링 메트릭 카운팅 (REQ-004)
-        gatewayMetrics.recordInboundPacket();
+            // 실시간 인바운드 TPS 모니터링 메트릭 카운팅 (REQ-004)
+            gatewayMetrics.recordInboundPacket();
 
-        log.info("[WS-RECV] [{}] 수신 전문: {}", chargeBoxId, payload);
+            log.info("[RECEIVE] {} | {}", chargeBoxId, payload);
 
-        OcppRawEventEnvelope envelope = OcppRawEventEnvelope.builder()
-                .chargeBoxId(chargeBoxId)
-                .sessionId(session.getId())
-                .remoteAddress(session.getRemoteAddress() != null ? session.getRemoteAddress().toString() : "unknown")
-                .rawPayload(payload)
-                .receivedAt(Instant.now())
-                .build();
+            OcppRawEventEnvelope envelope = OcppRawEventEnvelope.builder()
+                    .chargeBoxId(chargeBoxId)
+                    .sessionId(session.getId())
+                    .remoteAddress(session.getRemoteAddress() != null ? session.getRemoteAddress().toString() : "unknown")
+                    .rawPayload(payload)
+                    .receivedAt(Instant.now())
+                    .build();
 
-        // 비동기로 Kafka 토픽에 발행하여 I/O 루프 블로킹 방지 및 레이턴시 기록
-        inboundProducer.sendRawEvent(envelope)
-                .whenComplete((result, ex) ->
-                        gatewayMetrics.recordPacketProcessingLatency(System.nanoTime() - startNanos));
+            // 비동기로 Kafka 토픽에 발행하여 I/O 루프 블로킹 방지 및 레이턴시 기록
+            inboundProducer.sendRawEvent(envelope)
+                    .whenComplete((result, ex) ->
+                            gatewayMetrics.recordPacketProcessingLatency(System.nanoTime() - startNanos));
+        }
     }
 
     @Override
     protected void handlePongMessage(WebSocketSession session, PongMessage message) {
         String chargeBoxId = getChargeBoxId(session);
-        sessionStore.touchSession(chargeBoxId);
-        log.debug("[WS-PONG] [{}] WebSocket Pong 수신 - 세션 활동 시각 갱신", chargeBoxId);
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, session.getId())) {
+            sessionStore.touchSession(chargeBoxId);
+            log.debug("[WebSocket][OCPP1.6] Pong received - charger: {}", chargeBoxId);
+        }
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         String chargeBoxId = getChargeBoxId(session);
-        log.error("[WS-Handler] 소켓 전송 에러 발생: chargeBoxId={}, sessionId={}, error={}",
-                chargeBoxId, session.getId(), exception.getMessage());
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, session.getId())) {
+            log.error("[WebSocket][OCPP1.6] Transport error - charger: {}, sessionId: {}, error: {}",
+                    chargeBoxId, session.getId(), exception.getMessage(), exception);
+        }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         String chargeBoxId = getChargeBoxId(session);
-        log.info("[WS-Handler] 소켓 연결 종료: chargeBoxId={}, sessionId={}, status={}",
-                chargeBoxId, session.getId(), status);
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, session.getId())) {
+            log.info("[WebSocket][OCPP1.6] Client disconnected - charger: {}, ip: {}, status: {}",
+                    chargeBoxId, session.getRemoteAddress(), status);
 
-        if (sessionStore.removeSession(chargeBoxId, session)) {
-            String remoteAddress = session.getRemoteAddress() != null
-                    ? session.getRemoteAddress().toString()
-                    : "unknown";
-            inboundProducer.sendDisconnectEvent(chargeBoxId, session.getId(), remoteAddress);
+            if (sessionStore.removeSession(chargeBoxId, session)) {
+                String remoteAddress = session.getRemoteAddress() != null
+                        ? session.getRemoteAddress().toString()
+                        : "unknown";
+                inboundProducer.sendDisconnectEvent(chargeBoxId, session.getId(), remoteAddress);
+            }
         }
     }
 

@@ -2,6 +2,7 @@ package com.lselink.elvis.connect.ws.kafka;
 
 import com.lselink.elvis.connect.ws.dto.OcppOutboundCommand;
 import com.lselink.elvis.connect.ws.session.LocalSessionStore;
+import com.lselink.elvis.connect.ws.util.LogFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -41,28 +42,34 @@ public class OutboundCommandConsumer {
 
         String chargeBoxId = command.getChargeBoxId();
         String payload = command.getPayload();
-        log.info("[OutboundConsumer] 하향 명령 수신: chargeBoxId={}, action={}, messageId={}",
-                chargeBoxId, command.getAction(), command.getMessageId());
+        String msgId = (command.getMessageId() != null && !command.getMessageId().isBlank())
+                ? command.getMessageId()
+                : LogFormatUtils.extractMsgId(payload);
 
-        Optional<WebSocketSession> sessionOpt = sessionStore.getSession(chargeBoxId);
-        if (sessionOpt.isPresent()) {
-            WebSocketSession session = sessionOpt.get();
-            synchronized (session) {
-                if (session.isOpen()) {
-                    try {
-                        session.sendMessage(new TextMessage(payload));
-                        gatewayMetrics.recordOutboundCommand();
-                        log.info("[WS-SEND] [{}] 하향 전문 전송: {}", chargeBoxId, payload);
-                    } catch (IOException e) {
-                        log.error("[OutboundConsumer] 하향 명령 소켓 전송 실패: chargeBoxId={}, error={}",
-                                chargeBoxId, e.getMessage(), e);
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, msgId)) {
+            log.debug("[REQ] OUTBOUND     | {} | charger={} msgId={}",
+                    LogFormatUtils.padAction(command.getAction()), chargeBoxId, msgId);
+
+            Optional<WebSocketSession> sessionOpt = sessionStore.getSession(chargeBoxId);
+            if (sessionOpt.isPresent()) {
+                WebSocketSession session = sessionOpt.get();
+                synchronized (session) {
+                    if (session.isOpen()) {
+                        try {
+                            session.sendMessage(new TextMessage(payload));
+                            gatewayMetrics.recordOutboundCommand();
+                            log.info("[SEND]    {} | {}", chargeBoxId, payload);
+                        } catch (IOException e) {
+                            log.error("[WebSocket][OCPP1.6] Send failed - charger: {}, error: {}",
+                                    chargeBoxId, e.getMessage(), e);
+                        }
+                    } else {
+                        log.warn("[WebSocket][OCPP1.6] Session closed - charger: {}", chargeBoxId);
                     }
-                } else {
-                    log.warn("[OutboundConsumer] 충전기 소켓 닫힘 상태: chargeBoxId={}", chargeBoxId);
                 }
+            } else {
+                log.warn("[WebSocket][OCPP1.6] Active session not found (offline) - charger: {}", chargeBoxId);
             }
-        } else {
-            log.warn("[OutboundConsumer] 활성 세션 미존재 (오프라인): chargeBoxId={}", chargeBoxId);
         }
     }
 }

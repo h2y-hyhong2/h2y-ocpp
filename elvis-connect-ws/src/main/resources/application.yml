@@ -62,4 +62,12 @@ management:
 logging:
   level:
     root: INFO
-    com.lselink.elvis.connect.ws: DEBUG
+    com.lselink.elvis.connect.ws: INFO
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+  file:
+    name: ${ELVIS_LOG_DIR:logs}/ocpp-ws.log
+  error-file:
+    name: ${ELVIS_LOG_DIR:logs}/ws-err.log
+  kafka-file:
+    name: ${ELVIS_LOG_DIR:logs}/ws-kafka.log

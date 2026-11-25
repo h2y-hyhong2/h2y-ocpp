@@ -78,11 +78,27 @@ CSMS Lite 프로젝트는 폐쇄망 및 로컬 독립 개발 환경을 지원하
 - **Frontend / Desktop**: Node.js `v24.x` (`fnm`), `pnpm`, Rust (`cargo`) — UI 최초 기동 전 각 UI 폴더(`elvis-launcher`, `elvis-control-ui`, `elvis-tester-ui`)에서 `pnpm install` 필요
 
 ### 2. 로컬 스토리지 · 포트 · MySQL 접속 정보
-- **경로/포트 설정**: [config/paths.env](config/paths.env) (`ELVIS_DATA_DIR=D:\elvis-lite\data`, `ELVIS_LOG_DIR=D:\elvis-lite\logs`)
+- **경로/포트 설정**: [config/paths.env](config/paths.env) (`ELVIS_DATA_DIR=%ELVIS_HOME%\data`, `ELVIS_LOG_DIR=%ELVIS_HOME%\logs`)
+  - **개발 환경(Dev/Debug)**: 워크스페이스 루트(`%ELVIS_HOME%`) 기준 `data/`·`logs/` 및 Gradle `bootRun` 사용 (`elvis-launcher` 설정 `settings-dev.json` 별도 관리)
+  - **Release 배포(`D:\elvis-lite\`)**: [scripts/deploy-elvis-lite.bat](scripts/deploy-elvis-lite.bat)로 표준 제품 구조(`apps/`, `binaries/`, `config/`, `scripts/`, `data/`, `logs/`, 4대 `.exe`)를 구성하며 Release 빌드 실행 파일은 `D:\elvis-lite` 제품 경로를 기본 참조합니다.
 - **데스크톱 4대 앱 릴리스 실행파일 (`D:\elvis-lite\`)**: [scripts/build-desktop-exes.bat](scripts/build-desktop-exes.bat)로 4대 앱(`elvis-launcher.exe`, `elvis-control-ui.exe`, `elvis-log-viewer.exe`, `elvis-tester-ui.exe`)을 공식 제품 아이콘(`icons/`) 적용 상태로 일괄 빌드·배포합니다.
 - **MySQL 9.71 (`127.0.0.1:13306`, DB: `elvis_lite`)**:
   - `root`: 비밀번호 없음 (`--initialize-insecure` 초기화)
   - `elvis` / `elvis1234!`: 애플리케이션 전용 계정 (`elvis_lite.*` 전체 권한)
+  - 초기 테스트 RFID 카드 4종 시드 포함 (`CARD-CORP-9901`, `CARD-USER-1001`, `CREDIT-IC-01`, `ROAM-ME-7701`)
+
+---
+
+## 📊 제품 구성 및 작업 현황 (2026-11-25 기준)
+
+| 영역 | 구성 모듈 / 산출물 | 진행 상태 | 주요 구현 내용 |
+| :--- | :--- | :---: | :--- |
+| **표준 인스톨·배포** | `D:\elvis-lite\`, [scripts/deploy-elvis-lite.ps1](scripts/deploy-elvis-lite.ps1) | 완료 | Standalone 제품 디렉터리 표준화(`apps/`, `binaries/`, `config/`, `scripts/`, `data/`, `logs/`), 무창 독립 데몬 기동(`run-daemon.ps1`/`vbs`), 개발/Release 경로 자동 분기 |
+| **통합 런처** | `elvis-launcher` (`elvis-launcher.exe`) | 완료 | 제품 메인 경로 동적 변경·영속 저장, 5대 서비스 설치 여부(`미설치` 배지) 판별, 일괄·개별 제어 및 시스템 트레이 연동 |
+| **로그·프로세스 뷰어** | `elvis-log-viewer` (`elvis-log-viewer.exe`) | 완료 | 5분할/3분할/2분할/단일/에러 분할 뷰, 하단 1줄 시스템 자원 바(`CPU`/`RAM`/`DISK`/`UPTIME`), OCPP 파이프 표준 로그 레벨 파싱 및 태그 강조 |
+| **OCPP 게이트웨이·동기화** | `elvis-connect-ws` (`:9080`), `elvis-connect-sync` (`:9081`) | 완료 | OCPP 1.6J 송수신·Kafka 파이프라인·MySQL 실시간 상태/세션/계측/TOU 과금 동기화, `evcs_ocpp_ws`/`evcs_ocpp_rest` 표준 파이프 로그·MDC(`charger`, `msgId`)·에러/Kafka 파일 분리 |
+| **관제 API·관제 UI** | `elvis-control-api` (`:9082`), `elvis-control-ui` (`elvis-control-ui.exe`) | 완료 | Tauri 2.0 CORS/WebSocket·JWT 인증 연동, `충전기 목록` + `과금 원장` 2화면 단순화·모던 라이트 디자인 통일, `transaction_session`/`charge_detail_record` 실시간 과금 원장 조회 및 CSV 내보내기 |
+| **가상 충전기 테스터** | `elvis-tester-ui` (`elvis-tester-ui.exe`) | 완료 | 듀얼건 가상 충전기 시뮬레이션, JWT 자동 인증 기반 MySQL 충전기 동기화 및 OCPP E2E 검증 스위트 |
 
 ### 3. 최초 세팅 및 기동 순서 (클린 환경 권장)
 1. [scripts/start-elvis-launcher.bat](scripts/start-elvis-launcher.bat)로 ELVIS 런처를 실행합니다.

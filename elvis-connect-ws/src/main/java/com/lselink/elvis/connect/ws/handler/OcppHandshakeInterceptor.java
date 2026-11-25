@@ -1,5 +1,6 @@
 package com.lselink.elvis.connect.ws.handler;
 
+import com.lselink.elvis.connect.ws.util.LogFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,20 +35,22 @@ public class OcppHandshakeInterceptor implements HandshakeInterceptor {
         String path = uri.getPath(); // 예: /ocpp/00000001
 
         String chargeBoxId = extractChargeBoxId(path);
-        if (chargeBoxId == null || chargeBoxId.isBlank()) {
-            log.warn("[Handshake] 유효하지 않은 URI 경로 (chargeBoxId 누락): {}", path);
-            return false;
-        }
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, null)) {
+            if (chargeBoxId == null || chargeBoxId.isBlank()) {
+                log.warn("[Handshake] 유효하지 않은 URI 경로 (chargeBoxId 누락): {}", path);
+                return false;
+            }
 
-        // 1. HTTP Basic Auth 헤더 및 Query Parameter Token 검증 (REQ-007)
-        if (!validateSecurityCredentials(request, uri)) {
-            log.warn("[Handshake] 미인증 충전기 핸드셰이크 거부: chargeBoxId={}, remoteUri={}", chargeBoxId, uri);
-            return false;
-        }
+            // 1. HTTP Basic Auth 헤더 및 Query Parameter Token 검증 (REQ-007)
+            if (!validateSecurityCredentials(request, uri)) {
+                log.warn("[Handshake] 미인증 충전기 핸드셰이크 거부: chargeBoxId={}, remoteUri={}", chargeBoxId, uri);
+                return false;
+            }
 
-        attributes.put(ATTR_CHARGE_BOX_ID, chargeBoxId);
-        log.info("[Handshake] 웹소켓 핸드셰이크 요청 수락: chargeBoxId={}, remoteUri={}", chargeBoxId, uri);
-        return true;
+            attributes.put(ATTR_CHARGE_BOX_ID, chargeBoxId);
+            log.info("[Handshake] 웹소켓 핸드셰이크 요청 수락: chargeBoxId={}, remoteUri={}", chargeBoxId, uri);
+            return true;
+        }
     }
 
     /**

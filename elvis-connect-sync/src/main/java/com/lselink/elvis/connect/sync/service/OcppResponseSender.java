@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lselink.elvis.connect.sync.dto.OcppOutboundCommand;
+import com.lselink.elvis.connect.sync.util.LogFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 public class OcppResponseSender {
 
     private static final Logger log = LoggerFactory.getLogger(OcppResponseSender.class);
+    private static final Logger kafkaLog = LoggerFactory.getLogger("com.lselink.elvis.connect.sync.kafka");
 
     private static final int MSG_TYPE_CALLRESULT = 3;
     private static final int MSG_TYPE_CALLERROR = 4;
@@ -165,45 +167,51 @@ public class OcppResponseSender {
      */
     public void sendCallError(String chargeBoxId, String uniqueId, String action,
                               String errorCode, String errorDescription) {
-        if (uniqueId == null || uniqueId.isBlank()) {
-            log.warn("[OcppSender] uniqueId 부재로 CALLERROR 발행 스킵: chargeBoxId={}, action={}", chargeBoxId, action);
-            return;
-        }
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, uniqueId)) {
+            if (uniqueId == null || uniqueId.isBlank()) {
+                log.warn("[RES] CALLERROR    | {} | charger={} reason=MissingUniqueId",
+                        LogFormatUtils.padAction(action), chargeBoxId);
+                return;
+            }
 
-        try {
-            ArrayNode root = objectMapper.createArrayNode();
-            root.add(MSG_TYPE_CALLERROR);
-            root.add(uniqueId);
-            root.add(errorCode != null && !errorCode.isBlank() ? errorCode : "GenericError");
-            root.add(errorDescription != null ? errorDescription : "");
-            root.add(objectMapper.createObjectNode());
+            try {
+                ArrayNode root = objectMapper.createArrayNode();
+                root.add(MSG_TYPE_CALLERROR);
+                root.add(uniqueId);
+                root.add(errorCode != null && !errorCode.isBlank() ? errorCode : "GenericError");
+                root.add(errorDescription != null ? errorDescription : "");
+                root.add(objectMapper.createObjectNode());
 
-            String callErrorJson = objectMapper.writeValueAsString(root);
+                String callErrorJson = objectMapper.writeValueAsString(root);
 
-            OcppOutboundCommand outboundCmd = OcppOutboundCommand.builder()
-                    .chargeBoxId(chargeBoxId)
-                    .action(action != null ? action : "UNKNOWN")
-                    .commandPayload(callErrorJson)
-                    .messageId(uniqueId)
-                    .build();
+                OcppOutboundCommand outboundCmd = OcppOutboundCommand.builder()
+                        .chargeBoxId(chargeBoxId)
+                        .action(action != null ? action : "UNKNOWN")
+                        .commandPayload(callErrorJson)
+                        .messageId(uniqueId)
+                        .build();
 
-            log.warn("[OcppSender] 하향 CALLERROR 발행: chargeBoxId={}, action={}, uniqueId={}, errorCode={}",
-                    chargeBoxId, action, uniqueId, errorCode);
+                log.warn("[RES] CALLERROR    | {} | charger={} msgId={} errorCode={} payload={}",
+                        LogFormatUtils.padAction(action), chargeBoxId, uniqueId, errorCode, callErrorJson);
 
-            kafkaTemplate.send(outboundTopic, chargeBoxId, outboundCmd)
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("[OcppSender] CALLERROR 하향 전송 실패: chargeBoxId={}, action={}, error={}",
-                                    chargeBoxId, action, ex.getMessage(), ex);
-                        } else {
-                            log.debug("[OcppSender] CALLERROR 하향 전송 완료: chargeBoxId={}, action={}, offset={}",
-                                    chargeBoxId, action, result.getRecordMetadata().offset());
-                        }
-                    });
+                kafkaTemplate.send(outboundTopic, chargeBoxId, outboundCmd)
+                        .whenComplete((result, ex) -> {
+                            try (LogFormatUtils.MdcScope cbMdc = LogFormatUtils.withMdc(chargeBoxId, uniqueId)) {
+                                if (ex != null) {
+                                    kafkaLog.error("[Kafka] SEND FAIL  | topic={} key={} action={} error={}",
+                                            outboundTopic, chargeBoxId, action, ex.getMessage(), ex);
+                                } else {
+                                    var meta = result.getRecordMetadata();
+                                    kafkaLog.info("[Kafka] SEND       | topic={} key={} partition={} offset={} action={} type=CALLERROR",
+                                            outboundTopic, chargeBoxId, meta.partition(), meta.offset(), action);
+                                }
+                            }
+                        });
 
-        } catch (Exception e) {
-            log.error("[OcppSender] CALLERROR 직렬화 실패: chargeBoxId={}, action={}, error={}",
-                    chargeBoxId, action, e.getMessage(), e);
+            } catch (Exception e) {
+                log.error("[RES] CALLERROR    | {} | charger={} msgId={} error={}",
+                        LogFormatUtils.padAction(action), chargeBoxId, uniqueId, e.getMessage(), e);
+            }
         }
     }
 
@@ -211,43 +219,49 @@ public class OcppResponseSender {
      * OCPP 1.6-J CALLRESULT [3, uniqueId, payload] 공통 조립 및 Kafka 하향 발행
      */
     public void sendCallResult(String chargeBoxId, String uniqueId, String action, ObjectNode payload) {
-        if (uniqueId == null || uniqueId.isBlank()) {
-            log.warn("[OcppSender] uniqueId 부재로 CALLRESULT 발행 스킵: chargeBoxId={}, action={}", chargeBoxId, action);
-            return;
-        }
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, uniqueId)) {
+            if (uniqueId == null || uniqueId.isBlank()) {
+                log.warn("[RES] CALLRESULT   | {} | charger={} reason=MissingUniqueId",
+                        LogFormatUtils.padAction(action), chargeBoxId);
+                return;
+            }
 
-        try {
-            ArrayNode root = objectMapper.createArrayNode();
-            root.add(MSG_TYPE_CALLRESULT);
-            root.add(uniqueId);
-            root.add(payload);
+            try {
+                ArrayNode root = objectMapper.createArrayNode();
+                root.add(MSG_TYPE_CALLRESULT);
+                root.add(uniqueId);
+                root.add(payload);
 
-            String callResultJson = objectMapper.writeValueAsString(root);
+                String callResultJson = objectMapper.writeValueAsString(root);
 
-            OcppOutboundCommand outboundCmd = OcppOutboundCommand.builder()
-                    .chargeBoxId(chargeBoxId)
-                    .action(action)
-                    .commandPayload(callResultJson)
-                    .messageId(uniqueId)
-                    .build();
+                OcppOutboundCommand outboundCmd = OcppOutboundCommand.builder()
+                        .chargeBoxId(chargeBoxId)
+                        .action(action)
+                        .commandPayload(callResultJson)
+                        .messageId(uniqueId)
+                        .build();
 
-            log.info("[OcppSender] 하향 CALLRESULT 발행: chargeBoxId={}, action={}, uniqueId={}, payload={}",
-                    chargeBoxId, action, uniqueId, callResultJson);
+                log.info("[RES] CALLRESULT   | {} | charger={} msgId={} payload={}",
+                        LogFormatUtils.padAction(action), chargeBoxId, uniqueId, callResultJson);
 
-            kafkaTemplate.send(outboundTopic, chargeBoxId, outboundCmd)
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("[OcppSender] CALLRESULT 하향 전송 실패: chargeBoxId={}, action={}, error={}",
-                                    chargeBoxId, action, ex.getMessage(), ex);
-                        } else {
-                            log.debug("[OcppSender] CALLRESULT 하향 전송 완료: chargeBoxId={}, action={}, offset={}",
-                                    chargeBoxId, action, result.getRecordMetadata().offset());
-                        }
-                    });
+                kafkaTemplate.send(outboundTopic, chargeBoxId, outboundCmd)
+                        .whenComplete((result, ex) -> {
+                            try (LogFormatUtils.MdcScope cbMdc = LogFormatUtils.withMdc(chargeBoxId, uniqueId)) {
+                                if (ex != null) {
+                                    kafkaLog.error("[Kafka] SEND FAIL  | topic={} key={} action={} error={}",
+                                            outboundTopic, chargeBoxId, action, ex.getMessage(), ex);
+                                } else {
+                                    var meta = result.getRecordMetadata();
+                                    kafkaLog.info("[Kafka] SEND       | topic={} key={} partition={} offset={} action={} type=CALLRESULT",
+                                            outboundTopic, chargeBoxId, meta.partition(), meta.offset(), action);
+                                }
+                            }
+                        });
 
-        } catch (Exception e) {
-            log.error("[OcppSender] CALLRESULT 직렬화 실패: chargeBoxId={}, action={}, error={}",
-                    chargeBoxId, action, e.getMessage(), e);
+            } catch (Exception e) {
+                log.error("[RES] CALLRESULT   | {} | charger={} msgId={} error={}",
+                        LogFormatUtils.padAction(action), chargeBoxId, uniqueId, e.getMessage(), e);
+            }
         }
     }
 }

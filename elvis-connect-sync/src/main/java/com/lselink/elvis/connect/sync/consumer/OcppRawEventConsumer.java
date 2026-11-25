@@ -11,8 +11,10 @@ import com.lselink.elvis.connect.sync.service.DltRecoveryService;
 import com.lselink.elvis.connect.sync.service.MeterValuesService;
 import com.lselink.elvis.connect.sync.service.OcppResponseSender;
 import com.lselink.elvis.connect.sync.service.TransactionSessionService;
+import com.lselink.elvis.connect.sync.util.LogFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -71,11 +73,17 @@ public class OcppRawEventConsumer {
             log.warn("[SyncConsumer] null OcppRawEventEnvelope 수신 무시");
             return;
         }
-        try {
+        String chargeBoxId = envelope.getChargeBoxId();
+        String initialMsgId = LogFormatUtils.extractMsgId(envelope.getRawPayload());
+        if (initialMsgId == null || initialMsgId.isBlank()) {
+            initialMsgId = envelope.getSessionId();
+        }
+
+        try (LogFormatUtils.MdcScope ignored = LogFormatUtils.withMdc(chargeBoxId, initialMsgId)) {
             processEnvelope(envelope);
         } catch (Exception e) {
-            log.error("[SyncConsumer] 패킷 처리 최종 예외: chargeBoxId={}, error={}",
-                    envelope.getChargeBoxId(), e.getMessage(), e);
+            log.error("[SyncConsumer] 패킷 처리 최종 예외: charger={} error={}",
+                    chargeBoxId, e.getMessage(), e);
         }
     }
 
@@ -87,8 +95,8 @@ public class OcppRawEventConsumer {
 
         // ─── 0단계: WebSocket 연결 종료/타임아웃 시스템 이벤트 처리 ───────────────────
         if (envelope.isDisconnectedEvent()) {
-            log.info("[SyncConsumer] 단말 연결 종료(DISCONNECTED) 이벤트 수신: chargeBoxId={}, sessionId={}",
-                    chargeBoxId, envelope.getSessionId());
+            log.info("[EVT] DISCONNECTED | {} | charger={} sessionId={}",
+                    LogFormatUtils.padAction("Disconnected"), chargeBoxId, envelope.getSessionId());
             connectorStatusService.handleDisconnected(chargeBoxId);
             return;
         }
@@ -96,13 +104,12 @@ public class OcppRawEventConsumer {
         String rawPayload = envelope.getRawPayload();
         int payloadLength = rawPayload != null ? rawPayload.length() : 0;
 
-        log.debug("[SyncConsumer] 스레드[{}] 패킷 수신: chargeBoxId={}, len={}",
-                Thread.currentThread().getName(), chargeBoxId, payloadLength);
+        log.debug("[SyncConsumer] 패킷 수신: charger={} len={}", chargeBoxId, payloadLength);
 
         // ─── 1단계: OCPP 파서 (Sprint 17) ───────────────────────────────────────────
         Optional<OcppParsedMessage> parsedOpt = ocppMessageParser.parse(chargeBoxId, rawPayload);
         if (parsedOpt.isEmpty()) {
-            log.warn("[SyncConsumer] OCPP 파싱 실패 → DLT 즉시 격리: chargeBoxId={}", chargeBoxId);
+            log.warn("[SyncConsumer] OCPP 파싱 실패 → DLT 즉시 격리: charger={}", chargeBoxId);
             dltRecoveryService.isolateFailure(
                     chargeBoxId,
                     "UNKNOWN",
@@ -116,11 +123,16 @@ public class OcppRawEventConsumer {
         }
 
         OcppParsedMessage msg = parsedOpt.get();
+        if (msg.getUniqueId() != null && !msg.getUniqueId().isBlank()) {
+            MDC.put(LogFormatUtils.MDC_MSG_ID, msg.getUniqueId());
+        }
 
         // CALLRESULT(3) / CALLERROR(4)는 단말이 CSMS 명령에 응답한 정상 프레임이므로 DLT로 보내지 않고 정상 종료
         if (msg.isCallResultOrError()) {
-            log.debug("[SyncConsumer] 단말 OCPP 응답 수신 (정상 무시): chargeBoxId={}, type={}, uniqueId={}, raw={}",
-                    chargeBoxId, msg.getMessageType(), msg.getUniqueId(), msg.getRaw());
+            String frameType = msg.getMessageType() == 3 ? "CALLRESULT  " : "CALLERROR   ";
+            log.info("[REQ] {} | {} | charger={} msgId={} payload={}",
+                    frameType, LogFormatUtils.padAction(msg.getAction()),
+                    chargeBoxId, msg.getUniqueId(), msg.getRaw());
             return;
         }
 
@@ -201,8 +213,11 @@ public class OcppRawEventConsumer {
      */
     private void dispatchAction(OcppParsedMessage msg) {
         String action = msg.getAction();
+        String paddedAction = LogFormatUtils.padAction(action);
+        long startNanos = System.nanoTime();
 
-        log.info("[SYNC-RECV] [{}] [{}] 수신 전문: {}", msg.getChargeBoxId(), action, msg.getRaw());
+        log.info("[REQ] CALL         | {} | charger={} msgId={} payload={}",
+                paddedAction, msg.getChargeBoxId(), msg.getUniqueId(), msg.getRaw());
 
         switch (action) {
             // ─── Sprint 18: 실시간 상태 UPDATE ──────────────────────────────────
@@ -224,10 +239,14 @@ public class OcppRawEventConsumer {
             case "DataTransfer"       -> dataTransferService.handleDataTransfer(msg);
 
             default -> {
-                log.warn("[SyncConsumer] 미구현 OCPP Action 수신 → CALLERROR(NotImplemented) 회신: chargeBoxId={}, action={}, uniqueId={}",
-                        msg.getChargeBoxId(), action, msg.getUniqueId());
+                log.warn("[REQ] CALL         | {} | charger={} msgId={} status=NotImplemented",
+                        paddedAction, msg.getChargeBoxId(), msg.getUniqueId());
                 ocppResponseSender.sendNotImplementedError(msg.getChargeBoxId(), msg.getUniqueId(), action);
             }
         }
+
+        long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
+        log.info("[RES] CALL         | {} | charger={} msgId={} elapsed={}ms",
+                paddedAction, msg.getChargeBoxId(), msg.getUniqueId(), elapsedMs);
     }
 }

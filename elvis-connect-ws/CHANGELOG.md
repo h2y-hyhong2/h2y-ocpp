@@ -10,6 +10,15 @@
 
 ## 변경 이력
 
+### [2026-11-25] `evcs_ocpp_ws` 표준 로그 포맷·MDC(`charger`, `msgId`)·파일 분리 적용
+- **과제/커밋**: `[3368]WBS-COMMON-OP-009` (WS/SYNC 로그 방식 표준화)
+- **변경 내용**:
+  - `logback-spring.xml`: `evcs_ocpp_ws`와 동일한 파이프 구분 고정 폭 패턴(`%d{yyyy-MM-dd HH:mm:ss.SSS} | %-5level | OCPP-WS   | %-18.-18thread | %-36.36logger{36} | %-8.-8X{charger:--} | %-36.-36X{msgId:--} | %msg%n`) 및 4종 어펜더(`CONSOLE`, `FILE`(ERROR 제외, `ocpp-ws.log`), `ERROR_FILE`(ERROR 전용, `ws-err.log`), `KAFKA_FILE`(`ws-kafka.log`, `additivity="false"` 분리))·롤링 정책(100MB/7일 `.gz`) 적용
+  - `util/LogFormatUtils.java`, `filter/MdcMsgIdFilter.java`: 29자 Action 패딩(`padAction`), OCPP 배열 프레임 `msgId` 추출, URI `charger` 추출 및 `try-with-resources` 기반 `MdcScope`·HTTP 필터(`jakarta.servlet`) 추가
+  - `OcppWebSocketHandler`, `OcppHandshakeInterceptor`, `OutboundCommandConsumer`, `InboundRawEventProducer`: MDC(`charger`, `msgId`) 바인딩 및 `[RECEIVE]`, `[SEND]   `, `[Kafka] SEND`/`SEND FAIL`, `[WebSocket][OCPP1.6]` 표준 로그 태그로 통일
+  - `application.yml`, `config/connect-ws/application.yml`: `logging.file.name`/`error-file.name`/`kafka-file.name` 및 `org.apache.kafka`/`org.springframework.kafka` `WARN` 레벨 설정
+- **영향 범위**: `elvis-connect-ws` 콘솔·파일·에러·Kafka 로그 출력 및 `D:\elvis-lite\logs\` 파일 구조
+
 ### [2026-11-20] 활성 세션 현황 로그 개행 문자 제거 (1줄 출력 표준화)
 - **과제/커밋**: `[3368]WBS-COMMON-OP-007` (로그 뷰어 1로그 1줄 가독성 개선)
 - **변경 내용**:
